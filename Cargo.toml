@@ -1,0 +1,35 @@
+[package]
+name = "tiny_os"
+version = "0.0.1"
+authors = ["Boo Gafford <byoboo@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[target.'cfg(target_os = "linux")']
+rustflags = ["-C", "link-arg=-nostartfiles"]
+
+[target.'cfg(target_os = "windows")']
+rustflags = ["-C", "link-args=/ENTRY:_start /SUBSYSTEM:console"]
+
+[target.'cfg(target_os = "macos")']
+rustflags = ["-C", "link-args=-e __start -static -nostartfiles"]
+
+[package.metadata.bootimage]
+run-command = ["qemu-system-x86_64", "-drive", "format=raw,file=target/x86_64-tiny_os/debug/bootimage-tiny_os.bin"]
+run-args = ["-L", "C:/Program Files/qemu"]
+
+[dependencies.lazy_static]
+version = "1.0"
+features = ["spin_no_std"]
+
+[dependencies]
+bootloader = "0.9.16"
+volatile = "0.2.6"  # Used because 0.4.X version gives trait bound errors
+spin = "0.9.0"
