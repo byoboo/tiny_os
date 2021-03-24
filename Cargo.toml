@@ -7,10 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.dev]
-panic = "abort"
+# panic = "abort"
 
 [profile.release]
-panic = "abort"
+# panic = "abort"
 
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-arg=-nostartfiles"]
@@ -24,6 +24,7 @@ rustflags = ["-C", "link-args=-e __start -static -nostartfiles"]
 [package.metadata.bootimage]
 run-command = ["qemu-system-x86_64", "-drive", "format=raw,file=target/x86_64-tiny_os/debug/bootimage-tiny_os.bin"]
 run-args = ["-L", "C:/Program Files/qemu"]
+test-args = ["-L", "C:/Program Files/qemu", "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"]
 
 [dependencies.lazy_static]
 version = "1.0"
