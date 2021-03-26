@@ -6,11 +6,11 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[profile.dev]
-# panic = "abort"
+#[profile.dev]
+#panic = "abort"
 
-[profile.release]
-# panic = "abort"
+#[profile.release]
+#panic = "abort"
 
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-arg=-nostartfiles"]
@@ -22,15 +22,24 @@ rustflags = ["-C", "link-args=/ENTRY:_start /SUBSYSTEM:console"]
 rustflags = ["-C", "link-args=-e __start -static -nostartfiles"]
 
 [package.metadata.bootimage]
-run-command = ["qemu-system-x86_64", "-drive", "format=raw,file=target/x86_64-tiny_os/debug/bootimage-tiny_os.bin"]
+# run-command = ["qemu-system-x86_64", "-drive", "format=raw,file=target/x86_64-tiny_os/debug/bootimage-tiny_os.bin"]
 run-args = ["-L", "C:/Program Files/qemu"]
-test-args = ["-L", "C:/Program Files/qemu", "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"]
+test-args = [
+    "-L", "C:/Program Files/qemu", 
+   "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
+   "-serial", "stdio",
+   "-display", "none"
+]
+test-success-exit-code = 33 # (0x10 << =1) | 1
+test-timeout = 300 # (in seconds)
 
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
 
 [dependencies]
-bootloader = "0.9.16"
-volatile = "0.2.6"  # Used because 0.4.X version gives trait bound errors
+bootloader = "0.9.8"
+volatile = "0.2.6" # using this version because 0.4.x doesn't work correctly
 spin = "0.9.0"
+x86_64 = "0.13.2"
+uart_16550 = "0.2.0"
