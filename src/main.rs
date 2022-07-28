@@ -29,13 +29,6 @@ pub extern "C" fn _start() -> ! {
 
     tiny_os::init();
 
-    // stack overflow
-    fn stack_overflow() {
-        stack_overflow();
-    }
-
-    stack_overflow();
-
     #[cfg(test)]
     test_main();
 
