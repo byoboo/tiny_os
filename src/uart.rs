@@ -1,0 +1,87 @@
+// UART driver for Raspberry Pi 4/5
+use core::ptr::{read_volatile, write_volatile};
+
+// UART base addresses for Raspberry Pi 4/5
+const UART_BASE: u32 = 0xFE201000;
+const UART_DR: u32 = UART_BASE + 0x00;     // Data register
+const UART_FR: u32 = UART_BASE + 0x18;     // Flag register
+const UART_IBRD: u32 = UART_BASE + 0x24;   // Integer baud rate divisor
+const UART_FBRD: u32 = UART_BASE + 0x28;   // Fractional baud rate divisor
+const UART_LCRH: u32 = UART_BASE + 0x2C;   // Line control register
+const UART_CR: u32 = UART_BASE + 0x30;     // Control register
+const UART_ICR: u32 = UART_BASE + 0x44;    // Interrupt clear register
+
+// Flag register bits
+const UART_FR_TXFF: u32 = 1 << 5;  // Transmit FIFO full
+const UART_FR_RXFE: u32 = 1 << 4;  // Receive FIFO empty
+
+// Control register bits
+const UART_CR_UARTEN: u32 = 1 << 0;  // UART enable
+const UART_CR_TXE: u32 = 1 << 8;     // Transmit enable
+const UART_CR_RXE: u32 = 1 << 9;     // Receive enable
+
+// Line control register bits
+const UART_LCRH_WLEN_8BIT: u32 = 0b11 << 5;  // 8-bit words
+const UART_LCRH_FEN: u32 = 1 << 4;            // Enable FIFOs
+
+pub struct Uart {
+    base: u32,
+}
+
+impl Uart {
+    pub fn new() -> Self {
+        Self { base: UART_BASE }
+    }
+
+    pub fn init(&self) {
+        unsafe {
+            // Disable UART
+            write_volatile(UART_CR as *mut u32, 0);
+
+            // Clear all pending interrupts
+            write_volatile(UART_ICR as *mut u32, 0x7FF);
+
+            // Set baud rate to 115200 (assuming 48MHz UART clock)
+            // Baud rate divisor = UART_CLK / (16 * baud_rate)
+            // For 115200: divisor = 48000000 / (16 * 115200) = 26.04
+            // Integer part = 26, fractional part = 0.04 * 64 = 2.56 ≈ 3
+            write_volatile(UART_IBRD as *mut u32, 26);
+            write_volatile(UART_FBRD as *mut u32, 3);
+
+            // Set line control: 8-bit, no parity, 1 stop bit, FIFOs enabled
+            write_volatile(UART_LCRH as *mut u32, UART_LCRH_WLEN_8BIT | UART_LCRH_FEN);
+
+            // Enable UART, transmit, and receive
+            write_volatile(UART_CR as *mut u32, UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE);
+        }
+    }
+
+    pub fn putc(&self, c: u8) {
+        unsafe {
+            // Wait for transmit FIFO to have space
+            while (read_volatile(UART_FR as *const u32) & UART_FR_TXFF) != 0 {
+                // Busy wait
+            }
+            
+            // Write character to data register
+            write_volatile(UART_DR as *mut u32, c as u32);
+        }
+    }
+
+    pub fn puts(&self, s: &str) {
+        for byte in s.bytes() {
+            self.putc(byte);
+        }
+    }
+
+    pub fn getc(&self) -> Option<u8> {
+        unsafe {
+            // Check if receive FIFO has data
+            if (read_volatile(UART_FR as *const u32) & UART_FR_RXFE) == 0 {
+                Some(read_volatile(UART_DR as *const u32) as u8)
+            } else {
+                None
+            }
+        }
+    }
+}

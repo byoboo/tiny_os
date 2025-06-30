@@ -1,0 +1,6 @@
+[build]
+target = "aarch64-unknown-none"
+
+[target.aarch64-unknown-none]
+runner = ["sh", "-c", "qemu-system-aarch64 -M raspi4b -kernel $1 -serial stdio -display none", "--"]
+rustflags = ["-C", "link-arg=-Tlinker.ld"]
