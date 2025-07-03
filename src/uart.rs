@@ -3,28 +3,30 @@ use core::ptr::{read_volatile, write_volatile};
 
 // UART base addresses for Raspberry Pi 4/5
 const UART_BASE: u32 = 0xFE201000;
-const UART_DR: u32 = UART_BASE + 0x00;     // Data register
-const UART_FR: u32 = UART_BASE + 0x18;     // Flag register
-const UART_IBRD: u32 = UART_BASE + 0x24;   // Integer baud rate divisor
-const UART_FBRD: u32 = UART_BASE + 0x28;   // Fractional baud rate divisor
-const UART_LCRH: u32 = UART_BASE + 0x2C;   // Line control register
-const UART_CR: u32 = UART_BASE + 0x30;     // Control register
-const UART_ICR: u32 = UART_BASE + 0x44;    // Interrupt clear register
+#[allow(clippy::identity_op)]
+const UART_DR: u32 = UART_BASE + 0x00; // Data register
+const UART_FR: u32 = UART_BASE + 0x18; // Flag register
+const UART_IBRD: u32 = UART_BASE + 0x24; // Integer baud rate divisor
+const UART_FBRD: u32 = UART_BASE + 0x28; // Fractional baud rate divisor
+const UART_LCRH: u32 = UART_BASE + 0x2C; // Line control register
+const UART_CR: u32 = UART_BASE + 0x30; // Control register
+const UART_ICR: u32 = UART_BASE + 0x44; // Interrupt clear register
 
 // Flag register bits
-const UART_FR_TXFF: u32 = 1 << 5;  // Transmit FIFO full
-const UART_FR_RXFE: u32 = 1 << 4;  // Receive FIFO empty
+const UART_FR_TXFF: u32 = 1 << 5; // Transmit FIFO full
+const UART_FR_RXFE: u32 = 1 << 4; // Receive FIFO empty
 
 // Control register bits
-const UART_CR_UARTEN: u32 = 1 << 0;  // UART enable
-const UART_CR_TXE: u32 = 1 << 8;     // Transmit enable
-const UART_CR_RXE: u32 = 1 << 9;     // Receive enable
+const UART_CR_UARTEN: u32 = 1 << 0; // UART enable
+const UART_CR_TXE: u32 = 1 << 8; // Transmit enable
+const UART_CR_RXE: u32 = 1 << 9; // Receive enable
 
 // Line control register bits
-const UART_LCRH_WLEN_8BIT: u32 = 0b11 << 5;  // 8-bit words
-const UART_LCRH_FEN: u32 = 1 << 4;            // Enable FIFOs
+const UART_LCRH_WLEN_8BIT: u32 = 0b11 << 5; // 8-bit words
+const UART_LCRH_FEN: u32 = 1 << 4; // Enable FIFOs
 
 pub struct Uart {
+    #[allow(dead_code)]
     base: u32,
 }
 
@@ -52,7 +54,10 @@ impl Uart {
             write_volatile(UART_LCRH as *mut u32, UART_LCRH_WLEN_8BIT | UART_LCRH_FEN);
 
             // Enable UART, transmit, and receive
-            write_volatile(UART_CR as *mut u32, UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE);
+            write_volatile(
+                UART_CR as *mut u32,
+                UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE,
+            );
         }
     }
 
@@ -62,7 +67,7 @@ impl Uart {
             while (read_volatile(UART_FR as *const u32) & UART_FR_TXFF) != 0 {
                 // Busy wait
             }
-            
+
             // Write character to data register
             write_volatile(UART_DR as *mut u32, c as u32);
         }

@@ -5,6 +5,12 @@ edition = "2021"
 
 [dependencies]
 
+[dev-dependencies]
+lazy_static = "1.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+
 [profile.dev]
 panic = "abort"
 
@@ -12,3 +18,16 @@ panic = "abort"
 panic = "abort"
 lto = true
 opt-level = "s"
+
+# Test configuration for unit tests (use std for testing)
+[profile.test]
+panic = "unwind"  # Allow panics in tests for better error reporting
+
+# Library target for testing (hosted environment)
+[[bin]]
+name = "tiny_os"
+path = "src/main.rs"
+
+[lib]
+name = "tiny_os_lib"
+path = "src/lib.rs"
