@@ -3,7 +3,8 @@
 # Simple QEMU Boot Test for TinyOS
 # Tests that TinyOS boots successfully without user interaction
 
-cd "$(dirname "$0")"
+# Change to project root directory
+cd "$(dirname "$0")/.."
 
 echo "=== TinyOS Boot Test ==="
 echo "Building kernel..."

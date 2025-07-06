@@ -1,0 +1,24 @@
+# This is the default config.txt for the OS on raspi
+# simply rename to config.txt
+
+# Enable 64-bit mode
+arm_64bit=1
+
+# Use appropriate start file based on memory split
+start_file=start_cd.elf
+fixup_file=fixup_cd.dat
+
+# Set GPU memory split (16MB minimum)
+gpu_mem=16
+
+# Enable UART for debugging
+enable_uart=1
+
+# Disable rainbow splash screen
+disable_splash=1
+
+# For Pi 5: specify device tree
+device_tree=bcm2712-rpi-5-b.dtb
+
+# Kernel loading address (important!)
+kernel_address=0x80000

@@ -3,6 +3,9 @@
 # Simple Test Runner for TinyOS
 # This script runs basic validation tests without requiring complex test infrastructure
 
+# Change to project root directory
+cd "$(dirname "$0")/.."
+
 echo "========================================"
 echo "  TinyOS Simple Test Validation"
 echo "========================================"
@@ -126,7 +129,7 @@ if ! grep -q "allocate" src/memory.rs; then
     MEMORY_OK=0
 fi
 
-if ! grep -q "HEAP_START\|HEAP_SIZE" src/memory.rs; then
+if ! (grep -q "HEAP_START" src/memory.rs && grep -q "HEAP_SIZE" src/memory.rs); then
     echo "Missing heap constants"
     MEMORY_OK=0
 fi
@@ -144,7 +147,7 @@ if ! grep -q "struct Uart" src/uart.rs; then
     UART_OK=0
 fi
 
-if ! grep -q "puts\|putc" src/uart.rs; then
+if ! (grep -q "puts" src/uart.rs || grep -q "putc" src/uart.rs); then
     echo "Missing UART output functions"
     UART_OK=0
 fi
@@ -162,7 +165,7 @@ if ! grep -q "struct Gpio" src/gpio.rs; then
     GPIO_OK=0
 fi
 
-if ! grep -q "set_pin\|get_pin" src/gpio.rs; then
+if ! (grep -q "set_high\|set_low\|set_function" src/gpio.rs); then
     echo "Missing GPIO control functions"
     GPIO_OK=0
 fi

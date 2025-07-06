@@ -6,6 +6,13 @@
 // Use std only for tests, no_std for embedded
 #![cfg_attr(not(test), no_std)]
 
+// Core modules (available in no_std environments)
+pub mod gpio;
+pub mod interrupts;
+pub mod memory;
+pub mod timer;
+pub mod uart;
+
 // Test modules (only compiled when testing)
 #[cfg(test)]
 mod simple_tests;
