@@ -1,0 +1,37 @@
+{
+    "rust-analyzer.cargo.target": "aarch64-unknown-none",
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.targets": "aarch64-unknown-none",
+    "rust-analyzer.cargo.features": [],
+    "rust-analyzer.cargo.noDefaultFeatures": true,
+    "rust-analyzer.cargo.allFeatures": false,
+    "rust-analyzer.checkOnSave.command": "clippy",
+    "rust-analyzer.checkOnSave.extraArgs": [
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "-W",
+        "clippy::all"
+    ],
+    "rust-analyzer.procMacro.enable": false,
+    "rust-analyzer.diagnostics.disabled": [
+        "unresolved-proc-macro",
+        "macro-error"
+    ],
+    "rust-analyzer.completion.callable.snippets": "none",
+    "rust-analyzer.hover.actions.enable": false,
+    "rust-analyzer.lens.enable": false,
+    "rust-analyzer.inlayHints.enable": false,
+    "files.associations": {
+        "*.s": "arm",
+        "*.ld": "ld-script"
+    },
+    "editor.rulers": [100],
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true
+    }
+}

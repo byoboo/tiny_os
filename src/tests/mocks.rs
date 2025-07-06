@@ -387,6 +387,125 @@ impl MockInterruptController {
     }
 }
 
+/// Mock SD Card driver for testing
+pub struct MockSdCard {
+    pub initialized: bool,
+    pub card_info: Option<MockSdCardInfo>,
+    pub storage: HashMap<u32, [u8; 512]>,  // Block number -> data
+    pub simulate_errors: bool,
+}
+
+impl MockSdCard {
+    pub fn new() -> Self {
+        Self {
+            initialized: false,
+            card_info: None,
+            storage: HashMap::new(),
+            simulate_errors: false,
+        }
+    }
+
+    pub fn new_initialized() -> Self {
+        let mut card = Self::new();
+        card.initialized = true;
+        card.card_info = Some(MockSdCardInfo::new());
+        card
+    }
+
+    pub fn is_initialized(&self) -> bool {
+        self.initialized
+    }
+
+    pub fn get_card_info(&self) -> Option<&MockSdCardInfo> {
+        self.card_info.as_ref()
+    }
+
+    pub fn read_block(&self, block_addr: u32, buffer: &mut [u8; 512]) -> Result<(), MockSdError> {
+        if !self.initialized {
+            return Err(MockSdError::CardNotPresent);
+        }
+
+        if self.simulate_errors && block_addr % 100 == 99 {
+            return Err(MockSdError::ReadError);
+        }
+
+        if let Some(data) = self.storage.get(&block_addr) {
+            buffer.copy_from_slice(data);
+        } else {
+            // Return zeros for unwritten blocks
+            buffer.fill(0);
+        }
+
+        Ok(())
+    }
+
+    pub fn write_block(&mut self, block_addr: u32, buffer: &[u8; 512]) -> Result<(), MockSdError> {
+        if !self.initialized {
+            return Err(MockSdError::CardNotPresent);
+        }
+
+        if self.simulate_errors && block_addr % 100 == 99 {
+            return Err(MockSdError::WriteError);
+        }
+
+        self.storage.insert(block_addr, *buffer);
+        Ok(())
+    }
+
+    pub fn set_error_simulation(&mut self, enabled: bool) {
+        self.simulate_errors = enabled;
+    }
+}
+
+/// Mock SD Card information for testing
+pub struct MockSdCardInfo {
+    pub high_capacity: bool,
+    pub rca: u32,
+    pub ocr: u32,
+    pub cid: [u32; 4],
+    pub csd: [u32; 4],
+    pub scr: [u32; 2],
+}
+
+impl MockSdCardInfo {
+    pub fn new() -> Self {
+        Self {
+            high_capacity: true,
+            rca: 0x1234,
+            ocr: 0x80300000,  // Card ready, 3.3V support
+            cid: [0x12345678, 0x9ABCDEF0, 0x11223344, 0x55667788],
+            csd: [0xAABBCCDD, 0xEEFF0011, 0x22334455, 0x66778899],
+            scr: [0x02350001, 0x00000000],  // SD spec version 2.0
+        }
+    }
+
+    pub fn new_sdsc() -> Self {
+        let mut info = Self::new();
+        info.high_capacity = false;
+        info.csd = [0x00260032, 0x5F5A83C6, 0x6DB7FF9F, 0x16800000];  // 1GB SDSC
+        info
+    }
+
+    pub fn get_capacity(&self) -> u64 {
+        if self.high_capacity {
+            // SDHC/SDXC capacity calculation (simplified)
+            let c_size = ((self.csd[1] & 0x3F) << 16) | ((self.csd[2] & 0xFFFF0000) >> 16);
+            (c_size as u64 + 1) * 512 * 1024  // Simplified: 8GB card
+        } else {
+            // SDSC capacity calculation (simplified)
+            1_073_741_824  // 1GB
+        }
+    }
+
+    pub fn get_manufacturer_id(&self) -> u8 {
+        ((self.cid[0] & 0xFF000000) >> 24) as u8
+    }
+
+    pub fn get_product_name(&self) -> [u8; 5] {
+        [b'T', b'E', b'S', b'T', b'1']  // Mock product name
+    }
+}
+
 /// Comprehensive mock system for integration testing
 pub struct MockSystem {
     pub uart: MockUart,
@@ -394,6 +513,7 @@ pub struct MockSystem {
     pub timer: MockTimer,
     pub memory: MockMemoryManager,
     pub interrupts: MockInterruptController,
+    pub sdcard: MockSdCard,
 }
 
 impl MockSystem {
@@ -404,6 +524,7 @@ impl MockSystem {
             timer: MockTimer::new(),
             memory: MockMemoryManager::new(0x100000, 4 * 1024 * 1024, 64),
             interrupts: MockInterruptController::new(),
+            sdcard: MockSdCard::new(),
         }
     }
 
@@ -416,6 +537,7 @@ impl MockSystem {
         self.memory.corruption_detected = false;
         self.memory.fragmentation_level = 0.0;
         self.interrupts.reset_statistics();
+        self.sdcard = MockSdCard::new();
     }
 
     pub fn simulate_boot_sequence(&mut self) -> Result<(), &'static str> {
@@ -424,6 +546,10 @@ impl MockSystem {
         self.gpio.enabled = true;
         self.timer.enabled = true;
         self.interrupts.controller_enabled = true;
+        
+        // Initialize SD card
+        self.sdcard.initialized = true;
+        self.sdcard.card_info = Some(MockSdCardInfo::new());
         
         // Set up LED pin
         self.gpio.set_pin_mode(42, GpioMode::Output)?;
@@ -453,6 +579,9 @@ impl MockSystem {
         
         // Test Interrupts
         report.interrupt_healthy = self.test_interrupt_functionality();
+        
+        // Test SD Card
+        report.sd_card_healthy = self.test_sd_card_functionality();
         
         Ok(report)
     }
@@ -489,6 +618,17 @@ impl MockSystem {
         self.interrupts.trigger_interrupt(64);
         self.interrupts.get_interrupt_count(64) > 0
     }
+
+    fn test_sd_card_functionality(&mut self) -> bool {
+        let mut buffer = [0u8; 512];
+        match self.sd_card.write_block(0, &buffer) {
+            Ok(()) => match self.sd_card.read_block(0, &mut buffer) {
+                Ok(()) => buffer.iter().all(|&x| x == 0),
+                Err(_) => false,
+            },
+            Err(_) => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -498,6 +638,7 @@ pub struct SystemHealthReport {
     pub timer_healthy: bool,
     pub memory_healthy: bool,
     pub interrupt_healthy: bool,
+    pub sd_card_healthy: bool,
 }
 
 impl SystemHealthReport {
@@ -508,6 +649,7 @@ impl SystemHealthReport {
             timer_healthy: false,
             memory_healthy: false,
             interrupt_healthy: false,
+            sd_card_healthy: false,
         }
     }
 
@@ -517,20 +659,36 @@ impl SystemHealthReport {
             && self.timer_healthy 
             && self.memory_healthy 
             && self.interrupt_healthy
+            && self.sd_card_healthy
     }
 
     pub fn health_score(&self) -> f32 {
-        let total = 5.0;
+        let total = 6.0;
         let healthy = [
             self.uart_healthy,
             self.gpio_healthy,
             self.timer_healthy,
             self.memory_healthy,
             self.interrupt_healthy,
+            self.sd_card_healthy,
         ].iter().filter(|&&x| x).count() as f32;
         
         (healthy / total) * 100.0
     }
+}
+
+/// Mock SD Card Error types for testing
+#[derive(Debug, Clone, Copy)]
+pub enum MockSdError {
+    InitializationFailed,
+    CommandTimeout,
+    CommandError,
+    DataTimeout,
+    DataError,
+    InvalidArgument,
+    CardNotPresent,
+    ReadError,
+    WriteError,
 }
 
 #[cfg(test)]
@@ -572,5 +730,22 @@ mod tests {
         let health = system.run_system_health_check().unwrap();
         assert!(health.all_healthy());
         assert_eq!(health.health_score(), 100.0);
+    }
+
+    #[test]
+    fn test_mock_sd_card() {
+        let mut sd_card = MockSdCard::new_initialized();
+        let mut buffer = [0u8; 512];
+        
+        // Test writing and reading a block
+        assert!(sd_card.write_block(0, &buffer).is_ok());
+        let mut read_buffer = [0u8; 512];
+        assert!(sd_card.read_block(0, &mut read_buffer).is_ok());
+        assert_eq!(buffer, read_buffer);
+        
+        // Test error simulation
+        sd_card.set_error_simulation(true);
+        assert!(sd_card.write_block(1, &buffer).is_err());
+        assert!(sd_card.read_block(1, &mut read_buffer).is_err());
     }
 }

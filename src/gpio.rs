@@ -1,4 +1,5 @@
 // GPIO and hardware control for Raspberry Pi 4/5
+use core::arch::asm;
 use core::ptr::{read_volatile, write_volatile};
 
 // GPIO base addresses for Raspberry Pi 4/5
@@ -97,5 +98,3 @@ pub fn delay_cycles(cycles: u32) {
         }
     }
 }
-
-use core::arch::asm;

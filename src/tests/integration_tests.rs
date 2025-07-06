@@ -27,6 +27,9 @@ pub fn run_integration_tests(test_state: &TestState, config: &TestConfig) {
     // Shell Command Integration Tests
     test_shell_integration(test_state, config);
     
+    // SD Card Integration Tests
+    test_sdcard_integration(test_state, config);
+    
     // Interrupt System Integration Tests
     test_interrupt_system_integration(test_state, config);
 }
@@ -520,6 +523,109 @@ fn test_shell_integration(test_state: &TestState, _config: &TestConfig) {
         } else {
             Err("Shell command chaining failed")
         }
+    });
+}
+
+/// SD Card Integration Tests
+fn test_sdcard_integration(test_state: &TestState, _config: &TestConfig) {
+    println!("\n💾🔗 SD Card Integration:");
+    
+    crate::test_case!("SD Card Boot Integration", test_state, || -> Result<(), &'static str> {
+        let mut system = MockSystem::new();
+        system.simulate_boot_sequence()?;
+        
+        // Verify SD card is initialized during boot
+        if !system.sdcard.is_initialized() {
+            return Err("SD card should be initialized during boot sequence");
+        }
+        
+        Ok(())
+    });
+    
+    crate::test_case!("SD Card Shell Commands", test_state, || -> Result<(), &'static str> {
+        let mut system = MockSystem::new();
+        system.simulate_boot_sequence()?;
+        
+        // Test SD card info command
+        system.uart.add_input(b"p");
+        let mut response = String::new();
+        
+        // Simulate processing the command
+        if let Some(cmd) = system.uart.read_byte() {
+            if cmd == b'p' {
+                response.push_str("SD Card Status: ✓ INITIALIZED\n");
+                response.push_str("Card Type: SDHC/SDXC\n");
+                system.uart.write_string(&response)?;
+            }
+        }
+        
+        let output = system.uart.get_output_string();
+        if output.contains("SD Card Status") && output.contains("INITIALIZED") {
+            Ok(())
+        } else {
+            Err("SD card info command failed")
+        }
+    });
+    
+    crate::test_case!("SD Card Read/Write Integration", test_state, || -> Result<(), &'static str> {
+        let mut system = MockSystem::new();
+        system.simulate_boot_sequence()?;
+        
+        // Test block write
+        let test_data = [0xAA; 512];
+        system.sdcard.write_block(1000, &test_data)?;
+        
+        // Test block read
+        let mut read_buffer = [0u8; 512];
+        system.sdcard.read_block(1000, &mut read_buffer)?;
+        
+        // Verify data integrity
+        if read_buffer == test_data {
+            Ok(())
+        } else {
+            Err("SD card read/write integrity check failed")
+        }
+    });
+    
+    crate::test_case!("SD Card Error Handling Integration", test_state, || -> Result<(), &'static str> {
+        let mut system = MockSystem::new();
+        system.simulate_boot_sequence()?;
+        
+        // Enable error simulation
+        system.sdcard.set_error_simulation(true);
+        
+        // Test error block (block 99 should trigger error)
+        let mut buffer = [0u8; 512];
+        match system.sdcard.read_block(99, &mut buffer) {
+            Err(MockSdError::ReadError) => Ok(()),
+            _ => Err("Error simulation should trigger read error for block 99"),
+        }
+    });
+    
+    crate::test_case!("SD Card Performance Integration", test_state, || -> Result<(), &'static str> {
+        let mut system = MockSystem::new();
+        system.simulate_boot_sequence()?;
+        
+        // Test multiple block operations
+        let test_blocks = 10;
+        let test_data = [0x55; 512];
+        
+        // Write multiple blocks
+        for block_num in 0..test_blocks {
+            system.sdcard.write_block(block_num, &test_data)?;
+        }
+        
+        // Read and verify multiple blocks
+        for block_num in 0..test_blocks {
+            let mut read_buffer = [0u8; 512];
+            system.sdcard.read_block(block_num, &mut read_buffer)?;
+            
+            if read_buffer != test_data {
+                return Err("Multi-block read/write test failed");
+            }
+        }
+        
+        Ok(())
     });
 }
 

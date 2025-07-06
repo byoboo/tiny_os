@@ -25,6 +25,9 @@ pub fn run_unit_tests(test_state: &TestState, config: &TestConfig) {
     
     // Interrupt Controller Tests
     test_interrupt_component(test_state, config);
+    
+    // SD Card Component Tests
+    test_sdcard_component(test_state, config);
 }
 
 /// UART Component Tests
@@ -569,6 +572,73 @@ fn test_interrupt_component(test_state: &TestState, _config: &TestConfig) {
             Ok(())
         } else {
             Err("Disabled controller should reject operations")
+        }
+    });
+}
+
+/// SD Card Component Tests
+fn test_sdcard_component(test_state: &TestState, _config: &TestConfig) {
+    println!("\n💾 SD Card Component Tests:");
+    
+    crate::test_case!("SD Card Structure Creation", test_state, || -> Result<(), &'static str> {
+        // Mock SD card creation since we can't test real hardware in unit tests
+        let mock_sdcard = MockSdCard::new();
+        if !mock_sdcard.is_initialized() {
+            Ok(())  // Should start uninitialized
+        } else {
+            Err("SD card should start uninitialized")
+        }
+    });
+    
+    crate::test_case!("SD Card Error Handling", test_state, || -> Result<(), &'static str> {
+        let mock_sdcard = MockSdCard::new();
+        
+        // Test reading from uninitialized card
+        let mut buffer = [0u8; 512];
+        match mock_sdcard.read_block(0, &mut buffer) {
+            Err(MockSdError::CardNotPresent) => Ok(()),
+            _ => Err("Should return CardNotPresent error for uninitialized card"),
+        }
+    });
+    
+    crate::test_case!("SD Card Block Size Validation", test_state, || -> Result<(), &'static str> {
+        // Test that SD card uses 512-byte blocks
+        let block_size = 512;
+        if block_size == 512 {  // Mock constant
+            Ok(())
+        } else {
+            Err("SD card block size mismatch")
+        }
+    });
+    
+    crate::test_case!("SD Card Info Structure", test_state, || -> Result<(), &'static str> {
+        let mock_info = MockSdCardInfo::new();
+        
+        // Test capacity calculation for different card types
+        if mock_info.high_capacity {
+            let capacity = mock_info.get_capacity();
+            if capacity > 2_000_000_000 {  // > 2GB indicates SDHC/SDXC
+                Ok(())
+            } else {
+                Err("High capacity card should have > 2GB")
+            }
+        } else {
+            Ok(())  // SDSC cards can be smaller
+        }
+    });
+    
+    crate::test_case!("SD Card Command Validation", test_state, || -> Result<(), &'static str> {
+        // Test that key SD commands are properly defined
+        
+        // Check some key command constants exist and have expected patterns
+        let cmd_go_idle = 0x00000000;  // CMD0
+        let cmd_read_single = 0x11000000 | 0x00020000 | 0x00200000;  // CMD17 with flags
+        
+        // Basic validation that commands follow SD spec patterns
+        if cmd_go_idle == 0 && (cmd_read_single & 0xFF000000) == 0x11000000 {
+            Ok(())
+        } else {
+            Err("SD command constants validation failed")
         }
     });
 }

@@ -1,18 +1,21 @@
 #![no_std]
 #![no_main]
 
+use core::arch::global_asm;
 use core::panic::PanicInfo;
 
 mod exceptions;
 mod gpio;
 mod interrupts;
 mod memory;
+mod sdcard;
 mod timer;
 mod uart;
 use exceptions::{get_exception_stats, init_exceptions, reset_exception_stats};
 use gpio::{Gpio, GpioFunction};
 use interrupts::InterruptController;
 use memory::MemoryManager;
+use sdcard::SdCard;
 use timer::SystemTimer;
 use uart::Uart;
 
@@ -66,6 +69,32 @@ pub extern "C" fn _start_rust() -> ! {
     let mut interrupt_controller = InterruptController::new();
     interrupt_controller.init();
     uart.puts("Interrupt Controller initialized!\r\n");
+
+    uart.puts("Initializing SD Card...\r\n");
+
+    // Initialize SD Card
+    let mut sdcard = SdCard::new();
+    let _sd_init_success = match sdcard.init() {
+        Ok(()) => {
+            uart.puts("SD Card initialized successfully!\r\n");
+            if let Some(info) = sdcard.get_card_info() {
+                uart.puts("SD Card Info: ");
+                if info.high_capacity {
+                    uart.puts("SDHC/SDXC");
+                } else {
+                    uart.puts("SDSC");
+                }
+                uart.puts(", Capacity: ");
+                print_number(&uart, (info.get_capacity() / (1024 * 1024)) as u32);
+                uart.puts(" MB\r\n");
+            }
+            true
+        }
+        Err(_) => {
+            uart.puts("SD Card initialization failed (normal in QEMU)\r\n");
+            false
+        }
+    };
 
     // Show initial memory stats
     let stats = memory_manager.get_stats();
@@ -127,6 +156,10 @@ pub extern "C" fn _start_rust() -> ! {
                     uart.puts("Exception Management:\r\n");
                     uart.puts("  v/V - Show exception statistics\r\n");
                     uart.puts("  w/W - Test exception handling (safe)\r\n");
+                    uart.puts("Storage & SD Card:\r\n");
+                    uart.puts("  p/P - Show SD card information\r\n");
+                    uart.puts("  q/Q - Read SD card block\r\n");
+                    uart.puts("  y/Y - Write SD card block (test)\r\n");
                     uart.puts("Diagnostics:\r\n");
                     uart.puts("  d/D - Hardware diagnostics\r\n");
                     uart.puts("================================\r\n");
@@ -683,6 +716,154 @@ pub extern "C" fn _start_rust() -> ! {
                     uart.puts("Use 'v' command to view exception statistics.\r\n");
                     uart.puts("===============================\r\n");
                 }
+                b'p' | b'P' => {
+                    uart.puts("\r\n=== SD Card Information ===\r\n");
+                    if sdcard.is_initialized() {
+                        if let Some(info) = sdcard.get_card_info() {
+                            uart.puts("SD Card Status: ✓ INITIALIZED\r\n");
+                            uart.puts("Card Type: ");
+                            if info.high_capacity {
+                                uart.puts("SDHC/SDXC (High Capacity)\r\n");
+                            } else {
+                                uart.puts("SDSC (Standard Capacity)\r\n");
+                            }
+                            
+                            uart.puts("Capacity: ");
+                            print_number(&uart, (info.get_capacity() / (1024 * 1024)) as u32);
+                            uart.puts(" MB\r\n");
+                            
+                            uart.puts("Relative Card Address: 0x");
+                            print_hex(&uart, info.rca as u32);
+                            uart.puts("\r\n");
+                            
+                            uart.puts("Manufacturer ID: 0x");
+                            print_hex(&uart, info.get_manufacturer_id() as u32);
+                            uart.puts("\r\n");
+                            
+                            uart.puts("Product Name: ");
+                            let name = info.get_product_name();
+                            for &byte in &name {
+                                if byte >= 32 && byte <= 126 {
+                                    uart.putc(byte);
+                                } else {
+                                    uart.putc(b'?');
+                                }
+                            }
+                            uart.puts("\r\n");
+                        } else {
+                            uart.puts("SD Card: Error getting card info\r\n");
+                        }
+                    } else {
+                        uart.puts("SD Card Status: ✗ NOT INITIALIZED\r\n");
+                        uart.puts("Note: SD card may not be available in QEMU\r\n");
+                    }
+                    uart.puts("===========================\r\n");
+                }
+                b'q' | b'Q' => {
+                    uart.puts("\r\n=== SD Card Block Read Test ===\r\n");
+                    if sdcard.is_initialized() {
+                        uart.puts("Reading block 0 from SD card...\r\n");
+                        let mut buffer = [0u8; 512];
+                        match sdcard.read_block(0, &mut buffer) {
+                            Ok(()) => {
+                                uart.puts("✓ Block read successful!\r\n");
+                                uart.puts("First 64 bytes (hex):\r\n");
+                                for i in (0..64).step_by(16) {
+                                    uart.puts("  ");
+                                    print_hex(&uart, i as u32);
+                                    uart.puts(": ");
+                                    for j in 0..16 {
+                                        if i + j < 64 {
+                                            let byte = buffer[i + j];
+                                            if byte < 16 {
+                                                uart.putc(b'0');
+                                            }
+                                            print_hex(&uart, byte as u32);
+                                            uart.putc(b' ');
+                                        }
+                                    }
+                                    uart.puts("\r\n");
+                                }
+                                
+                                // Check if it looks like a boot sector
+                                if buffer[510] == 0x55 && buffer[511] == 0xAA {
+                                    uart.puts("✓ Boot sector signature found (0x55AA)\r\n");
+                                } else {
+                                    uart.puts("ℹ No boot sector signature found\r\n");
+                                }
+                            }
+                            Err(e) => {
+                                uart.puts("✗ Block read failed: ");
+                                match e {
+                                    sdcard::SdError::ReadError => uart.puts("Read error\r\n"),
+                                    sdcard::SdError::CommandTimeout => uart.puts("Command timeout\r\n"),
+                                    sdcard::SdError::DataTimeout => uart.puts("Data timeout\r\n"),
+                                    _ => uart.puts("Unknown error\r\n"),
+                                }
+                            }
+                        }
+                    } else {
+                        uart.puts("✗ SD card not initialized\r\n");
+                    }
+                    uart.puts("===============================\r\n");
+                }
+                b'y' | b'Y' => {
+                    uart.puts("\r\n=== SD Card Block Write Test ===\r\n");
+                    if sdcard.is_initialized() {
+                        uart.puts("⚠️  WARNING: This will write test data to block 1000\r\n");
+                        uart.puts("Creating test pattern...\r\n");
+                        
+                        let mut buffer = [0u8; 512];
+                        // Create a test pattern
+                        for i in 0..512 {
+                            buffer[i] = (i & 0xFF) as u8;
+                        }
+                        
+                        uart.puts("Writing to block 1000...\r\n");
+                        match sdcard.write_block(1000, &buffer) {
+                            Ok(()) => {
+                                uart.puts("✓ Block write successful!\r\n");
+                                
+                                // Verify by reading back
+                                uart.puts("Verifying write by reading back...\r\n");
+                                let mut verify_buffer = [0u8; 512];
+                                match sdcard.read_block(1000, &mut verify_buffer) {
+                                    Ok(()) => {
+                                        let mut match_count = 0;
+                                        for i in 0..512 {
+                                            if buffer[i] == verify_buffer[i] {
+                                                match_count += 1;
+                                            }
+                                        }
+                                        uart.puts("Verification: ");
+                                        print_number(&uart, match_count);
+                                        uart.puts("/512 bytes match\r\n");
+                                        if match_count == 512 {
+                                            uart.puts("✓ Write/read verification PASSED\r\n");
+                                        } else {
+                                            uart.puts("✗ Write/read verification FAILED\r\n");
+                                        }
+                                    }
+                                    Err(_) => {
+                                        uart.puts("✗ Verification read failed\r\n");
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                uart.puts("✗ Block write failed: ");
+                                match e {
+                                    sdcard::SdError::WriteError => uart.puts("Write error\r\n"),
+                                    sdcard::SdError::CommandTimeout => uart.puts("Command timeout\r\n"),
+                                    sdcard::SdError::DataTimeout => uart.puts("Data timeout\r\n"),
+                                    _ => uart.puts("Unknown error\r\n"),
+                                }
+                            }
+                        }
+                    } else {
+                        uart.puts("✗ SD card not initialized\r\n");
+                    }
+                    uart.puts("===============================\r\n");
+                }
                 _ => {
                     // For any other character, just echo it back with timestamp
                     if (32..=126).contains(&ch) {
@@ -779,6 +960,3 @@ fn panic(_info: &PanicInfo) -> ! {
     uart.puts("KERNEL PANIC!\r\n");
     loop {}
 }
-
-// Import inline assembly and global assembly
-use core::arch::global_asm;

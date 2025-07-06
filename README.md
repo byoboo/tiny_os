@@ -24,7 +24,8 @@ A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 an
 - ✅ **Comprehensive memory management** with bitmap allocation
 - ✅ **Interrupt management system** with ARM GIC simulation
 - ✅ **Exception vector table** with ARM64 exception handling
-- ✅ **Hardware drivers** for UART, GPIO, and System Timer
+- ✅ **SD card driver** with EMMC interface and block I/O operations
+- ✅ **Hardware drivers** for UART, GPIO, System Timer, and SD/EMMC
 - ✅ **Diagnostic and testing suite** with health checks
 - ✅ **QEMU development environment** with real hardware deployment ready
 - ✅ **Memory protection** with corruption detection and canary values
@@ -491,6 +492,7 @@ disable_overscan=1
 │   ├── timer.rs          # BCM2835 System Timer driver
 │   ├── memory.rs         # Bitmap-based memory manager
 │   ├── interrupts.rs     # ARM GIC interrupt controller
+│   ├── sdcard.rs         # SD card driver (EMMC interface)
 │   └── tests/            # Rust unit tests
 ├── tests/                # Test suite
 │   ├── test_*_automated.sh  # Automated test scripts (no dependencies)
@@ -506,6 +508,53 @@ disable_overscan=1
 ├── run.sh                # QEMU execution script
 └── DOCS.md               # Technical documentation
 ```
+
+## SD Card Driver
+
+TinyOS includes a comprehensive SD card driver that implements the EMMC (Enhanced Multi-Media Card) interface for communicating with SD/SDHC/SDXC cards on Raspberry Pi 4/5.
+
+### Features
+
+- **Hardware Interface**: Direct EMMC register manipulation for maximum performance
+- **Card Support**: SDSC (Standard Capacity), SDHC, and SDXC cards
+- **Block Operations**: 512-byte block read/write operations
+- **Initialization**: Complete SD card initialization sequence (CMD0 through ACMD51)
+- **Error Handling**: Comprehensive error detection and timeout management
+- **Interactive Commands**: Real-time testing through the shell interface
+
+### Technical Implementation
+
+The SD card driver (`src/sdcard.rs`) provides:
+
+- **EMMC Register Interface**: Direct hardware register access at `0xFE300000`
+- **Command Processing**: Full SD command set implementation with proper timing
+- **Clock Management**: Dynamic clock frequency adjustment (400kHz initialization, 25MHz operation)
+- **GPIO Configuration**: Automatic GPIO pin setup for SD interface (pins 48-53)
+- **Data Transfer**: Efficient word-based data transfer with proper synchronization
+
+### Shell Commands
+
+Use these commands to interact with the SD card:
+
+- **`p`** - Display SD card information (type, capacity, manufacturer)
+- **`q`** - Read and display block 0 (boot sector analysis)
+- **`y`** - Write test pattern to block 1000 and verify
+
+### QEMU Limitations
+
+**Note**: SD card functionality is limited in QEMU emulation:
+- EMMC hardware is not fully emulated in QEMU's Raspberry Pi 4 model
+- SD card initialization will fail gracefully with appropriate error messages
+- Commands will show "SD card not initialized" status in QEMU
+- Full functionality is available on real Raspberry Pi 4/5 hardware
+
+### Real Hardware Usage
+
+On actual Raspberry Pi hardware with an SD card inserted:
+1. The driver will detect and initialize the card automatically during boot
+2. Card information (capacity, type, manufacturer) will be displayed
+3. Block read/write operations will function normally
+4. Boot sector analysis can identify FAT filesystems
 
 ## Development
 
@@ -542,6 +591,9 @@ Once TinyOS is running, use these commands in the interactive shell:
 - `1/0` - LED on/off
 - `x` - Memory test
 - `j` - Interrupt test
+- `p` - SD card information
+- `q` - Read SD card block
+- `y` - Write SD card test block
 
 ## To-Do List
 
@@ -568,7 +620,7 @@ Once TinyOS is running, use these commands in the interactive shell:
 - [ ] Process scheduler improvements
 
 ### Storage & File System
-- [ ] SD card driver
+- [x] SD card driver
 - [ ] FAT32 file system support
 - [ ] File I/O operations
 - [ ] Directory management

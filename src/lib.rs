@@ -11,6 +11,7 @@ pub mod exceptions;
 pub mod gpio;
 pub mod interrupts;
 pub mod memory;
+pub mod sdcard;
 pub mod timer;
 pub mod uart;
 

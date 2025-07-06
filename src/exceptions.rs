@@ -1,11 +1,21 @@
 //! ARM64 Exception Handling for TinyOS
 //!
-//! This module implements the ARM64 exception vector table and exception handlers.
-//! ARM64 has a comprehensive exception model with different exception levels (EL0-EL3)
-//! and various exception types.
+//! This module implements the ARM64 exception vector table and exception
+//! handlers. ARM64 has a comprehensive exception model with different exception
+//! levels (EL0-EL3) and various exception types.
+
+// Allow various warnings for this low-level exception handling code
+#![allow(
+    static_mut_refs,
+    dead_code,
+    clippy::new_without_default,
+    clippy::missing_transmute_annotations,
+    clippy::unnecessary_cast
+)]
+
+use core::arch::global_asm;
 
 use crate::uart::Uart;
-use core::arch::global_asm;
 
 // Exception types in ARM64
 #[derive(Debug, Clone, Copy)]
@@ -122,7 +132,7 @@ pub fn init_exceptions() {
 
 /// Get current exception statistics
 pub fn get_exception_stats() -> &'static ExceptionStats {
-    unsafe { &EXCEPTION_STATS }
+    unsafe { (&raw const EXCEPTION_STATS).as_ref().unwrap() }
 }
 
 /// Reset exception statistics
@@ -136,10 +146,8 @@ pub fn reset_exception_stats() {
 #[no_mangle]
 pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u32) {
     unsafe {
-        EXCEPTION_STATS.record_exception(
-            ExceptionType::Synchronous,
-            core::mem::transmute(exc_level),
-        );
+        EXCEPTION_STATS
+            .record_exception(ExceptionType::Synchronous, core::mem::transmute(exc_level));
     }
 
     let uart = Uart::new();
@@ -156,7 +164,7 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
 
     // Decode exception syndrome
     let ec = (ctx.esr >> 26) & 0x3F; // Exception Class
-    let iss = ctx.esr & 0x1FFFFFF;   // Instruction Specific Syndrome
+    let iss = ctx.esr & 0x1FFFFFF; // Instruction Specific Syndrome
 
     uart.puts("Exception Class: ");
     match ec {
@@ -186,7 +194,7 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
 }
 
 #[no_mangle]
-pub extern "C" fn handle_irq_exception(ctx: &mut ExceptionContext, exc_level: u32) {
+pub extern "C" fn handle_irq_exception(_ctx: &mut ExceptionContext, exc_level: u32) {
     unsafe {
         EXCEPTION_STATS.record_exception(ExceptionType::Irq, core::mem::transmute(exc_level));
     }
@@ -198,7 +206,7 @@ pub extern "C" fn handle_irq_exception(ctx: &mut ExceptionContext, exc_level: u3
 }
 
 #[no_mangle]
-pub extern "C" fn handle_fiq_exception(ctx: &mut ExceptionContext, exc_level: u32) {
+pub extern "C" fn handle_fiq_exception(_ctx: &mut ExceptionContext, exc_level: u32) {
     unsafe {
         EXCEPTION_STATS.record_exception(ExceptionType::Fiq, core::mem::transmute(exc_level));
     }
