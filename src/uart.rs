@@ -79,6 +79,15 @@ impl Uart {
         }
     }
 
+    pub fn put_hex(&self, value: u64) {
+        const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+
+        for i in (0..16).rev() {
+            let nibble = ((value >> (i * 4)) & 0xF) as usize;
+            self.putc(HEX_CHARS[nibble]);
+        }
+    }
+
     pub fn getc(&self) -> Option<u8> {
         unsafe {
             // Check if receive FIFO has data

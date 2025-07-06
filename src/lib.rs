@@ -7,6 +7,7 @@
 #![cfg_attr(not(test), no_std)]
 
 // Core modules (available in no_std environments)
+pub mod exceptions;
 pub mod gpio;
 pub mod interrupts;
 pub mod memory;

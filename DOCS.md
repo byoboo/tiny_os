@@ -7,6 +7,7 @@ This document provides comprehensive technical documentation for TinyOS, includi
 - [Architecture Overview](#architecture-overview)
 - [Memory Management](#memory-management)
 - [Interrupt Management](#interrupt-management)
+- [Exception Handling](#exception-handling)
 - [Hardware Drivers](#hardware-drivers)
 - [Interactive Shell](#interactive-shell)
 - [Testing Framework](#testing-framework)
@@ -68,6 +69,7 @@ TinyOS is a bare-metal operating system designed for ARM64 architecture, specifi
 - **Timer Driver** (`timer.rs`): BCM2835 system timer with microsecond precision
 - **Memory Manager** (`memory.rs`): Bitmap-based heap allocation
 - **Interrupt Controller** (`interrupts.rs`): ARM GIC simulation and management
+- **Exception Handler** (`exceptions.rs`): ARM64 exception vector table and handling
 
 ## Memory Management
 
@@ -190,6 +192,158 @@ The interrupt system includes comprehensive testing:
 - **Performance Analysis**: Latency and throughput measurement
 - **Edge Case Testing**: Nested interrupts, rapid-fire scenarios
 
+## Exception Handling
+
+### ARM64 Exception Vector Table
+
+TinyOS implements a comprehensive ARM64 exception handling system that provides robust error handling, debugging capabilities, and system stability through proper exception processing.
+
+#### Exception Architecture
+
+**Vector Table Structure:**
+- **16 Exception Vectors**: Complete ARM64 exception coverage
+- **2KB Alignment**: Hardware-required vector table alignment
+- **4 Exception Groups**: Covering all ARM64 exception scenarios
+- **4 Exception Types**: Per group (Synchronous, IRQ, FIQ, SError)
+
+**Exception Groups:**
+1. **Current EL with SP_EL0**: Exceptions while using EL0 stack pointer
+2. **Current EL with SP_ELx**: Exceptions while using current EL stack pointer  
+3. **Lower EL using AArch64**: Exceptions from lower exception level (64-bit)
+4. **Lower EL using AArch32**: Exceptions from lower exception level (32-bit)
+
+#### Exception Types
+
+**1. Synchronous Exceptions**
+- **System Calls**: SVC instruction execution
+- **Undefined Instructions**: Invalid instruction execution
+- **Data Aborts**: Memory access violations, MMU faults
+- **Instruction Aborts**: Instruction fetch errors
+- **Alignment Faults**: Unaligned memory access
+
+**2. Interrupt Request (IRQ)**
+- **External Interrupts**: Hardware peripheral interrupts
+- **Timer Interrupts**: System timer events
+- **Software Generated**: Inter-processor interrupts
+
+**3. Fast Interrupt Request (FIQ)**
+- **High Priority Interrupts**: Time-critical interrupt handling
+- **Dedicated Registers**: FIQ-specific register banking
+- **Low Latency**: Optimized for real-time response
+
+**4. System Error (SError)**
+- **Asynchronous Aborts**: External error signaling
+- **Hardware Failures**: Memory system errors
+- **Critical Errors**: System integrity violations
+
+#### Exception Context Preservation
+
+**Complete Register Saving:**
+```assembly
+// All general-purpose registers (x0-x30)
+// System registers (ELR_EL1, SPSR_EL1, ESR_EL1, FAR_EL1)
+// Exception context structure in memory
+```
+
+**Context Structure:**
+```rust
+pub struct ExceptionContext {
+    pub gpr: [u64; 31],        // General purpose registers x0-x30
+    pub sp: u64,               // Stack pointer
+    pub elr: u64,              // Exception Link Register (return address)
+    pub spsr: u64,             // Saved Program Status Register
+    pub esr: u64,              // Exception Syndrome Register
+    pub far: u64,              // Fault Address Register
+}
+```
+
+#### Exception Handlers
+
+**Synchronous Exception Handler:**
+- **Syndrome Decoding**: Detailed analysis of exception cause
+- **Exception Class Identification**: Categorization of synchronous exceptions
+- **Fault Address Analysis**: Memory fault location determination
+- **System State Logging**: Complete exception context preservation
+- **Recovery Strategies**: Appropriate response per exception type
+
+**IRQ/FIQ Handlers:**
+- **Interrupt Dispatching**: Routing to specific interrupt handlers
+- **Statistics Tracking**: Interrupt frequency and latency monitoring
+- **Priority Management**: Interrupt preemption and nesting
+- **Performance Optimization**: Minimal exception overhead
+
+**SError Handler:**
+- **Critical Error Processing**: System error analysis and logging
+- **Recovery Assessment**: Determination of system recovery possibility
+- **Safe System Halt**: Controlled system shutdown on critical errors
+- **Debug Information**: Complete system state preservation
+
+#### Exception Statistics and Monitoring
+
+**Real-time Statistics:**
+- **Exception Counters**: Per-type exception occurrence tracking
+- **Performance Metrics**: Exception handling latency analysis
+- **System Health**: Exception frequency monitoring
+- **Debug Support**: Last exception context preservation
+
+**Interactive Commands:**
+- **`v/V`**: View detailed exception statistics
+- **`w/W`**: Test exception handling system integrity
+- **Debug Output**: Hexadecimal register dumps and syndrome analysis
+
+#### Exception Syndrome Decoding
+
+**Exception Class (EC) Support:**
+```rust
+match exception_class {
+    0x15 => "SVC instruction execution in AArch64",
+    0x20 => "Instruction Abort from lower Exception level", 
+    0x21 => "Instruction Abort without Exception level change",
+    0x24 => "Data Abort from lower Exception level",
+    0x25 => "Data Abort without Exception level change",
+    0x0E => "Illegal Execution state",
+    // Additional exception classes...
+}
+```
+
+**Instruction Specific Syndrome (ISS):**
+- **Fault Analysis**: Detailed fault information extraction
+- **Address Information**: Virtual and physical address correlation
+- **Access Type**: Read/write/execute determination
+- **Permission Analysis**: Access right violation identification
+
+#### Safety and Recovery
+
+**Exception Safety Measures:**
+- **Complete Context Preservation**: All registers and system state saved
+- **Stack Protection**: Exception-specific stack usage
+- **Re-entrant Handlers**: Support for nested exception handling
+- **Recovery Mechanisms**: Graceful degradation on non-critical exceptions
+
+**Debug and Development Support:**
+- **Exception Logging**: Detailed exception information recording
+- **Register Dumps**: Complete system state visualization
+- **Symbol Resolution**: Exception address to function mapping
+- **Interactive Analysis**: Real-time exception investigation tools
+
+#### Integration with Kernel Systems
+
+**Memory Management Integration:**
+- **Page Fault Handling**: Memory management exception processing
+- **Address Translation**: Virtual to physical address resolution
+- **Protection Enforcement**: Memory access control validation
+
+**Interrupt System Coordination:**
+- **Exception Level Management**: Proper EL handling during interrupts
+- **Interrupt Masking**: Exception-safe interrupt enable/disable
+- **Priority Coordination**: Exception and interrupt priority management
+
+**Testing and Validation:**
+- **Exception Vector Validation**: Vector table integrity verification
+- **Handler Testing**: Exception handler functionality validation
+- **Recovery Testing**: System recovery capability verification
+- **Performance Benchmarking**: Exception handling overhead measurement
+
 ## Hardware Drivers
 
 ### UART Driver (PL011)
@@ -305,6 +459,10 @@ The interactive shell provides a comprehensive interface for system interaction 
 - **`i/I`** - Show interrupt status and statistics
 - **`e/E`** - Enable all major interrupt sources
 - **`j/J`** - Run complete interrupt test suite
+
+#### Exception Handling Commands
+- **`v/V`** - Show detailed exception statistics
+- **`w/W`** - Test exception handling system integrity
 
 #### Hardware Control Commands
 - **`1`** - Turn LED ON manually
@@ -737,167 +895,3 @@ pub fn enable_interrupt(irq: usize) -> bool
 pub fn disable_interrupt(irq: usize) -> bool
 pub fn set_interrupt_priority(irq: usize, priority: u8) -> bool
 ```
-
-#### Handler Management
-```rust
-pub fn register_interrupt_handler(irq: usize, handler: fn()) -> bool
-pub fn unregister_interrupt_handler(irq: usize) -> bool
-pub fn get_interrupt_count(irq: usize) -> u64
-pub fn get_total_interrupts() -> u64
-```
-
-#### Statistics
-```rust
-pub struct InterruptStats {
-    pub enabled_interrupts: u32,
-    pub total_interrupts: u64,
-    pub per_source_counts: [u64; 256],
-    pub average_latency: u64,
-}
-```
-
-### Hardware Driver APIs
-
-#### UART API
-```rust
-pub fn uart_init(baud_rate: u32) -> Result<(), UartError>
-pub fn uart_write_byte(byte: u8)
-pub fn uart_write_string(s: &str)
-pub fn uart_read_byte() -> Option<u8>
-pub fn uart_is_readable() -> bool
-pub fn uart_is_writable() -> bool
-```
-
-#### GPIO API
-```rust
-pub fn gpio_set_function(pin: u8, function: GpioFunction) -> Result<(), GpioError>
-pub fn gpio_set_output(pin: u8, value: bool) -> Result<(), GpioError>
-pub fn gpio_get_input(pin: u8) -> Result<bool, GpioError>
-pub fn gpio_set_pull(pin: u8, pull: GpioPull) -> Result<(), GpioError>
-pub fn gpio_enable_interrupt(pin: u8, trigger: InterruptTrigger) -> Result<(), GpioError>
-```
-
-#### Timer API
-```rust
-pub fn timer_init() -> Result<(), TimerError>
-pub fn timer_get_time() -> u64
-pub fn timer_delay(microseconds: u32)
-pub fn timer_set_interrupt(channel: u8, microseconds: u32) -> Result<(), TimerError>
-pub fn timer_clear_interrupt(channel: u8) -> Result<(), TimerError>
-```
-
-## Performance Analysis
-
-### Memory Management Performance
-
-#### Allocation Performance
-- **Average Allocation Time**: ~50 microseconds
-- **Worst-case Allocation**: ~200 microseconds (fragmented heap)
-- **Deallocation Time**: ~5 microseconds (constant time)
-- **Memory Overhead**: 1 bit per 64-byte block (0.2% overhead)
-
-#### Memory Efficiency
-- **Block Utilization**: 95-98% for typical workloads
-- **Fragmentation Threshold**: <5% under normal operation
-- **Defragmentation Performance**: ~1ms per 1000 blocks
-
-### Interrupt Performance
-
-#### Latency Measurements
-- **Interrupt Latency**: 5-15 microseconds (hardware to handler)
-- **Context Switch Time**: 2-5 microseconds
-- **Handler Execution**: Varies by handler complexity
-- **Maximum Throughput**: ~100,000 interrupts/second
-
-#### Interrupt Load Analysis
-- **Timer Interrupts**: 1Hz baseline, configurable
-- **UART Interrupts**: Based on communication rate
-- **GPIO Interrupts**: Event-driven, typically low frequency
-
-### System Performance
-
-#### Boot Time
-- **Hardware Boot**: ~2 seconds (Pi 4/5 firmware)
-- **Kernel Boot**: ~100 milliseconds
-- **Full System Ready**: ~2.1 seconds total
-
-#### Resource Utilization
-- **Memory Usage**: ~100KB kernel, 4MB heap available
-- **CPU Usage**: Idle when not processing commands
-- **Power Consumption**: Minimal (no power management yet)
-
-## Troubleshooting
-
-### Common Issues
-
-#### Build Problems
-**Issue**: Cross-compilation target not found
-**Solution**: 
-```bash
-rustup target add aarch64-unknown-none-softfloat
-```
-
-**Issue**: Linker errors
-**Solution**: Ensure `rust-lld` is available and linker script is correct
-
-#### QEMU Issues
-**Issue**: QEMU not found or wrong version
-**Solution**: Install QEMU with ARM64 support:
-```bash
-# Verify QEMU installation
-qemu-system-aarch64 --version
-```
-
-**Issue**: Kernel doesn't boot in QEMU
-**Solution**: Check kernel size and ensure proper ELF format
-
-#### Hardware Deployment Issues
-**Issue**: Pi doesn't boot with TinyOS kernel
-**Solution**: 
-1. Verify firmware files are present
-2. Check `config.txt` configuration
-3. Ensure kernel is named `kernel8.img`
-4. Verify SD card FAT32 formatting
-
-#### Memory Issues
-**Issue**: Memory allocation failures
-**Solution**: 
-1. Run memory test suite: `./test_tinyos.sh memory`
-2. Check for memory corruption: shell command `g`
-3. Monitor memory statistics: shell command `m`
-
-#### Interrupt Issues
-**Issue**: Interrupts not firing
-**Solution**:
-1. Verify interrupt controller initialization
-2. Check interrupt enable status: shell command `i`
-3. Run interrupt test suite: `./test_tinyos.sh interrupts`
-
-### Debug Information
-
-#### System State Commands
-- **Memory State**: Shell command `m` for detailed memory statistics
-- **Interrupt State**: Shell command `i` for interrupt status
-- **System Health**: Shell command `c` for comprehensive system check
-- **Hardware Diagnostics**: Shell command `d` for hardware status
-
-#### Test Suite Debugging
-```bash
-# Run with verbose output
-./test_tinyos.sh --verbose memory
-
-# Run individual test suites
-./test_memory_suite.sh --mode interactive
-./test_interrupt_suite.sh --mode automated
-./test_hardware_suite.sh --mode quick
-```
-
-#### Log Analysis
-- Monitor UART output for debug messages
-- Check test suite reports for failure details
-- Use memory corruption detection for memory issues
-- Analyze interrupt statistics for timing problems
-
----
-
-This documentation is continuously updated as TinyOS evolves. For the latest information, see the source code comments and test suite documentation.

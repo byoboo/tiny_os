@@ -23,6 +23,7 @@ A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 an
 - ✅ **Interactive shell** with real-time command processing *(UART only)*
 - ✅ **Comprehensive memory management** with bitmap allocation
 - ✅ **Interrupt management system** with ARM GIC simulation
+- ✅ **Exception vector table** with ARM64 exception handling
 - ✅ **Hardware drivers** for UART, GPIO, and System Timer
 - ✅ **Diagnostic and testing suite** with health checks
 - ✅ **QEMU development environment** with real hardware deployment ready
@@ -534,6 +535,8 @@ Once TinyOS is running, use these commands in the interactive shell:
 - `c` - System health check
 - `m` - Memory statistics
 - `i` - Interrupt status
+- `v` - Exception statistics
+- `w` - Test exception handling
 - `s` - System information
 - `t` - Current time
 - `1/0` - LED on/off
@@ -543,7 +546,7 @@ Once TinyOS is running, use these commands in the interactive shell:
 ## To-Do List
 
 ### Core Features
-- [ ] Exception vectors implementation
+- [x] Exception vectors implementation
 - [ ] Real hardware validation on Pi 4/5
 - [ ] Enhanced GPIO control capabilities
 - [ ] Device driver framework
