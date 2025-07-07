@@ -31,9 +31,9 @@ clear_bss:
     
 start_kernel:
     // Jump to Rust code
-    bl _start_rust
+    bl kernel_main
     
     // Should never reach here
     b halt
 
-.global _start_rust
+.global kernel_main

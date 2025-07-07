@@ -8,6 +8,7 @@
 
 // Core modules (available in no_std environments)
 pub mod exceptions;
+pub mod fat32;
 pub mod gpio;
 pub mod interrupts;
 pub mod memory;

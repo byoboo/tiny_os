@@ -13,6 +13,7 @@
     clippy::unnecessary_cast
 )]
 
+#[cfg(target_arch = "aarch64")]
 use core::arch::global_asm;
 
 use crate::uart::Uart;
@@ -117,6 +118,7 @@ impl ExceptionStats {
 }
 
 /// Initialize the exception vector table
+#[cfg(target_arch = "aarch64")]
 pub fn init_exceptions() {
     unsafe {
         // Set the Vector Base Address Register (VBAR_EL1) to point to our vector table
@@ -128,6 +130,12 @@ pub fn init_exceptions() {
             options(nomem, nostack)
         );
     }
+}
+
+/// Initialize the exception vector table (mock for non-aarch64 targets)
+#[cfg(not(target_arch = "aarch64"))]
+pub fn init_exceptions() {
+    // Mock implementation for testing on non-aarch64 targets
 }
 
 /// Get current exception statistics
@@ -186,10 +194,16 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
 
     // For now, halt the system on synchronous exceptions
     uart.puts("System halted due to synchronous exception.\r\n");
+    #[cfg(target_arch = "aarch64")]
     loop {
         unsafe {
             core::arch::asm!("wfe");
         }
+    }
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        // Mock halt for testing
+        panic!("System halted due to synchronous exception");
     }
 }
 
@@ -233,12 +247,19 @@ pub extern "C" fn handle_serror_exception(ctx: &mut ExceptionContext, exc_level:
 
     // SError is critical - halt the system
     uart.puts("System halted due to SError.\r\n");
+    #[cfg(target_arch = "aarch64")]
     loop {
         unsafe {
             core::arch::asm!("wfe");
         }
     }
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        // Mock halt for testing
+        panic!("System halted due to SError");
+    }
 }
 
 // Include the exception vector table assembly
+#[cfg(target_arch = "aarch64")]
 global_asm!(include_str!("exception_vectors.s"));

@@ -56,8 +56,16 @@ sudo pacman -S qemu-arch-extra
 
 **Setup Rust Toolchain:**
 ```bash
+# The project uses nightly by default (configured in rust-toolchain.toml)
+# This provides the best embedded development experience
+rustup install nightly
+
 # Add the AArch64 target for cross-compilation
-rustup target add aarch64-unknown-none-softfloat
+rustup target add aarch64-unknown-none
+
+# Note: The project can also build with stable Rust if needed:
+# rustup override set stable
+```
 ```
 
 #### Building and Running

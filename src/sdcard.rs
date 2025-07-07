@@ -150,7 +150,7 @@ const CONTROL1_RESET_DATA: u32 = 0x04000000;
 #[allow(dead_code)]
 const SD_BLOCK_SIZE: u32 = 512;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SdError {
     InitializationFailed,
     CommandTimeout,

@@ -1,6 +1,19 @@
+# TinyOS Cargo Configuration
+# This overrides any global ~/.cargo/config.toml settings
+
 [build]
 target = "aarch64-unknown-none"
 
 [target.aarch64-unknown-none]
 runner = ["sh", "-c", "qemu-system-aarch64 -M raspi4b -kernel $1 -serial stdio -display none", "--"]
 rustflags = ["-C", "link-arg=-Tlinker.ld"]
+
+# Note: build-std is available if needed for advanced no-std scenarios
+# Uncomment the following lines if you need to rebuild core/alloc from source:
+# [unstable]
+# build-std = ["core", "alloc"]
+# build-std-features = ["compiler-builtins-mem"]
+
+# Override any global target settings for this workspace
+[env]
+CARGO_BUILD_TARGET = "aarch64-unknown-none"

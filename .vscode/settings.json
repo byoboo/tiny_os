@@ -22,6 +22,12 @@
     "rust-analyzer.hover.actions.enable": false,
     "rust-analyzer.lens.enable": false,
     "rust-analyzer.inlayHints.enable": false,
+    // Force rust-analyzer to use project-specific cargo config
+    "rust-analyzer.server.extraEnv": {
+        "CARGO_BUILD_TARGET": "aarch64-unknown-none"
+    },
+    // Explicit workspace override to ignore global cargo settings
+    "rust-analyzer.cargo.configPath": ".cargo/config.toml",
     "files.associations": {
         "*.s": "arm",
         "*.ld": "ld-script"

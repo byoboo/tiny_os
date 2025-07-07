@@ -2,6 +2,7 @@
 use core::ptr::{read_volatile, write_volatile};
 
 // UART base addresses for Raspberry Pi 4/5
+// Pi 4/5: 0xFE201000 (BCM2711/BCM2712)
 const UART_BASE: u32 = 0xFE201000;
 #[allow(clippy::identity_op)]
 const UART_DR: u32 = UART_BASE + 0x00; // Data register
@@ -95,6 +96,58 @@ impl Uart {
                 Some(read_volatile(UART_DR as *const u32) as u8)
             } else {
                 None
+            }
+        }
+    }
+
+    /// Read a line of input with basic editing support
+    /// Returns the number of characters read (excluding null terminator)
+    pub fn read_line(&self, buffer: &mut [u8], max_len: usize) -> usize {
+        let mut pos = 0;
+        let actual_max = max_len.min(buffer.len().saturating_sub(1));
+
+        loop {
+            if let Some(ch) = self.getc() {
+                match ch {
+                    // Enter/newline - finish input
+                    b'\r' | b'\n' => {
+                        self.puts("\r\n");
+                        buffer[pos] = 0; // Null terminate
+                        return pos;
+                    }
+                    // Backspace
+                    8 | 127 => {
+                        if pos > 0 {
+                            pos -= 1;
+                            self.puts("\x08 \x08"); // Backspace, space, backspace
+                        }
+                    }
+                    // Ctrl+C - cancel input
+                    3 => {
+                        self.puts("^C\r\n");
+                        buffer[0] = 0;
+                        return 0;
+                    }
+                    // Printable characters
+                    32..=126 => {
+                        if pos < actual_max {
+                            buffer[pos] = ch;
+                            pos += 1;
+                            self.putc(ch); // Echo character
+                        }
+                    }
+                    // Ignore other control characters
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    /// Wait for a single keypress and return it
+    pub fn wait_for_key(&self) -> u8 {
+        loop {
+            if let Some(ch) = self.getc() {
+                return ch;
             }
         }
     }

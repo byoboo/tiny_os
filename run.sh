@@ -12,7 +12,7 @@ if [ $? -eq 0 ]; then
     echo "Press Ctrl+A then X to exit QEMU"
     echo "----------------------------------------"
     
-    # Run in QEMU
+    # Run in QEMU - Raspberry Pi 4B
     qemu-system-aarch64 \
         -M raspi4b \
         -kernel target/aarch64-unknown-none/debug/tiny_os \

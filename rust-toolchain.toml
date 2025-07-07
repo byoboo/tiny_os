@@ -1,3 +1,12 @@
+# TinyOS Rust Toolchain Configuration
+# 
+# This project uses nightly for:
+# - Better embedded/bare-metal support and diagnostics
+# - Latest improvements to aarch64-unknown-none target
+# - Future compatibility with advanced features
+#
+# Note: The project can also build with stable Rust if needed
+
 [toolchain]
 channel = "nightly"
 targets = ["aarch64-unknown-none"]
