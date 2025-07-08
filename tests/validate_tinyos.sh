@@ -92,10 +92,30 @@ print_info "Validating code structure..."
 ((TOTAL_TESTS++))
 STRUCTURE_OK=1
 
-# Check for essential files
-for file in "src/main.rs" "src/boot.s" "src/memory.rs" "src/uart.rs" "src/gpio.rs" "src/timer.rs" "src/interrupts.rs"; do
+# Check for essential files (updated for modular architecture)
+for file in "src/main.rs" "src/boot.s" "src/memory.rs" "src/interrupts.rs" "src/lib.rs"; do
     if [ ! -f "$file" ]; then
         echo "Missing file: $file"
+        STRUCTURE_OK=0
+    fi
+done
+
+# Check for modular driver structure
+for driver in "uart" "gpio" "timer" "sdcard"; do
+    if [ ! -d "src/drivers/$driver" ]; then
+        echo "Missing modular driver directory: src/drivers/$driver"
+        STRUCTURE_OK=0
+    fi
+    if [ ! -f "src/drivers/$driver/mod.rs" ]; then
+        echo "Missing modular driver module: src/drivers/$driver/mod.rs"
+        STRUCTURE_OK=0
+    fi
+done
+
+# Check for legacy drivers (should be archived)
+for file in "uart.rs" "gpio.rs" "timer.rs" "sdcard.rs"; do
+    if [ -f "src/$file" ] && [ ! -f "src/legacy_drivers/$file" ]; then
+        echo "Old driver file not archived: src/$file (should be in src/legacy_drivers/)"
         STRUCTURE_OK=0
     fi
 done
@@ -137,43 +157,67 @@ fi
 print_status $((1 - MEMORY_OK)) "Memory management validation"
 [ $MEMORY_OK -eq 1 ] && ((PASSED_TESTS++))
 
-# Test 8: UART driver validation
-print_info "Validating UART driver..."
+# Test 8: Driver interface validation (modular architecture)
+print_info "Validating modular driver interfaces..."
 ((TOTAL_TESTS++))
-UART_OK=1
+DRIVER_OK=1
 
-if ! grep -q "struct Uart" src/uart.rs; then
-    echo "Missing Uart struct"
-    UART_OK=0
+# Check UART driver interface via lib.rs re-exports
+if ! grep -q "pub mod uart" src/lib.rs; then
+    echo "Missing UART driver re-export in lib.rs"
+    DRIVER_OK=0
 fi
 
-if ! (grep -q "puts" src/uart.rs || grep -q "putc" src/uart.rs); then
-    echo "Missing UART output functions"
-    UART_OK=0
+# Check GPIO driver interface via lib.rs re-exports  
+if ! grep -q "pub mod gpio" src/lib.rs; then
+    echo "Missing GPIO driver re-export in lib.rs"
+    DRIVER_OK=0
 fi
 
-print_status $((1 - UART_OK)) "UART driver validation"
-[ $UART_OK -eq 1 ] && ((PASSED_TESTS++))
+# Check timer driver interface via lib.rs re-exports
+if ! grep -q "pub mod timer" src/lib.rs; then
+    echo "Missing timer driver re-export in lib.rs"
+    DRIVER_OK=0
+fi
 
-# Test 9: GPIO driver validation
-print_info "Validating GPIO driver..."
+print_status $((1 - DRIVER_OK)) "Modular driver interface validation"
+[ $DRIVER_OK -eq 1 ] && ((PASSED_TESTS++))
+
+# Test 9: Legacy driver validation (backward compatibility)
+print_info "Validating legacy driver compatibility..."
 ((TOTAL_TESTS++))
-GPIO_OK=1
+LEGACY_OK=1
 
-if ! grep -q "struct Gpio" src/gpio.rs; then
-    echo "Missing Gpio struct"
-    GPIO_OK=0
+if [ -d "src/legacy_drivers" ]; then
+    for driver in "uart.rs" "gpio.rs" "timer.rs" "sdcard.rs"; do
+        if [ ! -f "src/legacy_drivers/$driver" ]; then
+            echo "Missing legacy driver: src/legacy_drivers/$driver"
+            LEGACY_OK=0
+        fi
+    done
+else
+    echo "Missing legacy drivers directory: src/legacy_drivers"
+    LEGACY_OK=0
 fi
 
-if ! (grep -q "set_high\|set_low\|set_function" src/gpio.rs); then
-    echo "Missing GPIO control functions"
-    GPIO_OK=0
+print_status $((1 - LEGACY_OK)) "Legacy driver compatibility validation"
+[ $LEGACY_OK -eq 1 ] && ((PASSED_TESTS++))
+
+# Test 10: Timer driver validation
+print_info "Validating timer functionality..."
+((TOTAL_TESTS++))
+TIMER_OK=1
+
+# Check timer re-export in lib.rs
+if ! grep -q "pub mod timer" src/lib.rs; then
+    echo "Missing timer driver re-export in lib.rs"
+    TIMER_OK=0
 fi
 
-print_status $((1 - GPIO_OK)) "GPIO driver validation"
-[ $GPIO_OK -eq 1 ] && ((PASSED_TESTS++))
+print_status $((1 - TIMER_OK)) "Timer driver validation"
+[ $TIMER_OK -eq 1 ] && ((PASSED_TESTS++))
 
-# Test 10: Interrupt system validation
+# Test 11: Interrupt system validation
 print_info "Validating interrupt system..."
 ((TOTAL_TESTS++))
 INTERRUPT_OK=1

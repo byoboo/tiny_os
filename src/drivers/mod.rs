@@ -1,0 +1,113 @@
+//! Hardware Driver Abstraction Layer
+//!
+//! This module provides a clean, modular driver architecture for TinyOS.
+//! Each driver is organized into separate modules with the following structure:
+//! - Hardware register definitions and low-level access
+//! - High-level API with type-safe interfaces
+//! - Zero-cost abstractions using const generics where applicable
+//! - Embedded-friendly design with static allocation only
+
+pub mod gpio;
+pub mod sdcard;
+pub mod timer;
+pub mod uart;
+
+// Re-export commonly used driver types for convenience
+pub use gpio::{Gpio, GpioFunction};
+pub use sdcard::SdCard;
+pub use timer::SystemTimer;
+pub use uart::Uart;
+
+/// Common traits for hardware drivers
+pub mod traits {
+    /// Trait for drivers that can be initialized
+    pub trait Initialize {
+        /// Initialize the driver with default settings
+        fn init(&mut self) -> Result<(), DriverError>;
+        
+        /// Initialize the driver with custom configuration
+        fn init_with_config(&mut self, config: &Self::Config) -> Result<(), DriverError>
+        where
+            Self: Sized,
+            Self::Config: Sized;
+        
+        /// Associated configuration type
+        type Config;
+    }
+    
+    /// Trait for drivers that support resetting
+    pub trait Reset {
+        /// Reset the driver to its initial state
+        fn reset(&mut self) -> Result<(), DriverError>;
+    }
+    
+    /// Trait for drivers that can report their status
+    pub trait Status {
+        /// Get the current driver status
+        fn status(&self) -> DriverStatus;
+    }
+    
+    /// Common driver error types
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum DriverError {
+        /// Hardware not present or not responding
+        HardwareNotFound,
+        /// Invalid configuration parameters
+        InvalidConfig,
+        /// Operation timeout
+        Timeout,
+        /// Hardware fault or error
+        HardwareFault,
+        /// Operation not supported
+        NotSupported,
+        /// Invalid input parameters
+        InvalidInput,
+    }
+    
+    /// Common driver status types
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum DriverStatus {
+        /// Driver is not initialized
+        Uninitialized,
+        /// Driver is ready for use
+        Ready,
+        /// Driver is busy with an operation
+        Busy,
+        /// Driver is in an error state
+        Error(DriverError),
+    }
+}
+
+/// Hardware configuration constants using const generics
+pub mod config {
+    /// Raspberry Pi hardware version configuration
+    pub trait HardwareVersion {
+        const GPIO_BASE: u32;
+        const UART_BASE: u32;
+        const TIMER_BASE: u32;
+        const EMMC_BASE: u32;
+    }
+    
+    /// Raspberry Pi 4 configuration
+    pub struct RaspberryPi4;
+    
+    impl HardwareVersion for RaspberryPi4 {
+        const GPIO_BASE: u32 = 0xFE200000;
+        const UART_BASE: u32 = 0xFE201000;
+        const TIMER_BASE: u32 = 0xFE003000;
+        const EMMC_BASE: u32 = 0xFE300000;
+    }
+    
+    /// Raspberry Pi 5 configuration (same as Pi 4 for most peripherals)
+    pub struct RaspberryPi5;
+    
+    impl HardwareVersion for RaspberryPi5 {
+        const GPIO_BASE: u32 = 0xFE200000;
+        const UART_BASE: u32 = 0xFE201000;
+        const TIMER_BASE: u32 = 0xFE003000;
+        const EMMC_BASE: u32 = 0xFE300000;
+    }
+    
+    /// Default hardware version (Pi 4/5 compatible)
+    pub type DefaultHardware = RaspberryPi4;
+}

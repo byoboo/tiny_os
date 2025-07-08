@@ -12,7 +12,8 @@ use core::mem;
 /// - File allocation table management
 /// - Boot sector parsing and validation
 /// - Cluster chain management
-use crate::{sdcard::*, uart::*};
+use crate::sdcard::*;
+use crate::uart::*;
 
 // Constants
 const MAX_FILE_SIZE: u32 = 1024 * 1024; // 1MB max file size to prevent memory issues

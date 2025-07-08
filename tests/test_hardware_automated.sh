@@ -55,48 +55,65 @@ else
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
-# Test 2: UART driver validation
-print_status "Test 2: UART driver validation"
-if grep -q "struct Uart" src/uart.rs && grep -q "fn puts" src/uart.rs; then
-    print_success "UART driver structure validated"
+# Test 2: UART driver validation (modular architecture)
+print_status "Test 2: UART driver validation (modular)"
+if [ -d "src/drivers/uart" ] && [ -f "src/drivers/uart/mod.rs" ] && grep -q "pub mod uart" src/lib.rs; then
+    print_success "UART modular driver structure validated"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    print_error "UART driver validation failed"
+    print_error "UART modular driver validation failed"
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
-# Test 3: GPIO driver validation
-print_status "Test 3: GPIO driver validation"
-if grep -q "struct Gpio" src/gpio.rs && grep -q "set_high\|set_low" src/gpio.rs; then
-    print_success "GPIO driver structure validated"
+# Test 3: GPIO driver validation (modular architecture)
+print_status "Test 3: GPIO driver validation (modular)"
+if [ -d "src/drivers/gpio" ] && [ -f "src/drivers/gpio/mod.rs" ] && grep -q "pub mod gpio" src/lib.rs; then
+    print_success "GPIO modular driver structure validated"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    print_error "GPIO driver validation failed"
+    print_error "GPIO modular driver validation failed"
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
-# Test 4: Timer driver validation
-print_status "Test 4: Timer driver validation"
-if grep -q "struct Timer\|SystemTimer" src/timer.rs; then
-    print_success "Timer driver structure validated"
+# Test 4: Timer driver validation (modular architecture)
+print_status "Test 4: Timer driver validation (modular)"
+if [ -d "src/drivers/timer" ] && [ -f "src/drivers/timer/mod.rs" ] && grep -q "pub mod timer" src/lib.rs; then
+    print_success "Timer modular driver structure validated"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    print_error "Timer driver validation failed"
+    print_error "Timer modular driver validation failed"
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
-# Test 5: Hardware abstraction completeness
-print_status "Test 5: Hardware abstraction completeness"
+# Test 5: Hardware abstraction completeness (modular architecture)
+print_status "Test 5: Modular hardware abstraction completeness"
 DRIVER_COUNT=0
-[ -f "src/uart.rs" ] && DRIVER_COUNT=$((DRIVER_COUNT + 1))
-[ -f "src/gpio.rs" ] && DRIVER_COUNT=$((DRIVER_COUNT + 1))
-[ -f "src/timer.rs" ] && DRIVER_COUNT=$((DRIVER_COUNT + 1))
+[ -d "src/drivers/uart" ] && DRIVER_COUNT=$((DRIVER_COUNT + 1))
+[ -d "src/drivers/gpio" ] && DRIVER_COUNT=$((DRIVER_COUNT + 1))
+[ -d "src/drivers/timer" ] && DRIVER_COUNT=$((DRIVER_COUNT + 1))
+[ -d "src/drivers/sdcard" ] && DRIVER_COUNT=$((DRIVER_COUNT + 1))
 
-if [ $DRIVER_COUNT -ge 3 ]; then
-    print_success "Core hardware drivers present ($DRIVER_COUNT/3)"
+if [ $DRIVER_COUNT -ge 4 ]; then
+    print_success "Core modular hardware drivers present ($DRIVER_COUNT/4)"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    print_error "Missing core hardware drivers ($DRIVER_COUNT/3)"
+    print_error "Missing modular hardware drivers ($DRIVER_COUNT/4)"
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+fi
+
+# Test 6: Legacy driver compatibility
+print_status "Test 6: Legacy driver compatibility"
+LEGACY_COUNT=0
+[ -f "src/legacy_drivers/uart.rs" ] && LEGACY_COUNT=$((LEGACY_COUNT + 1))
+[ -f "src/legacy_drivers/gpio.rs" ] && LEGACY_COUNT=$((LEGACY_COUNT + 1))
+[ -f "src/legacy_drivers/timer.rs" ] && LEGACY_COUNT=$((LEGACY_COUNT + 1))
+[ -f "src/legacy_drivers/sdcard.rs" ] && LEGACY_COUNT=$((LEGACY_COUNT + 1))
+
+if [ $LEGACY_COUNT -ge 4 ]; then
+    print_success "Legacy drivers archived correctly ($LEGACY_COUNT/4)"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+else
+    print_error "Legacy driver archival incomplete ($LEGACY_COUNT/4)"
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 

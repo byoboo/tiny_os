@@ -17,17 +17,20 @@ A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 an
 - ✅ **Memory testing suite** with stress tests and boundary validation
 
 ### Hardware & Drivers
-- ✅ **Hardware drivers** for UART, GPIO, System Timer, and SD/EMMC
+- ✅ **Modular driver architecture** with hardware abstraction layer under `src/drivers/`
+- ✅ **UART driver** with PL011 hardware support and high-level interface  
+- ✅ **GPIO driver** with BCM2835 register access and LED control APIs
+- ✅ **Timer driver** with BCM2835 timer hardware and scheduling interface
 - ✅ **SD card driver** with EMMC interface and block I/O operations
-- ✅ **Interrupt management system** with ARM GIC simulation
-- ✅ **GPIO control** with LED manipulation and pin management
+- ✅ **Interrupt management** with ARM GIC simulation and handler registration
 
 ### Development & Testing
-- ✅ **Comprehensive testing infrastructure** - 6 test suites, 100% passing
+- ✅ **Comprehensive testing infrastructure** - 7 test suites, including modular driver tests
 - ✅ **QEMU development environment** with real hardware deployment ready
 - ✅ **Performance benchmarks** and diagnostic health checks
 - ✅ **Cross-platform development** with automated CI/CD-ready testing
-- ✅ **Feature-organized tests** (boot, memory, interrupts, hardware, shell-based validation)
+- ✅ **Feature-organized tests** (boot, memory, interrupts, hardware, modular drivers)
+- ✅ **Shell-based validation** for embedded systems testing
 
 ### System Design
 - 🔧 **Serial-based interface** - No HDMI/video output (embedded design)
@@ -102,7 +105,7 @@ TinyOS uses a **hardware-focused testing approach** optimized for embedded devel
 ./test_tinyos.sh boot       # Boot system validation + QEMU boot tests
 ./test_tinyos.sh memory     # Memory management tests (shell-based)
 ./test_tinyos.sh interrupts # Interrupt handling tests (hardware simulation) 
-./test_tinyos.sh hardware   # Hardware/driver tests (GPIO, UART, Timer)
+./test_tinyos.sh hardware   # Hardware/driver tests (GPIO, UART, Timer, SD card, modular drivers)
 ```
 
 **Advanced testing options:**
@@ -120,6 +123,7 @@ TinyOS uses a **hardware-focused testing approach** optimized for embedded devel
 - ✅ **Memory management tests** - Shell-based memory system validation
 - ✅ **Interrupt management tests** - Hardware simulation and validation
 - ✅ **Hardware/driver tests** - UART, GPIO, Timer validation via shell commands
+- ✅ **Modular driver tests** - Validates Phase 2 driver architecture and organization
 - ✅ **Interactive testing** - Real-time testing via shell interface
 
 **Testing Philosophy:**
@@ -512,60 +516,79 @@ disable_overscan=1
 
 ## Project Structure
 
-**Clean, organized codebase after recent cleanup:**
+**Clean, modular codebase with Phase 2 driver organization:**
 
 ```
 ├── src/
-│   ├── main.rs           # Main kernel and interactive shell (30+ commands)
+│   ├── main.rs           # Minimal main - imports from library, starts shell
+│   ├── lib.rs            # Library interface with modular driver re-exports
 │   ├── boot.s            # Assembly boot code and initialization  
-│   ├── uart.rs           # PL011 UART driver (Pi 4/5 addresses)
-│   ├── gpio.rs           # GPIO and LED control driver
-│   ├── timer.rs          # BCM2835 System Timer driver
+│   ├── shell/            # Interactive shell system (Phase 1 modularization)
+│   │   ├── mod.rs        # Shell module exports
+│   │   ├── shell.rs      # Main shell loop and interface  
+│   │   └── commands/     # Individual command handlers
+│   │       ├── mod.rs
+│   │       ├── memory.rs       # Memory-related commands (m, a, f, etc.)
+│   │       ├── filesystem.rs   # FAT32 commands (d, l, n, etc.)
+│   │       ├── hardware.rs     # Hardware commands (i, t, g, etc.)
+│   │       ├── system.rs       # System commands (c, h, q, etc.)
+│   │       └── diagnostics.rs  # Advanced diagnostic commands
+│   ├── drivers/          # Modular driver architecture (Phase 2)
+│   │   ├── mod.rs        # Driver module exports
+│   │   ├── uart/         # UART driver with hardware abstraction
+│   │   │   ├── mod.rs
+│   │   │   ├── hardware.rs     # PL011 register-level implementation
+│   │   │   └── driver.rs       # High-level UART interface
+│   │   ├── gpio/         # GPIO driver with hardware abstraction
+│   │   │   ├── mod.rs
+│   │   │   ├── hardware.rs     # BCM2835 register-level implementation
+│   │   │   └── driver.rs       # High-level GPIO interface
+│   │   ├── timer/        # Timer driver with hardware abstraction
+│   │   │   ├── mod.rs
+│   │   │   ├── hardware.rs     # BCM2835 timer implementation
+│   │   │   └── driver.rs       # High-level timer interface
+│   │   └── sdcard/       # SD card driver with hardware abstraction
+│   │       ├── mod.rs
+│   │       ├── hardware.rs     # EMMC register-level implementation
+│   │       └── driver.rs       # High-level SD card interface
+│   ├── legacy_drivers/   # Archived monolithic drivers (backward compatibility)
+│   │   ├── uart.rs       # Original UART driver
+│   │   ├── gpio.rs       # Original GPIO driver
+│   │   ├── timer.rs      # Original timer driver
+│   │   └── sdcard.rs     # Original SD card driver
 │   ├── memory.rs         # Bitmap-based memory manager with protection
 │   ├── interrupts.rs     # ARM GIC interrupt controller
-│   ├── sdcard.rs         # SD card driver (EMMC interface)
-│   ├── simple_tests.rs   # Unit tests (13 tests, all passing)
-│   └── lib.rs            # Library interface and module organization
+│   ├── exceptions.rs     # Exception handling and vectors
+│   ├── fat32.rs          # FAT32 filesystem implementation
+│   └── simple_tests.rs   # Unit tests (13 tests, all passing)
 ├── tests/                # Comprehensive test infrastructure
-│   ├── test_*_automated.sh    # Automated test scripts (no dependencies)
-│   ├── test_*_suite.sh        # Interactive test suites (optional, require expect)
-│   ├── test_qemu_boot.sh      # QEMU boot validation
-│   └── validate_tinyos.sh     # System structure validation
+│   ├── test_*_automated.sh      # Automated test scripts (no dependencies)
+│   ├── test_*_suite.sh          # Interactive test suites (optional, require expect)
+│   ├── test_drivers_modular.sh  # Phase 2 modular driver validation
+│   ├── test_qemu_boot.sh        # QEMU boot validation
+│   └── validate_tinyos.sh       # System structure validation
 ├── .cargo/
 │   └── config.toml       # Cargo cross-compilation configuration
 ├── linker.ld             # Custom linker script for Pi 4/5 memory layout
 ├── aarch64-raspi.json    # Custom target specification
 ├── test_tinyos.sh        # Unified test runner (feature-organized)
+├── validate_phase2.sh    # Phase 2 validation script
 ├── build.sh              # Build script (creates kernel8.img for Pi)
 ├── run.sh                # QEMU execution script (Pi 4 model)
-├── TESTING_INFRASTRUCTURE.md  # Complete testing documentation
+├── PHASE2_DRIVER_ANALYSIS.md    # Phase 2 completion documentation
+├── TESTING_INFRASTRUCTURE.md   # Complete testing documentation
 └── DOCS.md               # Technical architecture documentation
 ```
 
-**Recent cleanup achievements:**
-- ✅ Removed `/temp/` directory and all backup files
-- ✅ Removed unused modules (`graphics.rs`, `framebuffer.rs`, `mailbox.rs`)
-- ✅ Removed duplicate/backup main files (`main_*.rs`)
-- ✅ Removed redundant test scripts (`test_fat32.sh`, `quick_test.sh`)
-- ✅ Fixed all test patterns to match actual system output
-- ✅ Consolidated Pi 4/5 focus (removed Pi 3 support)
-- ✅ Updated all hardware addresses for Pi 4/5
-│   ├── sdcard.rs         # SD card driver (EMMC interface)
-│   └── tests/            # Rust unit tests
-├── tests/                # Test suite
-│   ├── test_*_automated.sh  # Automated test scripts (no dependencies)
-│   ├── test_*_suite.sh      # Interactive test suites (require expect)
-│   ├── test_qemu_boot.sh    # Boot validation
-│   └── validate_tinyos.sh   # System validation
-├── .cargo/
-│   └── config.toml       # Cargo configuration for cross-compilation
-├── linker.ld             # Custom linker script for memory layout
-├── aarch64-raspi.json    # Custom target specification
-├── test_tinyos.sh        # Unified test runner (at project root)
-├── build.sh              # Build script  
-├── run.sh                # QEMU execution script
-└── DOCS.md               # Technical documentation
-```
+**Recent achievements:**
+- ✅ **Phase 1**: Modular shell system with command separation and organization
+- ✅ **Phase 2**: Modular driver architecture with hardware abstraction layer
+- ✅ **Driver organization**: Clean separation of hardware-specific and high-level APIs
+- ✅ **Legacy compatibility**: Maintained backward compatibility via re-exports in `lib.rs`
+- ✅ **Testing coverage**: Added comprehensive modular driver test suite
+- ✅ **Documentation**: Updated all docs to reflect new modular architecture
+- ✅ Fixed all test patterns and consolidated Pi 4/5 focus
+- ✅ Updated all hardware addresses for Pi 4/5 exclusive support
 
 ## SD Card Driver
 
@@ -582,9 +605,11 @@ TinyOS includes a comprehensive SD card driver that implements the EMMC (Enhance
 
 ### Technical Implementation
 
-The SD card driver (`src/sdcard.rs`) provides:
+The SD card driver (`src/drivers/sdcard/`) provides a modular architecture:
 
-- **EMMC Register Interface**: Direct hardware register access at `0xFE300000`
+- **Hardware Layer** (`hardware.rs`): Direct EMMC register access at `0xFE300000`
+- **Driver Layer** (`driver.rs`): High-level SD card interface and initialization
+- **Legacy Interface**: Backward compatibility via `src/legacy_drivers/sdcard.rs`
 - **Command Processing**: Full SD command set implementation with proper timing
 - **Clock Management**: Dynamic clock frequency adjustment (400kHz initialization, 25MHz operation)
 - **GPIO Configuration**: Automatic GPIO pin setup for SD interface (pins 48-53)

@@ -10,25 +10,20 @@ use core::{
     result::Result::{Err, Ok},
 };
 
-mod exceptions;
-mod fat32;
-mod gpio;
-mod interrupts;
-mod memory;
-mod sdcard;
-mod shell;
-mod timer;
-mod uart;
-
-use exceptions::init_exceptions;
-use fat32::Fat32FileSystem;
-use gpio::{Gpio, GpioFunction};
-use interrupts::InterruptController;
-use memory::MemoryManager;
-use sdcard::SdCard;
-use shell::{run_shell, ShellContext};
-use timer::SystemTimer;
-use uart::Uart;
+// Import everything from the library crate
+use tiny_os_lib::{
+    drivers::{
+        gpio::{Gpio, GpioFunction},
+        sdcard::SdCard,
+        timer::SystemTimer,
+        uart::Uart,
+    },
+    exceptions::init_exceptions,
+    fat32::Fat32FileSystem,
+    interrupts::InterruptController,
+    memory::MemoryManager,
+    shell::{run_shell, ShellContext},
+};
 
 // Include the boot assembly
 #[cfg(target_arch = "aarch64")]
@@ -37,7 +32,7 @@ global_asm!(include_str!("boot.s"));
 #[no_mangle]
 pub extern "C" fn kernel_main() {
     // Initialize UART for output
-    let uart = Uart::new();
+    let mut uart = Uart::new();
     uart.init();
 
     uart.puts("TinyOS Starting...\r\n");
@@ -122,7 +117,7 @@ pub extern "C" fn kernel_main() {
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    let uart = Uart::new();
+    let mut uart = Uart::new();
     uart.init();
     uart.puts("KERNEL PANIC!\r\n");
     loop {}
