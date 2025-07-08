@@ -1,5 +1,9 @@
 # TinyOS - Raspberry Pi Operating System
 
+[![CI/CD Pipeline](https://github.com/your-username/tiny_os/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/tiny_os/actions/workflows/ci.yml)
+[![Pull Request Validation](https://github.com/your-username/tiny_os/actions/workflows/pr.yml/badge.svg)](https://github.com/your-username/tiny_os/actions/workflows/pr.yml)
+[![Security Scan](https://github.com/your-username/tiny_os/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/your-username/tiny_os/actions/workflows/ci.yml)
+
 A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 and 5, developed in Rust. TinyOS features comprehensive memory management, interrupt handling, and an interactive shell interface.
 
 ## Features
@@ -869,7 +873,7 @@ Once TinyOS is running, use these commands in the interactive shell:
 - [x] **Integration testing** across all modular components
 - [ ] Automated hardware testing on real Pi devices
 - [ ] Code coverage analysis expansion
-- [ ] GitHub Actions CI/CD integration
+- [x] **GitHub Actions CI/CD integration** - Automated build, test, and release pipeline
 - [ ] Documentation automation
 
 ### Project Status: ✅ **Stable & Ready for Production Use**
@@ -884,6 +888,29 @@ Once TinyOS is running, use these commands in the interactive shell:
 - Comprehensive integration testing across all modular components
 
 ## Contributing
+
+### CI/CD Pipeline
+
+TinyOS uses **GitHub Actions** for automated build, test, and release management:
+
+**🔄 Automated Workflows:**
+- **Build & Test**: Runs on every push and PR
+- **Dev Releases**: Auto-versioned pre-releases from `dev` branch (`0.2.0-dev.{build}`)
+- **Stable Releases**: Production releases from `master` branch (`0.2.0`)
+- **Feature Validation**: Quick validation for feature branches
+- **Security Scanning**: Automated dependency vulnerability checks
+- **Pull Request Validation**: Comprehensive testing with status comments
+
+**📋 Branch Strategy:**
+- `master` - Production/stable releases
+- `dev` - Active development/nightly builds (auto-versioned)
+- `feature/*` - Feature branches (validated but not released)
+
+**🚀 Release Process:**
+1. **Development**: Work on feature branches
+2. **Integration**: Merge to `dev` → triggers auto-versioned dev release
+3. **Stabilization**: Test dev releases thoroughly
+4. **Production**: Merge `dev` to `master` → triggers stable release
 
 **Development Workflow:**
 1. Fork the repository
