@@ -202,6 +202,17 @@ Add these to your README for CI/CD visibility:
 
 ## Configuration
 
+### GitHub Actions Versions
+
+All workflows use the latest stable versions of GitHub Actions:
+
+- **actions/checkout@v4** - Repository checkout
+- **dtolnay/rust-toolchain@stable** - Rust toolchain setup (replaces deprecated actions-rs/toolchain)
+- **actions/cache@v4** - Dependency caching
+- **actions/upload-artifact@v4** - Artifact uploads
+- **softprops/action-gh-release@v1** - Release creation
+- **actions/github-script@v7** - GitHub API interactions
+
 ### Required Secrets
 
 The workflows use standard GitHub tokens and don't require additional secrets for basic functionality.

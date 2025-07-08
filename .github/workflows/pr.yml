@@ -20,11 +20,10 @@ jobs:
         fetch-depth: 0
     
     - name: Setup Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: nightly
-        target: aarch64-unknown-none
-        override: true
+        targets: aarch64-unknown-none
         components: rustfmt, clippy
     
     - name: Install QEMU
@@ -33,7 +32,7 @@ jobs:
         sudo apt-get install -y qemu-system-arm
     
     - name: Cache cargo
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -146,7 +145,7 @@ jobs:
         echo "Release build time: ${build_time}s"
     
     - name: Upload PR artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pr-build-${{ github.event.number }}
         path: |
@@ -211,11 +210,10 @@ jobs:
         fetch-depth: 0
     
     - name: Setup Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: nightly
-        target: aarch64-unknown-none
-        override: true
+        targets: aarch64-unknown-none
     
     - name: Install cargo-semver-checks
       run: cargo install cargo-semver-checks
