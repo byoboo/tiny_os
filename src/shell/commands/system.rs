@@ -36,6 +36,7 @@ fn print_time(uart: &crate::uart::Uart, ms: u32) {
 }
 
 /// Helper function to print numbers
+#[inline]
 fn print_number(uart: &crate::uart::Uart, mut num: u32) {
     if num == 0 {
         uart.putc(b'0');

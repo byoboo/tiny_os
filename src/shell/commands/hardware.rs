@@ -6,7 +6,8 @@
 
 use crate::{exceptions::get_exception_stats, shell::ShellContext};
 
-/// Helper function to print numbers
+/// Helper function to print numbers  
+#[inline]
 fn print_number(uart: &crate::uart::Uart, mut num: u32) {
     if num == 0 {
         uart.putc(b'0');

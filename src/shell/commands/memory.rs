@@ -255,6 +255,7 @@ pub fn handle_memory_defragment(uart: &Uart, memory_manager: &mut MemoryManager)
 }
 
 /// Helper function to print a number
+#[inline]
 fn print_number(uart: &Uart, mut num: u32) {
     if num == 0 {
         uart.puts("0");
@@ -276,6 +277,7 @@ fn print_number(uart: &Uart, mut num: u32) {
 }
 
 /// Helper function to print a hexadecimal number
+#[inline]
 fn print_hex(uart: &Uart, mut num: u32) {
     if num == 0 {
         uart.puts("0");

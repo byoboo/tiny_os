@@ -171,6 +171,7 @@ pub fn handle_change_to_root(uart: &Uart, fat32_fs: &mut Option<Fat32FileSystem>
 }
 
 /// Helper function to print a number
+#[inline]
 fn print_number(uart: &Uart, mut num: u32) {
     if num == 0 {
         uart.puts("0");
