@@ -65,7 +65,7 @@ jobs:
         
         # Install QEMU for testing
         sudo apt-get update
-        sudo apt-get install -y qemu-system-arm
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
         
         # Build with updated dependencies
         cargo build --target aarch64-unknown-none

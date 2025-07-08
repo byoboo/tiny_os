@@ -34,7 +34,7 @@ jobs:
     - name: Install QEMU
       run: |
         sudo apt-get update
-        sudo apt-get install -y qemu-system-arm
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
     
     - name: Cache cargo registry
       uses: actions/cache@v4
@@ -74,9 +74,13 @@ jobs:
     - name: Run modular tests
       run: |
         chmod +x ./tests/test_*.sh
+        echo "Running comprehensive integration test..."
         ./tests/test_comprehensive_integration.sh
+        echo "Running memory modular test..."
         ./tests/test_memory_modular.sh
+        echo "Running drivers modular test..."
         ./tests/test_drivers_modular.sh
+        echo "Running filesystem modular test..."
         ./tests/test_filesystem_modular.sh
     
     - name: Test QEMU boot
@@ -132,7 +136,7 @@ jobs:
     - name: Install QEMU
       run: |
         sudo apt-get update
-        sudo apt-get install -y qemu-system-arm
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
     
     - name: Run tests for scheduled builds
       if: github.event_name == 'schedule'
@@ -242,7 +246,7 @@ jobs:
     - name: Install QEMU
       run: |
         sudo apt-get update
-        sudo apt-get install -y qemu-system-arm
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
     
     - name: Get version from Cargo.toml
       id: get_version
