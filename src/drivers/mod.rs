@@ -88,6 +88,16 @@ pub mod config {
         const EMMC_BASE: u32;
     }
 
+    /// Raspberry Pi 3 configuration
+    pub struct RaspberryPi3;
+
+    impl HardwareVersion for RaspberryPi3 {
+        const GPIO_BASE: u32 = 0x3F200000;
+        const UART_BASE: u32 = 0x3F201000;
+        const TIMER_BASE: u32 = 0x3F003000;
+        const EMMC_BASE: u32 = 0x3F300000;
+    }
+
     /// Raspberry Pi 4 configuration
     pub struct RaspberryPi4;
 
@@ -108,6 +118,10 @@ pub mod config {
         const EMMC_BASE: u32 = 0xFE300000;
     }
 
-    /// Default hardware version (Pi 4/5 compatible)
+    /// Default hardware version selection based on target
+    #[cfg(feature = "raspi3")]
+    pub type DefaultHardware = RaspberryPi3;
+
+    #[cfg(not(feature = "raspi3"))]
     pub type DefaultHardware = RaspberryPi4;
 }

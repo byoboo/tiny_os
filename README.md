@@ -4,7 +4,7 @@
 [![Pull Request Validation](https://github.com/your-username/tiny_os/actions/workflows/pr.yml/badge.svg)](https://github.com/your-username/tiny_os/actions/workflows/pr.yml)
 [![Security Scan](https://github.com/your-username/tiny_os/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/your-username/tiny_os/actions/workflows/ci.yml)
 
-A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 and 5, developed in Rust. TinyOS features comprehensive memory management, interrupt handling, and an interactive shell interface.
+A sophisticated bare-metal operating system designed to run on Raspberry Pi 3, 4, and 5, developed in Rust. TinyOS features comprehensive memory management, interrupt handling, and an interactive shell interface.
 
 ## Features
 
@@ -12,7 +12,7 @@ A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 an
 - ✅ **Bare-metal ARM64 kernel** with custom boot process and linker script
 - ✅ **Modular interactive shell** with 30+ commands for real-time system control *(UART only)*
 - ✅ **Exception vector table** with comprehensive ARM64 exception handling
-- ✅ **Raspberry Pi 4/5 exclusive** - Optimized for modern Pi hardware only
+- ✅ **Raspberry Pi 3/4/5 support** - Optimized for modern Pi hardware with hardware abstraction
 - ✅ **Complete refactored architecture** - Modular design for maintainability and scalability
 
 ### Memory Management
@@ -56,6 +56,26 @@ A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 an
 - ✅ **Interactive testing** with memory, interrupt, and hardware validation
 - ✅ **Educational codebase** with comprehensive documentation
 
+## Hardware Support
+
+TinyOS supports multiple Raspberry Pi models with hardware abstraction:
+
+- **Raspberry Pi 3** (Cortex-A53): Use `--features raspi3` for Pi 3 builds
+- **Raspberry Pi 4** (Cortex-A72): Default build target
+- **Raspberry Pi 5** (Cortex-A76): Compatible with Pi 4 build
+
+### Build Instructions
+
+**For Raspberry Pi 4/5 (default):**
+```bash
+cargo build --target aarch64-unknown-none --release
+```
+
+**For Raspberry Pi 3:**
+```bash
+cargo build --target aarch64-unknown-none --release --features raspi3
+```
+
 ## Quick Start
 
 ### Development Environment Setup
@@ -87,7 +107,6 @@ rustup target add aarch64-unknown-none
 
 # Note: The project can also build with stable Rust if needed:
 # rustup override set stable
-```
 ```
 
 #### Building and Running
@@ -926,10 +945,6 @@ TinyOS uses **GitHub Actions** for automated build, test, and release management
 - Ensure `./test_tinyos.sh` passes completely before submission
 - Include performance impact analysis for core changes
 
-**Code Quality Standards:**
-- Follow Rust embedded best practices
-- Maintain `#![no_std]` compatibility
-- Include comprehensive documentation
 **Code Quality Standards:**
 - Follow Rust embedded best practices
 - Maintain `#![no_std]` compatibility

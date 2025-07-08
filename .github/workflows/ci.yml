@@ -34,7 +34,13 @@ jobs:
     - name: Install QEMU
       run: |
         sudo apt-get update
+        # Install QEMU from Ubuntu repos first
         sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+        # Check QEMU version and available machine types
+        echo "QEMU version:"
+        qemu-system-aarch64 --version
+        echo "Available Raspberry Pi machine types:"
+        qemu-system-aarch64 -machine help | grep -i raspi || echo "No Raspberry Pi machine types found"
     
     - name: Cache cargo registry
       uses: actions/cache@v4
