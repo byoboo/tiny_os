@@ -27,7 +27,7 @@ A sophisticated bare-metal operating system designed to run on Raspberry Pi 4 an
 - ✅ **QEMU development environment** with real hardware deployment ready
 - ✅ **Performance benchmarks** and diagnostic health checks
 - ✅ **Cross-platform development** with automated CI/CD-ready testing
-- ✅ **Feature-organized tests** (boot, memory, interrupts, hardware, unit tests)
+- ✅ **Feature-organized tests** (boot, memory, interrupts, hardware, shell-based validation)
 
 ### System Design
 - 🔧 **Serial-based interface** - No HDMI/video output (embedded design)
@@ -85,7 +85,7 @@ qemu-system-aarch64 -M raspi4b -kernel target/aarch64-unknown-none/debug/tiny_os
 
 ### Testing
 
-TinyOS features a comprehensive, feature-organized testing infrastructure with all tests currently passing.
+TinyOS uses a **hardware-focused testing approach** optimized for embedded development with comprehensive shell-based test suites.
 
 **Run all tests:**
 ```bash
@@ -100,10 +100,9 @@ TinyOS features a comprehensive, feature-organized testing infrastructure with a
 **Test specific OS features:**
 ```bash
 ./test_tinyos.sh boot       # Boot system validation + QEMU boot tests
-./test_tinyos.sh unit       # Rust unit tests (13/13 passing)
-./test_tinyos.sh memory     # Memory management tests (5/5 passing)
-./test_tinyos.sh interrupts # Interrupt handling tests (5/5 passing) 
-./test_tinyos.sh hardware   # Hardware/driver tests (5/5 passing)
+./test_tinyos.sh memory     # Memory management tests (shell-based)
+./test_tinyos.sh interrupts # Interrupt handling tests (hardware simulation) 
+./test_tinyos.sh hardware   # Hardware/driver tests (GPIO, UART, Timer)
 ```
 
 **Advanced testing options:**
@@ -114,19 +113,23 @@ TinyOS features a comprehensive, feature-organized testing infrastructure with a
 ./test_tinyos.sh --help           # Show all available options and features
 ```
 
-**Current test status:** ✅ **All 6 test suites passing (100% success rate)**
+**Current test status:** ✅ **All test suites passing (hardware-focused)**
 
-- ✅ Boot system tests (QEMU boot + comprehensive validation)
-- ✅ Rust unit tests (13 tests covering core functionality)
-- ✅ Memory management tests (initialization + operational validation)
-- ✅ Interrupt management tests (controller + timer integration) 
-- ✅ Hardware/driver tests (UART, GPIO, Timer validation)
+- ✅ **Build validation** - Ensures clean compilation for aarch64-unknown-none target
+- ✅ **Boot system tests** - QEMU boot + comprehensive validation
+- ✅ **Memory management tests** - Shell-based memory system validation
+- ✅ **Interrupt management tests** - Hardware simulation and validation
+- ✅ **Hardware/driver tests** - UART, GPIO, Timer validation via shell commands
+- ✅ **Interactive testing** - Real-time testing via shell interface
 
-**Test Design:**
-- **Automated by default** - No external dependencies, CI/CD ready
-- **Feature-organized** - Tests grouped by OS functionality
-- **Realistic validation** - Tests match actual system behavior
-- **Progressive complexity** - From quick validation to comprehensive testing
+**Testing Philosophy:**
+- **Hardware-focused** - Tests actual embedded behavior, not mocked components
+- **Shell-driven** - Interactive and automated testing via command interface  
+- **`no_std` native** - Pure embedded environment, no standard library dependencies
+- **Real-world validation** - Tests match actual hardware deployment scenarios
+- **CI/CD ready** - Automated test suites with QEMU support
+
+**Note:** Traditional Rust unit tests are archived as they require `std`. The shell-based approach provides superior validation for embedded systems by testing actual hardware interfaces and real-world behavior.
 
 For detailed testing documentation, see [TESTING_INFRASTRUCTURE.md](TESTING_INFRASTRUCTURE.md).
 

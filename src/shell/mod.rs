@@ -3,6 +3,8 @@
 //! This module provides the interactive shell interface for TinyOS.
 //! The shell handles command parsing, execution, and user interaction.
 
+use core::option::Option::Some;
+
 use crate::{
     fat32::Fat32FileSystem, gpio::Gpio, interrupts::InterruptController, memory::MemoryManager,
     sdcard::SdCard, timer::SystemTimer, uart::Uart,

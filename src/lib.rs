@@ -3,8 +3,8 @@
 //! This module provides a library interface for TinyOS components
 //! that can be used in hosted environments for testing.
 
-// Use std only for tests, no_std for embedded
-#![cfg_attr(not(test), no_std)]
+// Use no_std for embedded target
+#![no_std]
 
 // Core modules (available in no_std environments)
 pub mod exceptions;

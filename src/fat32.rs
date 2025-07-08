@@ -1,8 +1,10 @@
+use core::mem;
+
 /// FAT32 File System Implementation for TinyOS
-/// 
+///
 /// This module provides FAT32filesystem support for the SD card driver.
 /// FAT32 is implemented for maximum compatibility with other operating systems.
-/// 
+///
 /// Features:
 /// - Read/write files and directories
 /// - Long filename support (LFN)
@@ -10,9 +12,7 @@
 /// - File allocation table management
 /// - Boot sector parsing and validation
 /// - Cluster chain management
-
 use crate::{sdcard::*, uart::*};
-use core::mem;
 
 // Constants
 const MAX_FILE_SIZE: u32 = 1024 * 1024; // 1MB max file size to prevent memory issues
@@ -92,7 +92,7 @@ impl FileList {
 
 impl core::ops::Index<usize> for FileList {
     type Output = FileInfo;
-    
+
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
     }
@@ -102,69 +102,69 @@ impl core::ops::Index<usize> for FileList {
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct Fat32BootSector {
-    pub jmp_boot: [u8; 3],              // Jump instruction
-    pub oem_name: [u8; 8],              // OEM name
-    pub bytes_per_sector: u16,          // Bytes per sector (usually 512)
-    pub sectors_per_cluster: u8,        // Sectors per cluster
-    pub reserved_sector_count: u16,     // Reserved sectors
-    pub num_fats: u8,                   // Number of FATs (usually 2)
-    pub root_entry_count: u16,          // Root directory entries (0 for FAT32)
-    pub total_sectors_16: u16,          // Total sectors (0 if > 65535)
-    pub media_type: u8,                 // Media descriptor
-    pub fat_size_16: u16,               // FAT size in sectors (0 for FAT32)
-    pub sectors_per_track: u16,         // Sectors per track
-    pub num_heads: u16,                 // Number of heads
-    pub hidden_sectors: u32,            // Hidden sectors
-    pub total_sectors_32: u32,          // Total sectors (if > 65535)
-    
+    pub jmp_boot: [u8; 3],          // Jump instruction
+    pub oem_name: [u8; 8],          // OEM name
+    pub bytes_per_sector: u16,      // Bytes per sector (usually 512)
+    pub sectors_per_cluster: u8,    // Sectors per cluster
+    pub reserved_sector_count: u16, // Reserved sectors
+    pub num_fats: u8,               // Number of FATs (usually 2)
+    pub root_entry_count: u16,      // Root directory entries (0 for FAT32)
+    pub total_sectors_16: u16,      // Total sectors (0 if > 65535)
+    pub media_type: u8,             // Media descriptor
+    pub fat_size_16: u16,           // FAT size in sectors (0 for FAT32)
+    pub sectors_per_track: u16,     // Sectors per track
+    pub num_heads: u16,             // Number of heads
+    pub hidden_sectors: u32,        // Hidden sectors
+    pub total_sectors_32: u32,      // Total sectors (if > 65535)
+
     // FAT32 specific fields
-    pub fat_size_32: u32,               // FAT size in sectors
-    pub ext_flags: u16,                 // Extended flags
-    pub fs_version: u16,                // Filesystem version
-    pub root_cluster: u32,              // Root directory cluster
-    pub fs_info: u16,                   // FSInfo sector
-    pub backup_boot_sector: u16,        // Backup boot sector
-    pub reserved: [u8; 12],             // Reserved
-    pub drive_number: u8,               // Drive number
-    pub reserved1: u8,                  // Reserved
-    pub boot_signature: u8,             // Boot signature (0x29)
-    pub volume_id: u32,                 // Volume ID
-    pub volume_label: [u8; 11],         // Volume label
-    pub file_system_type: [u8; 8],      // "FAT32   "
-    pub boot_code: [u8; 420],           // Boot code
-    pub signature: u16,                 // Boot signature (0xAA55)
+    pub fat_size_32: u32,          // FAT size in sectors
+    pub ext_flags: u16,            // Extended flags
+    pub fs_version: u16,           // Filesystem version
+    pub root_cluster: u32,         // Root directory cluster
+    pub fs_info: u16,              // FSInfo sector
+    pub backup_boot_sector: u16,   // Backup boot sector
+    pub reserved: [u8; 12],        // Reserved
+    pub drive_number: u8,          // Drive number
+    pub reserved1: u8,             // Reserved
+    pub boot_signature: u8,        // Boot signature (0x29)
+    pub volume_id: u32,            // Volume ID
+    pub volume_label: [u8; 11],    // Volume label
+    pub file_system_type: [u8; 8], // "FAT32   "
+    pub boot_code: [u8; 420],      // Boot code
+    pub signature: u16,            // Boot signature (0xAA55)
 }
 
 // FAT32 Directory Entry (32 bytes)
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct Fat32DirEntry {
-    pub name: [u8; 11],                 // 8.3 filename
-    pub attr: u8,                       // Attributes
-    pub nt_reserved: u8,                // Reserved
-    pub creation_time_tenth: u8,        // Creation time (tenths of second)
-    pub creation_time: u16,             // Creation time
-    pub creation_date: u16,             // Creation date
-    pub last_access_date: u16,          // Last access date
-    pub first_cluster_high: u16,        // High 16 bits of first cluster
-    pub write_time: u16,                // Write time
-    pub write_date: u16,                // Write date
-    pub first_cluster_low: u16,         // Low 16 bits of first cluster
-    pub file_size: u32,                 // File size in bytes
+    pub name: [u8; 11],          // 8.3 filename
+    pub attr: u8,                // Attributes
+    pub nt_reserved: u8,         // Reserved
+    pub creation_time_tenth: u8, // Creation time (tenths of second)
+    pub creation_time: u16,      // Creation time
+    pub creation_date: u16,      // Creation date
+    pub last_access_date: u16,   // Last access date
+    pub first_cluster_high: u16, // High 16 bits of first cluster
+    pub write_time: u16,         // Write time
+    pub write_date: u16,         // Write date
+    pub first_cluster_low: u16,  // Low 16 bits of first cluster
+    pub file_size: u32,          // File size in bytes
 }
 
 // Long File Name (LFN) Entry (32 bytes)
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct Fat32LfnEntry {
-    pub ord: u8,                        // Order/sequence number
-    pub name1: [u16; 5],                // First 5 characters (UTF-16)
-    pub attr: u8,                       // Attribute (always 0x0F for LFN)
-    pub entry_type: u8,                 // Type (0 for name entry)
-    pub checksum: u8,                   // Checksum of 8.3 name
-    pub name2: [u16; 6],                // Next 6 characters
-    pub first_cluster_low: u16,         // Always 0 for LFN
-    pub name3: [u16; 2],                // Last 2 characters
+    pub ord: u8,                // Order/sequence number
+    pub name1: [u16; 5],        // First 5 characters (UTF-16)
+    pub attr: u8,               // Attribute (always 0x0F for LFN)
+    pub entry_type: u8,         // Type (0 for name entry)
+    pub checksum: u8,           // Checksum of 8.3 name
+    pub name2: [u16; 6],        // Next 6 characters
+    pub first_cluster_low: u16, // Always 0 for LFN
+    pub name3: [u16; 2],        // Last 2 characters
 }
 
 // Directory entry attributes
@@ -212,16 +212,16 @@ impl From<SdError> for Fat32Error {
 // File information structure
 #[derive(Debug, Clone, Copy)]
 pub struct FileInfo {
-    pub name: [u8; 256],                // Long filename (UTF-8)
-    pub short_name: [u8; 11],           // 8.3 short name
-    pub size: u32,                      // File size
-    pub first_cluster: u32,             // First cluster
-    pub attributes: u8,                 // File attributes
-    pub is_directory: bool,             // Is this a directory?
-    pub creation_time: u16,             // Creation time
-    pub creation_date: u16,             // Creation date
-    pub modified_time: u16,             // Last modified time
-    pub modified_date: u16,             // Last modified date
+    pub name: [u8; 256],      // Long filename (UTF-8)
+    pub short_name: [u8; 11], // 8.3 short name
+    pub size: u32,            // File size
+    pub first_cluster: u32,   // First cluster
+    pub attributes: u8,       // File attributes
+    pub is_directory: bool,   // Is this a directory?
+    pub creation_time: u16,   // Creation time
+    pub creation_date: u16,   // Creation date
+    pub modified_time: u16,   // Last modified time
+    pub modified_date: u16,   // Last modified date
 }
 
 impl FileInfo {
@@ -245,16 +245,16 @@ impl FileInfo {
 pub struct Fat32FileSystem {
     sd_card: SdCard,
     boot_sector: Fat32BootSector,
-    fat_start_sector: u32,              // First sector of FAT
-    data_start_sector: u32,             // First sector of data area
-    sectors_per_cluster: u32,           // Sectors per cluster
-    bytes_per_cluster: u32,             // Bytes per cluster
-    cluster_count: u32,                 // Total number of clusters
-    root_dir_cluster: u32,              // Root directory cluster
-    current_dir_cluster: u32,           // Current directory cluster
-    fat_cache: [u8; 512],               // Cache for FAT sector
-    fat_cache_sector: u32,              // Cached FAT sector number
-    fat_cache_dirty: bool,              // FAT cache needs writing
+    fat_start_sector: u32,    // First sector of FAT
+    data_start_sector: u32,   // First sector of data area
+    sectors_per_cluster: u32, // Sectors per cluster
+    bytes_per_cluster: u32,   // Bytes per cluster
+    cluster_count: u32,       // Total number of clusters
+    root_dir_cluster: u32,    // Root directory cluster
+    current_dir_cluster: u32, // Current directory cluster
+    fat_cache: [u8; 512],     // Cache for FAT sector
+    fat_cache_sector: u32,    // Cached FAT sector number
+    fat_cache_dirty: bool,    // FAT cache needs writing
 }
 
 impl Fat32FileSystem {
@@ -270,9 +270,7 @@ impl Fat32FileSystem {
         sd_card.read_block(0, &mut boot_sector_data)?;
 
         // Parse boot sector
-        let boot_sector = unsafe {
-            mem::transmute::<[u8; 512], Fat32BootSector>(boot_sector_data)
-        };
+        let boot_sector = unsafe { mem::transmute::<[u8; 512], Fat32BootSector>(boot_sector_data) };
 
         // Validate boot sector
         if boot_sector.signature != 0xAA55 {
@@ -283,8 +281,9 @@ impl Fat32FileSystem {
             return Err(Fat32Error::UnsupportedSectorSize);
         }
 
-        if boot_sector.sectors_per_cluster == 0 || 
-           (boot_sector.sectors_per_cluster & (boot_sector.sectors_per_cluster - 1)) != 0 {
+        if boot_sector.sectors_per_cluster == 0
+            || (boot_sector.sectors_per_cluster & (boot_sector.sectors_per_cluster - 1)) != 0
+        {
             return Err(Fat32Error::UnsupportedClusterSize);
         }
 
@@ -297,7 +296,7 @@ impl Fat32FileSystem {
         let fat_start_sector = boot_sector.reserved_sector_count as u32;
         let fat_size = boot_sector.fat_size_32;
         let data_start_sector = fat_start_sector + (boot_sector.num_fats as u32 * fat_size);
-        
+
         let total_sectors = if boot_sector.total_sectors_16 != 0 {
             boot_sector.total_sectors_16 as u32
         } else {
@@ -332,12 +331,12 @@ impl Fat32FileSystem {
     pub fn mount(&mut self) -> Result<(), Fat32Error> {
         // Verify we can read the root directory
         let _entries = self.read_directory(self.root_dir_cluster)?;
-        
+
         // Print filesystem information
         let uart = Uart::new();
         uart.puts("FAT32 filesystem mounted successfully!\n");
         uart.puts("Volume label: ");
-        
+
         // Convert volume label to string (removing padding spaces)
         let mut label = [0u8; 12];
         let mut len = 0;
@@ -347,7 +346,7 @@ impl Fat32FileSystem {
                 len += 1;
             }
         }
-        
+
         if len > 0 {
             for i in 0..len {
                 uart.putc(label[i]);
@@ -360,7 +359,7 @@ impl Fat32FileSystem {
         uart.puts("Cluster size: ");
         uart.put_hex(self.bytes_per_cluster as u64);
         uart.puts(" bytes\n");
-        
+
         uart.puts("Total clusters: ");
         uart.put_hex(self.cluster_count as u64);
         uart.putc(b'\n');
@@ -390,7 +389,8 @@ impl Fat32FileSystem {
         if fat_sector != self.fat_cache_sector {
             // Write cache if dirty
             if self.fat_cache_dirty {
-                self.sd_card.write_block(self.fat_cache_sector, &self.fat_cache)?;
+                self.sd_card
+                    .write_block(self.fat_cache_sector, &self.fat_cache)?;
                 self.fat_cache_dirty = false;
             }
 
@@ -424,7 +424,8 @@ impl Fat32FileSystem {
         if fat_sector != self.fat_cache_sector {
             // Write cache if dirty
             if self.fat_cache_dirty {
-                self.sd_card.write_block(self.fat_cache_sector, &self.fat_cache)?;
+                self.sd_card
+                    .write_block(self.fat_cache_sector, &self.fat_cache)?;
                 self.fat_cache_dirty = false;
             }
 
@@ -456,14 +457,15 @@ impl Fat32FileSystem {
     /// Flush FAT cache to disk
     pub fn flush_fat(&mut self) -> Result<(), Fat32Error> {
         if self.fat_cache_dirty && self.fat_cache_sector != 0xFFFFFFFF {
-            self.sd_card.write_block(self.fat_cache_sector, &self.fat_cache)?;
-            
+            self.sd_card
+                .write_block(self.fat_cache_sector, &self.fat_cache)?;
+
             // Write to backup FAT if it exists
             if self.boot_sector.num_fats > 1 {
                 let backup_sector = self.fat_cache_sector + self.boot_sector.fat_size_32;
                 self.sd_card.write_block(backup_sector, &self.fat_cache)?;
             }
-            
+
             self.fat_cache_dirty = false;
         }
         Ok(())
@@ -480,9 +482,7 @@ impl Fat32FileSystem {
         self.sd_card.read_block(sector, &mut dir_data)?;
 
         // Convert to directory entries
-        let entries = unsafe {
-            mem::transmute::<[u8; 512], [Fat32DirEntry; 16]>(dir_data)
-        };
+        let entries = unsafe { mem::transmute::<[u8; 512], [Fat32DirEntry; 16]>(dir_data) };
 
         Ok(entries)
     }
@@ -510,16 +510,16 @@ impl Fat32FileSystem {
                 }
 
                 // Skip LFN entries and volume labels for now
-                if entry.attr & ATTR_LONG_NAME == ATTR_LONG_NAME ||
-                   entry.attr & ATTR_VOLUME_ID != 0 {
+                if entry.attr & ATTR_LONG_NAME == ATTR_LONG_NAME || entry.attr & ATTR_VOLUME_ID != 0
+                {
                     continue;
                 }
 
                 let mut file_info = FileInfo::new();
-                
+
                 // Copy short name
                 file_info.short_name.copy_from_slice(&entry.name);
-                
+
                 // Convert 8.3 name to readable format
                 let mut name_len = 0;
                 for i in 0..8 {
@@ -528,7 +528,7 @@ impl Fat32FileSystem {
                         name_len += 1;
                     }
                 }
-                
+
                 // Add extension if present
                 if entry.name[8] != 0x20 {
                     file_info.name[name_len] = b'.';
@@ -542,8 +542,8 @@ impl Fat32FileSystem {
                 }
 
                 file_info.size = entry.file_size;
-                file_info.first_cluster = ((entry.first_cluster_high as u32) << 16) | 
-                                         (entry.first_cluster_low as u32);
+                file_info.first_cluster =
+                    ((entry.first_cluster_high as u32) << 16) | (entry.first_cluster_low as u32);
                 file_info.attributes = entry.attr;
                 file_info.is_directory = (entry.attr & ATTR_DIRECTORY) != 0;
                 file_info.creation_time = entry.creation_time;
@@ -587,14 +587,14 @@ impl Fat32FileSystem {
         }
 
         let files = self.list_directory()?;
-        
+
         for i in 0..files.len() {
             let file = &files[i];
             if file.is_directory {
                 let name_len = file.name.iter().position(|&x| x == 0).unwrap_or(256);
                 let name = core::str::from_utf8(&file.name[..name_len.min(dir_name.len())])
                     .map_err(|_| Fat32Error::InvalidFilename)?;
-                    
+
                 if name.eq_ignore_ascii_case(dir_name) {
                     self.current_dir_cluster = file.first_cluster;
                     return Ok(());
@@ -608,7 +608,7 @@ impl Fat32FileSystem {
     /// Read file contents
     pub fn read_file(&mut self, filename: &str) -> Result<FileContent, Fat32Error> {
         let files = self.list_directory()?;
-        
+
         // Find the file
         let mut target_file = None;
         for i in 0..files.len() {
@@ -617,7 +617,7 @@ impl Fat32FileSystem {
                 let name_len = file.name.iter().position(|&x| x == 0).unwrap_or(256);
                 let name = core::str::from_utf8(&file.name[..name_len.min(filename.len())])
                     .map_err(|_| Fat32Error::InvalidFilename)?;
-                    
+
                 if name.eq_ignore_ascii_case(filename) {
                     target_file = Some(file);
                     break;
@@ -626,15 +626,15 @@ impl Fat32FileSystem {
         }
 
         let file = target_file.ok_or(Fat32Error::FileNotFound)?;
-        
+
         if file.size == 0 {
             return Ok(FileContent::new());
         }
 
         // Calculate how many clusters we need to read
-        let bytes_per_cluster = self.bytes_per_cluster as u32;
+        let bytes_per_cluster = self.bytes_per_cluster;
         let clusters_needed = (file.size + bytes_per_cluster - 1) / bytes_per_cluster;
-        
+
         // Limit file size to prevent excessive memory usage
         if file.size > MAX_FILE_SIZE {
             return Err(Fat32Error::FileTooLarge);
@@ -651,13 +651,15 @@ impl Fat32FileSystem {
 
             // Read cluster data
             let sector = self.cluster_to_sector(current_cluster);
-            let sectors_to_read = self.sectors_per_cluster.min(
-                ((file.size - bytes_read + 511) / 512).min(self.sectors_per_cluster as u32)
-            ) as usize;
+            let sectors_to_read = self
+                .sectors_per_cluster
+                .min(((file.size - bytes_read + 511) / 512).min(self.sectors_per_cluster))
+                as usize;
 
             for sector_offset in 0..sectors_to_read {
                 let mut sector_data = [0u8; 512];
-                self.sd_card.read_block(sector + sector_offset as u32, &mut sector_data)?;
+                self.sd_card
+                    .read_block(sector + sector_offset as u32, &mut sector_data)?;
 
                 // Copy relevant bytes from this sector
                 let bytes_in_sector = if bytes_read + 512 <= file.size {
@@ -701,31 +703,31 @@ impl Fat32FileSystem {
             }
         }
         uart.putc(b'\n');
-        
+
         uart.puts("Bytes per sector: ");
         uart.put_hex(self.boot_sector.bytes_per_sector as u64);
         uart.putc(b'\n');
-        
+
         uart.puts("Sectors per cluster: ");
         uart.put_hex(self.sectors_per_cluster as u64);
         uart.putc(b'\n');
-        
+
         uart.puts("Bytes per cluster: ");
         uart.put_hex(self.bytes_per_cluster as u64);
         uart.putc(b'\n');
-        
+
         uart.puts("Total clusters: ");
         uart.put_hex(self.cluster_count as u64);
         uart.putc(b'\n');
-        
+
         uart.puts("Root directory cluster: ");
         uart.put_hex(self.root_dir_cluster as u64);
         uart.putc(b'\n');
-        
+
         uart.puts("FAT start sector: ");
         uart.put_hex(self.fat_start_sector as u64);
         uart.putc(b'\n');
-        
+
         uart.puts("Data start sector: ");
         uart.put_hex(self.data_start_sector as u64);
         uart.putc(b'\n');
@@ -735,14 +737,14 @@ impl Fat32FileSystem {
 // Helper functions for filename handling
 pub fn name_to_83(name: &str) -> [u8; 11] {
     let mut result = [0x20u8; 11]; // Fill with spaces
-    
+
     let name_bytes = name.as_bytes();
     let mut name_idx = 0;
     let mut result_idx = 0;
-    
+
     // Find extension
     let ext_pos = name_bytes.iter().rposition(|&b| b == b'.');
-    
+
     // Copy name part (up to 8 characters)
     while result_idx < 8 && name_idx < name_bytes.len() {
         if Some(name_idx) == ext_pos {
@@ -755,7 +757,7 @@ pub fn name_to_83(name: &str) -> [u8; 11] {
         }
         name_idx += 1;
     }
-    
+
     // Copy extension (up to 3 characters)
     if let Some(ext_start) = ext_pos {
         let mut ext_idx = 0;
@@ -769,14 +771,14 @@ pub fn name_to_83(name: &str) -> [u8; 11] {
             }
         }
     }
-    
+
     result
 }
 
 pub fn name_from_83(name_83: &[u8; 11]) -> [u8; 13] {
     let mut result = [0u8; 13];
     let mut idx = 0;
-    
+
     // Copy name part
     for i in 0..8 {
         if name_83[i] != 0x20 {
@@ -784,7 +786,7 @@ pub fn name_from_83(name_83: &[u8; 11]) -> [u8; 13] {
             idx += 1;
         }
     }
-    
+
     // Add extension if present
     if name_83[8] != 0x20 {
         result[idx] = b'.';
@@ -796,6 +798,6 @@ pub fn name_from_83(name_83: &[u8; 11]) -> [u8; 13] {
             }
         }
     }
-    
+
     result
 }

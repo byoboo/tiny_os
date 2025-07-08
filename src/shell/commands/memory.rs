@@ -60,7 +60,7 @@ pub fn handle_memory_allocate(uart: &Uart, memory_manager: &mut MemoryManager) {
     match memory_manager.allocate_block() {
         Some(address) => {
             uart.puts("✓ Memory block allocated at: 0x");
-            print_hex(uart, address as u32);
+            print_hex(uart, address);
             uart.puts("\r\n");
         }
         None => {

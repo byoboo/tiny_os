@@ -23,15 +23,16 @@ panic = "abort"
 lto = true
 opt-level = "s"
 
-# Test configuration for unit tests (use std for testing)
+# Test profile (currently unused in no_std embedded environment)
 [profile.test]
 panic = "unwind"  # Allow panics in tests for better error reporting
 
-# Library target for testing (hosted environment)
+# Embedded binary target
 [[bin]]
 name = "tiny_os"
 path = "src/main.rs"
 
+# Library target for modular access
 [lib]
 name = "tiny_os_lib"
 path = "src/lib.rs"

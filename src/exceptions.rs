@@ -15,6 +15,12 @@
 
 #[cfg(target_arch = "aarch64")]
 use core::arch::global_asm;
+use core::{
+    include_str,
+    mem::transmute,
+    option::Option::{self, None, Some},
+    prelude::rust_2021::*,
+};
 
 use crate::uart::Uart;
 
@@ -154,8 +160,7 @@ pub fn reset_exception_stats() {
 #[no_mangle]
 pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u32) {
     unsafe {
-        EXCEPTION_STATS
-            .record_exception(ExceptionType::Synchronous, core::mem::transmute(exc_level));
+        EXCEPTION_STATS.record_exception(ExceptionType::Synchronous, transmute(exc_level));
     }
 
     let uart = Uart::new();
@@ -210,7 +215,7 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
 #[no_mangle]
 pub extern "C" fn handle_irq_exception(_ctx: &mut ExceptionContext, exc_level: u32) {
     unsafe {
-        EXCEPTION_STATS.record_exception(ExceptionType::Irq, core::mem::transmute(exc_level));
+        EXCEPTION_STATS.record_exception(ExceptionType::Irq, transmute(exc_level));
     }
 
     // For now, just acknowledge and return
@@ -222,7 +227,7 @@ pub extern "C" fn handle_irq_exception(_ctx: &mut ExceptionContext, exc_level: u
 #[no_mangle]
 pub extern "C" fn handle_fiq_exception(_ctx: &mut ExceptionContext, exc_level: u32) {
     unsafe {
-        EXCEPTION_STATS.record_exception(ExceptionType::Fiq, core::mem::transmute(exc_level));
+        EXCEPTION_STATS.record_exception(ExceptionType::Fiq, transmute(exc_level));
     }
 
     let uart = Uart::new();

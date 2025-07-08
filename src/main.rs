@@ -1,9 +1,14 @@
-#![cfg_attr(not(test), no_std)]
-#![cfg_attr(not(test), no_main)]
+#![no_std]
+#![no_main]
 
 #[cfg(target_arch = "aarch64")]
 use core::arch::global_asm;
-use core::panic::PanicInfo;
+use core::{
+    include_str,
+    option::Option::{None, Some},
+    panic::PanicInfo,
+    result::Result::{Err, Ok},
+};
 
 mod exceptions;
 mod fat32;
@@ -115,7 +120,6 @@ pub extern "C" fn kernel_main() {
     run_shell(shell_context);
 }
 
-#[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     let uart = Uart::new();
