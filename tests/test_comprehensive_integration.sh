@@ -118,7 +118,7 @@ echo "Test 4: Basic functionality tests..."
 # Test QEMU boot to ensure everything works together
 echo "Running QEMU boot test..."
 if [ -f "tests/test_qemu_boot.sh" ]; then
-    if ./tests/test_qemu_boot.sh > /dev/null 2>&1; then
+    if ./tests/test_qemu_boot.sh; then
         echo "✓ QEMU boot test passes"
     else
         echo "✗ QEMU boot test failed"
@@ -205,7 +205,7 @@ echo
 # Test 6: QEMU boot test (ultimate integration test)
 echo "Test 6: QEMU boot integration test..."
 if [ -f "tests/test_qemu_boot.sh" ]; then
-    if ./tests/test_qemu_boot.sh > /dev/null 2>&1; then
+    if ./tests/test_qemu_boot.sh; then
         echo "✓ QEMU boot test passes - all phases integrate correctly"
     else
         echo "✗ QEMU boot test failed - integration issue"
