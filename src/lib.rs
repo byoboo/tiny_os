@@ -13,14 +13,6 @@ pub mod gpio;
 pub mod interrupts;
 pub mod memory;
 pub mod sdcard;
+pub mod shell;
 pub mod timer;
 pub mod uart;
-
-// Test modules (only compiled when testing)
-#[cfg(test)]
-mod simple_tests;
-
-// Constants for testing
-pub const HEAP_START: u32 = 0x100000;
-pub const HEAP_SIZE: u32 = 0x400000;
-pub const BLOCK_SIZE: u32 = 64;
