@@ -9,10 +9,16 @@
 // Core modules (available in no_std environments)
 pub mod drivers; // New modular driver system
 pub mod exceptions;
-pub mod fat32;
+pub mod filesystem; // New modular filesystem system
 pub mod interrupts;
 pub mod memory;
 pub mod shell;
+
+// Legacy filesystem module (for backward compatibility)
+// This re-exports types from the new modular filesystem
+pub mod fat32 {
+    pub use crate::filesystem::fat32::*;
+}
 
 // Legacy driver modules (for backward compatibility)
 // These re-export types from the new modular drivers

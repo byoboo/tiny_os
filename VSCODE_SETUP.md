@@ -1,33 +1,74 @@
-# VSCode Configuration for TinyOS
+# VSCode & Development Environment Setup for TinyOS
 
-This document explains the VSCode configuration set up for the TinyOS bare-metal operating system project, including solutions for global cargo configuration interference.
+This document explains the complete development environment setup for TinyOS, including VSCode configuration, rust-analyzer setup, and solutions for common `no_std` embedded development issues.
 
-## The Problem: Global Cargo Configuration Interference
+## The Problem: no_std Development Challenges
 
-**Why this matters**: Cargo has a configuration hierarchy where global settings in `~/.cargo/config.toml` can interfere with project-specific settings. This is particularly problematic for bare-metal projects because:
+**Why this configuration is critical**: Developing embedded `no_std` projects presents unique challenges:
 
+### 1. Global Cargo Configuration Interference
+- Global settings in `~/.cargo/config.toml` can interfere with project-specific settings
 - Global configs often assume std targets
-- They might set different default targets  
-- They could have incompatible rustflags
+- They might set different default targets or incompatible rustflags
 - rust-analyzer picks up these global settings, causing confusion
 
-## The Solution: Project Isolation
+### 2. "Can't find crate for test" Error
+In `no_std` embedded projects, rust-analyzer often shows this error because:
+- The `test` crate is part of the standard library (`std`)
+- `no_std` projects don't have access to the standard library
+- Rust-analyzer tries to analyze test code even when tests aren't compatible with the target
 
-We've configured this project to explicitly override any global cargo settings and ensure complete isolation.
+### 3. Target Architecture Complexity
+- Need explicit targeting for `aarch64-unknown-none`
+- Require custom linker scripts and memory layouts
+- Standard library features must be completely disabled
+
+## The Solution: Complete Project Isolation
+
+We've configured this project to explicitly override any global cargo settings and ensure complete isolation while eliminating common `no_std` errors.
 
 ## Configuration Files
 
-### `.vscode/settings.json`
+### `.rust-analyzer.toml` - Primary Rust-Analyzer Configuration
+```toml
+# Force embedded target and disable test compilation
+cargo.target = "aarch64-unknown-none"
+cargo.unsetTest = true  # KEY: Prevents test crate lookup error
+cargo.features = []
+
+# Disable test-related features completely
+runnables.enable = false
+lens.enable = false
+```
+
+### `.vscode/settings.json` - VSCode Integration
 - Configures rust-analyzer for the `aarch64-unknown-none` target
-- Disables features that don't work with no-std projects
-- **Forces rust-analyzer to use project-specific cargo config**
+- **Completely disables test-related analysis** to prevent errors
+- Forces rust-analyzer to use project-specific cargo config
 - Sets explicit environment variables to override global settings
 - Configures file associations for assembly and linker scripts
 
-### `.vscode/tasks.json`
-- Provides build tasks for debug and release modes
-- QEMU testing task
-- Unit testing task
+Key settings:
+```json
+{
+    "rust-analyzer.cargo.target": "aarch64-unknown-none",
+    "rust-analyzer.cargo.unsetTest": true,
+    "rust-analyzer.lens.run.enable": false,
+    "rust-analyzer.lens.debug.enable": false,
+    "rust-analyzer.cargo.runBuildScripts": false
+}
+```
+
+### `.cargo/config.toml` - Cargo Project Configuration
+- Sets default target to `aarch64-unknown-none`
+- Specifies custom linker script
+- Configures target-specific rustflags
+- Overrides any global cargo configuration
+
+### `.vscode/tasks.json` - Development Tasks
+- Build tasks for debug and release modes
+- QEMU testing task for hardware simulation
+- Validation and testing tasks
 - Clippy linting task
 
 ### `.vscode/launch.json`
@@ -60,52 +101,67 @@ We've configured this project to explicitly override any global cargo settings a
 - Ensures project isolation from global cargo settings
 - Prevents inheritance of problematic global configurations
 
-## How We Solved the Global Config Issue
+## Troubleshooting Common Issues
 
-1. **Project-level `.cargo/config.toml`**: Explicitly sets all necessary configuration
-2. **Environment variable overrides**: Forces `CARGO_BUILD_TARGET` in multiple places
-3. **rust-analyzer configuration**: Tells rust-analyzer to use project-specific settings
-4. **Workspace isolation**: Uses `.env` file to override global environment
+### "Can't find crate for test" Error
+**Status**: ✅ RESOLVED
+- **Root cause**: rust-analyzer trying to analyze test code in `no_std` environment
+- **Solution**: Comprehensive test disabling via `cargo.unsetTest = true` and related settings
+- **Result**: Error completely eliminated
 
-## Benefits
+### Global Cargo Configuration Interference  
+**Status**: ✅ RESOLVED
+- **Root cause**: Global `~/.cargo/config.toml` overriding project settings
+- **Solution**: Project-level configuration with explicit overrides
+- **Result**: Complete project isolation achieved
 
-With this configuration:
-1. **No false errors**: rust-analyzer won't show std-related errors
-2. **Proper target**: All builds use the correct bare-metal target
-3. **Clean warnings**: Appropriate allows for low-level code patterns
-4. **Global isolation**: Project settings override any global cargo configuration
-5. **Easy testing**: Run QEMU with Ctrl+Shift+P → "Tasks: Run Task" → "run-qemu"
-6. **Consistent formatting**: rustfmt configured for the project style
+### Target Architecture Issues
+**Status**: ✅ RESOLVED
+- **Root cause**: Conflicting target specifications
+- **Solution**: Explicit `aarch64-unknown-none` targeting in all config files
+- **Result**: Consistent targeting across all tools
 
-## Usage
+### Build Script Errors
+**Status**: ✅ RESOLVED
+- **Root cause**: Build scripts trying to access std library
+- **Solution**: `cargo.runBuildScripts = false` in rust-analyzer config
+- **Result**: Clean analysis without build script interference
 
-- **Build**: Use Ctrl+Shift+P → "Tasks: Run Task" → "build-debug" or "build-release"
-- **Test in QEMU**: Use "run-qemu" task
-- **Lint**: Use "clippy" task for code analysis
-- **Format**: rust-analyzer will auto-format on save
+## Development Workflow
 
-## Troubleshooting
+### Quick Start
+1. Open the project in VSCode
+2. Install recommended extensions when prompted
+3. Configuration will be automatically applied
+4. Use `Ctrl+Shift+P` → "Rust Analyzer: Restart Server" if needed
 
-If you still see VSCode problems:
+### Building and Testing
+- Use `Ctrl+Shift+P` → "Tasks: Run Task" → "Build (Debug)" or "Build (Release)"
+- For QEMU testing: "Run QEMU Test"
+- For validation: "Run TinyOS Tests"
 
-1. **Restart rust-analyzer**: Ctrl+Shift+P → "rust-analyzer: Restart server"
-2. **Reload window**: Ctrl+Shift+P → "Developer: Reload Window"
-3. **Check toolchain**: `rustup show`
-4. **Verify no global interference**: 
-   ```bash
-   cd /path/to/tinyos
-   cargo config get build.target
-   # Should show: aarch64-unknown-none
-   ```
+### Debugging
+- The project is configured for QEMU debugging
+- Use F5 to start debugging session
+- Breakpoints and step debugging work in QEMU environment
 
-## Why This Approach is Correct
+## Benefits of This Configuration
 
-**It's absolutely correct** to isolate project configuration from global settings because:
+- **Zero setup friction**: Works immediately after cloning
+- **Global config immunity**: Unaffected by user's global cargo settings  
+- **Error-free analysis**: No spurious rust-analyzer errors
+- **Optimized for embedded**: All tools configured for bare-metal development
+- **Team consistency**: Same environment for all developers
+- **CI/CD ready**: Configuration works in automated environments
 
-- **Reproducible builds**: Anyone can clone and build without environment setup
-- **Team consistency**: All developers use the same configuration
-- **CI/CD reliability**: Build servers won't be affected by global settings
-- **Security**: Prevents unexpected behavior from modified global configs
-- **Bare-metal isolation**: std-library assumptions in global configs can't interfere
+## File Overview
 
-This is considered a **best practice** for specialized projects like bare-metal OS development.
+| File | Purpose | Key Settings |
+|------|---------|--------------|
+| `.rust-analyzer.toml` | Primary rust-analyzer config | `cargo.unsetTest = true` |
+| `.vscode/settings.json` | VSCode integration | Target override, test disabling |
+| `.cargo/config.toml` | Cargo project config | Default target, linker script |
+| `.vscode/tasks.json` | Build and test tasks | QEMU integration, validation |
+| `rust-toolchain.toml` | Toolchain specification | Nightly with required components |
+
+This configuration ensures a smooth development experience for embedded Rust development with TinyOS.

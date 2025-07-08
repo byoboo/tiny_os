@@ -6,7 +6,7 @@
 //! - File reading and manipulation
 //! - Storage device information
 
-use crate::{fat32::Fat32FileSystem, sdcard::SdCard, uart::Uart};
+use crate::{filesystem::Fat32FileSystem, sdcard::SdCard, uart::Uart};
 
 /// Handle directory listing command ('d', 'D')
 pub fn handle_directory_listing(uart: &Uart, fat32_fs: &mut Option<Fat32FileSystem>) {

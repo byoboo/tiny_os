@@ -93,12 +93,34 @@ print_info "Validating code structure..."
 STRUCTURE_OK=1
 
 # Check for essential files (updated for modular architecture)
-for file in "src/main.rs" "src/boot.s" "src/memory.rs" "src/interrupts.rs" "src/lib.rs"; do
+for file in "src/main.rs" "src/boot.s" "src/interrupts.rs" "src/lib.rs"; do
     if [ ! -f "$file" ]; then
         echo "Missing file: $file"
         STRUCTURE_OK=0
     fi
 done
+
+# Check for modular memory structure
+if [ ! -d "src/memory" ]; then
+    echo "Missing modular memory directory: src/memory"
+    STRUCTURE_OK=0
+fi
+
+if [ ! -f "src/memory/mod.rs" ]; then
+    echo "Missing modular memory module: src/memory/mod.rs"
+    STRUCTURE_OK=0
+fi
+
+# Check for modular filesystem structure
+if [ ! -d "src/filesystem" ]; then
+    echo "Missing modular filesystem directory: src/filesystem"
+    STRUCTURE_OK=0
+fi
+
+if [ ! -f "src/filesystem/mod.rs" ]; then
+    echo "Missing modular filesystem module: src/filesystem/mod.rs"
+    STRUCTURE_OK=0
+fi
 
 # Check for modular driver structure
 for driver in "uart" "gpio" "timer" "sdcard"; do
@@ -139,17 +161,17 @@ print_info "Validating memory management..."
 ((TOTAL_TESTS++))
 MEMORY_OK=1
 
-if ! grep -q "MemoryManager" src/memory.rs; then
+if ! grep -q "MemoryManager" src/memory/mod.rs; then
     echo "Missing MemoryManager struct"
     MEMORY_OK=0
 fi
 
-if ! grep -q "allocate" src/memory.rs; then
+if ! grep -q "allocate" src/memory/mod.rs; then
     echo "Missing allocation function"
     MEMORY_OK=0
 fi
 
-if ! (grep -q "HEAP_START" src/memory.rs && (grep -q "HEAP_SIZE" src/memory.rs || grep -q "HEAP_SIZE" src/lib.rs)); then
+if ! (grep -q "HEAP_START" src/memory/layout.rs && (grep -q "HEAP_SIZE" src/memory/layout.rs || grep -q "HEAP_SIZE" src/lib.rs)); then
     echo "Missing heap constants"
     MEMORY_OK=0
 fi

@@ -6,8 +6,8 @@
 use core::option::Option::Some;
 
 use crate::{
-    fat32::Fat32FileSystem, gpio::Gpio, interrupts::InterruptController, memory::MemoryManager,
-    sdcard::SdCard, timer::SystemTimer, uart::Uart,
+    filesystem::Fat32FileSystem, gpio::Gpio, interrupts::InterruptController,
+    memory::MemoryManager, sdcard::SdCard, timer::SystemTimer, uart::Uart,
 };
 
 mod commands;

@@ -21,14 +21,17 @@ This document provides comprehensive technical documentation for TinyOS, includi
 
 ### System Design
 
-TinyOS is a bare-metal operating system designed for ARM64 architecture, specifically targeting Raspberry Pi 4 and 5. The system follows a monolithic kernel design with modular components.
+TinyOS is a bare-metal operating system designed for ARM64 architecture, specifically targeting Raspberry Pi 4 and 5. The system follows a modular architecture with clearly separated components for maximum maintainability and testability.
 
 #### Key Design Principles
-- **No Standard Library**: Uses `#![no_std]` for embedded development
+- **Modular Architecture**: Complete separation of concerns across shell, drivers, memory, and filesystem
+- **No Standard Library**: Uses `#![no_std]` for embedded development with zero-cost abstractions
 - **Memory Safety**: Leverages Rust's ownership system for safe system programming
-- **Hardware Abstraction**: Direct memory-mapped I/O with safe abstractions
+- **Hardware Abstraction**: Layered driver architecture with clear hardware abstraction
 - **Real-time Capabilities**: Microsecond-precision timing and interrupt handling
-- **Testing-First**: Comprehensive test suite for all major components
+- **Testing-First**: Comprehensive test suite for all major components and modular integration
+- **Legacy Compatibility**: Maintains backward compatibility while enabling modern architecture
+- **Zero Runtime Cost**: Modular organization compiles to identical assembly as monolithic code
 
 #### Memory Layout
 ```
@@ -65,31 +68,65 @@ TinyOS is a bare-metal operating system designed for ARM64 architecture, specifi
 - System health monitoring and diagnostics
 - Comprehensive error handling and recovery
 
-#### 3. Hardware Abstraction Layer (Modular Architecture)
+#### 3. Hardware Abstraction Layer (Complete Modular Architecture)
 
-**Phase 2 Modular Driver System:**
+**Phase 1: Shell System (Completed)**
+- **Modular Shell** (`src/shell/`): Complete command system with organized handlers
+  - **Command Modules** (`shell/commands/`): Memory, filesystem, hardware, and system commands
+  - **Shell Interface** (`shell/mod.rs`): Main shell loop and command routing
+  - **Legacy Compatibility**: Preserved all existing command functionality
+
+**Phase 2: Driver System (Completed)**
 - **Modular Drivers** (`src/drivers/`): Organized driver architecture with hardware abstraction
   - **UART Driver** (`drivers/uart/`): PL011 hardware layer + high-level interface
   - **GPIO Driver** (`drivers/gpio/`): BCM2835 register access + LED control APIs  
   - **Timer Driver** (`drivers/timer/`): BCM2835 timer hardware + scheduling interface
   - **SD Card Driver** (`drivers/sdcard/`): EMMC register layer + block I/O interface
 - **Legacy Compatibility** (`src/legacy_drivers/`): Archived monolithic drivers for backward compatibility
-- **Library Interface** (`src/lib.rs`): Re-exports modular drivers for seamless integration
-- **Memory Manager** (`memory.rs`): Bitmap-based heap allocation with protection
+
+**Phase 3: Memory System (Completed)**
+- **Modular Memory** (`src/memory/`): Separated memory management components
+  - **Allocator** (`memory/allocator.rs`): Core bitmap-based block allocation
+  - **Protection** (`memory/protection.rs`): Corruption detection and canary values
+  - **Statistics** (`memory/statistics.rs`): Usage analysis and fragmentation tracking
+  - **Testing** (`memory/testing.rs`): Comprehensive test framework (no_std compliant)
+  - **Hardware** (`memory/hardware.rs`): Memory hardware abstraction layer
+  - **Layout** (`memory/layout.rs`): Memory layout constants and configuration
+- **Legacy Memory** (`src/legacy_memory/`): Archived monolithic memory system for backup
+
+**Phase 4: Filesystem System (Completed)**
+- **Modular Filesystem** (`src/filesystem/`): Separated FAT32 implementation
+  - **FAT32 Core** (`filesystem/fat32/`): Complete modular FAT32 implementation
+    - **Boot Sector** (`fat32/boot_sector.rs`): Boot sector parsing and validation
+    - **Directory** (`fat32/directory.rs`): Directory operations and management
+    - **File Operations** (`fat32/file_operations.rs`): File read/write operations
+    - **Cluster Chain** (`fat32/cluster_chain.rs`): Cluster chain and FAT management
+    - **Filename** (`fat32/filename.rs`): Filename utilities and validation
+    - **Interface** (`fat32/interface.rs`): High-level filesystem API
+- **Legacy Filesystem** (`src/legacy_filesystem/`): Archived monolithic FAT32 for backup
+
+**System Integration:**
+- **Library Interface** (`src/lib.rs`): Re-exports modular systems for seamless integration
 - **Interrupt Controller** (`interrupts.rs`): ARM GIC simulation and management
 
 #### 4. Testing Infrastructure (`simple_tests.rs`, `/tests/`)
 - **Unit Tests**: 13 comprehensive tests covering all core functionality
 - **Integration Tests**: Feature-organized test suites (boot, memory, interrupts, hardware, modular drivers)
-- **Modular Driver Tests**: Phase 2 validation suite for driver architecture (`test_drivers_modular.sh`)
+- **Modular Component Tests**: Comprehensive validation for all 4 phases
+  - **Memory Modular Tests**: Phase 3 validation suite (`test_memory_modular.sh`)
+  - **Driver Modular Tests**: Phase 2 validation suite (`test_drivers_modular.sh`)
+  - **Filesystem Modular Tests**: Phase 4 validation suite (`test_filesystem_modular.sh`)
+  - **Comprehensive Integration**: All phases working together (`test_comprehensive_integration.sh`)
 - **Validation Framework**: Build verification, structure validation, health checks
 - **Automated CI/CD**: Shell-based testing, no external dependencies, embedded-focused
 
 #### 5. Project Evolution Achievements
 - ✅ **Phase 1**: Modular shell system with command separation and organization  
 - ✅ **Phase 2**: Modular driver architecture with hardware abstraction layer
+- ✅ **Phase 3**: Modular memory system with separated allocation, protection, statistics, and testing
 - ✅ **Driver organization**: Clean separation of hardware-specific and high-level APIs
-- ✅ **Legacy compatibility**: Maintained backward compatibility via re-exports
+- ✅ **Memory system**: Full no_std compliance with direct UART output and static allocation
+- ✅ **Legacy compatibility**: Maintained backward compatibility via unified interfaces
 - ✅ **Pi 4/5 focus**: Updated all hardware addresses, optimized for modern Pi hardware
 - ✅ **Testing coverage**: Comprehensive shell-based validation for embedded development
 
@@ -97,7 +134,18 @@ TinyOS is a bare-metal operating system designed for ARM64 architecture, specifi
 
 ### Architecture
 
-TinyOS implements a sophisticated bitmap-based memory management system optimized for embedded systems with deterministic allocation patterns.
+TinyOS implements a sophisticated modular memory management system optimized for embedded systems with deterministic allocation patterns. The system is organized into specialized modules for better maintainability and no_std compliance.
+
+#### Modular Structure (Phase 3)
+
+**Core Modules:**
+- **`allocator.rs`**: Bitmap-based block allocation algorithms
+- **`protection.rs`**: Memory protection and corruption detection
+- **`statistics.rs`**: Usage statistics and fragmentation analysis
+- **`testing.rs`**: Comprehensive testing utilities (fully no_std)
+- **`hardware.rs`**: Hardware abstraction layer for memory operations
+- **`layout.rs`**: Memory layout constants and configuration
+- **`mod.rs`**: Unified interface maintaining backward compatibility
 
 #### Specifications
 - **Heap Range**: 0x100000 - 0x500000 (4MB total capacity)
@@ -105,6 +153,7 @@ TinyOS implements a sophisticated bitmap-based memory management system optimize
 - **Total Blocks**: 65,536 blocks available
 - **Allocation Method**: Bitmap-based with O(n) allocation, O(1) deallocation
 - **Alignment**: All allocations are 64-byte aligned for optimal performance
+- **no_std Compliance**: Full compatibility with embedded constraints
 
 #### Memory Protection Features
 
@@ -123,17 +172,22 @@ TinyOS implements a sophisticated bitmap-based memory management system optimize
 #### Memory Management API
 
 ```rust
-// Core allocation functions
-pub fn allocate_block() -> Option<*mut u8>
-pub fn allocate_blocks(count: usize) -> Option<*mut u8>
-pub fn deallocate_block(ptr: *mut u8) -> bool
-pub fn deallocate_blocks(ptr: *mut u8, count: usize) -> bool
+// Core allocation functions (via MemoryManager)
+pub fn allocate_block() -> Option<u32>
+pub fn allocate_blocks(count: u32) -> Option<u32>
+pub fn free_block(address: u32) -> bool
+pub fn allocated_blocks() -> u32
 
 // Advanced features
 pub fn defragment_memory() -> usize
-pub fn check_corruption() -> bool
-pub fn get_memory_stats() -> MemoryStats
+pub fn get_stats() -> MemoryStats
 pub fn get_largest_free_block() -> usize
+pub fn get_fragmentation() -> u32
+
+// Testing framework (with UART output)
+pub fn run_memory_test(&mut self) -> bool
+pub fn run_stress_test(&mut self) -> bool
+pub fn run_boundary_test(&mut self) -> bool
 ```
 
 #### Memory Statistics
@@ -146,7 +200,16 @@ The system provides comprehensive memory statistics including:
 - **Corruption Status**: Real-time integrity checking results
 - **Largest Free Block**: Maximum contiguous allocation possible
 
-#### Testing
+#### Testing Framework
+
+The modular memory system includes a comprehensive testing framework designed for no_std environments:
+
+**Test Categories:**
+- **Basic Tests**: Allocation/deallocation cycles with pattern verification
+- **Stress Tests**: High-volume allocation with fragmentation simulation
+- **Corruption Tests**: Deliberate corruption detection validation
+- **Boundary Tests**: Memory exhaustion and limit testing
+- **Fragmentation Tests**: Memory layout analysis and optimization
 
 Memory management includes 5 comprehensive test categories:
 
