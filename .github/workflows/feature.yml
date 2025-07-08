@@ -62,7 +62,7 @@ jobs:
       run: |
         echo "🧹 Checking code quality..."
         cargo fmt -- --check || echo "⚠️ Code formatting issues found"
-        cargo clippy --target aarch64-unknown-none -- -D warnings || echo "⚠️ Clippy warnings found"
+        cargo clippy --target aarch64-unknown-none -- -W clippy::all || echo "⚠️ Clippy warnings found"
     
     - name: Feature-specific validation
       run: |

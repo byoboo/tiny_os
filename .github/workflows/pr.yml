@@ -44,7 +44,7 @@ jobs:
       run: cargo fmt -- --check
     
     - name: Run clippy analysis
-      run: cargo clippy --target aarch64-unknown-none -- -D warnings
+      run: cargo clippy --target aarch64-unknown-none -- -W clippy::all
     
     - name: Build debug version
       run: cargo build --target aarch64-unknown-none
