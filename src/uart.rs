@@ -119,7 +119,8 @@ impl Uart {
                     8 | 127 => {
                         if pos > 0 {
                             pos -= 1;
-                            self.puts("\x08 \x08"); // Backspace, space, backspace
+                            self.puts("\x08 \x08"); // Backspace, space,
+                                                    // backspace
                         }
                     }
                     // Ctrl+C - cancel input

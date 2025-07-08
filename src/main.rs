@@ -44,7 +44,7 @@ pub extern "C" fn kernel_main() {
 
     // Initialize GPIO
     let gpio = Gpio::new();
-    
+
     // Configure LED pin (GPIO 42 on Raspberry Pi)
     gpio.set_function(42, GpioFunction::Output);
     uart.puts("✓ GPIO initialized (LED on pin 42)\r\n");
@@ -66,7 +66,7 @@ pub extern "C" fn kernel_main() {
     uart.puts("Initializing SD Card...\r\n");
     let mut sdcard = SdCard::new();
     let mut fat32_fs: Option<Fat32FileSystem> = None;
-    
+
     let _sd_init_success = match sdcard.init() {
         Ok(()) => {
             uart.puts("SD Card initialized successfully!\r\n");
@@ -81,7 +81,7 @@ pub extern "C" fn kernel_main() {
                 uart.put_hex(info.rca as u64);
                 uart.puts("\r\n");
             }
-            
+
             uart.puts("✓ SD Card ready (use 'n' command to mount FAT32)\r\n");
             true
         }
@@ -100,10 +100,10 @@ pub extern "C" fn kernel_main() {
     // Main system loop
     let mut led_state = false;
     let start_time = timer.get_time();
-    
+
     loop {
         let current_time = timer.get_time();
-        
+
         // Check for UART input
         if let Some(ch) = uart.getc() {
             match ch {
@@ -335,16 +335,21 @@ pub extern "C" fn kernel_main() {
                                     uart.puts("--------------------------------\r\n");
                                     for i in 0..files.len() {
                                         let file = files.get(i).unwrap();
-                                        
+
                                         // Print filename (up to 12 chars)
-                                        let name_len = file.name.iter().position(|&x| x == 0).unwrap_or(256).min(12);
+                                        let name_len = file
+                                            .name
+                                            .iter()
+                                            .position(|&x| x == 0)
+                                            .unwrap_or(256)
+                                            .min(12);
                                         for j in 0..name_len {
                                             uart.putc(file.name[j]);
                                         }
                                         for _ in name_len..13 {
                                             uart.putc(b' ');
                                         }
-                                        
+
                                         // Print size
                                         if file.is_directory {
                                             uart.puts("<DIR>    ");
@@ -352,7 +357,7 @@ pub extern "C" fn kernel_main() {
                                             print_number(&uart, file.size);
                                             uart.puts("     ");
                                         }
-                                        
+
                                         // Print type
                                         if file.is_directory {
                                             uart.puts("Directory");
@@ -382,24 +387,20 @@ pub extern "C" fn kernel_main() {
                         // Create a new SD card instance for the filesystem
                         let mut fs_sdcard = SdCard::new();
                         match fs_sdcard.init() {
-                            Ok(()) => {
-                                match Fat32FileSystem::new(fs_sdcard) {
-                                    Ok(mut fs) => {
-                                        match fs.mount() {
-                                            Ok(()) => {
-                                                uart.puts("✓ FAT32 filesystem mounted successfully!\r\n");
-                                                fat32_fs = Some(fs);
-                                            }
-                                            Err(_) => {
-                                                uart.puts("Failed to mount FAT32 filesystem\r\n");
-                                            }
-                                        }
+                            Ok(()) => match Fat32FileSystem::new(fs_sdcard) {
+                                Ok(mut fs) => match fs.mount() {
+                                    Ok(()) => {
+                                        uart.puts("✓ FAT32 filesystem mounted successfully!\r\n");
+                                        fat32_fs = Some(fs);
                                     }
                                     Err(_) => {
-                                        uart.puts("No FAT32 filesystem found\r\n");
+                                        uart.puts("Failed to mount FAT32 filesystem\r\n");
                                     }
+                                },
+                                Err(_) => {
+                                    uart.puts("No FAT32 filesystem found\r\n");
                                 }
-                            }
+                            },
                             Err(_) => {
                                 uart.puts("Failed to initialize SD card for filesystem\r\n");
                             }

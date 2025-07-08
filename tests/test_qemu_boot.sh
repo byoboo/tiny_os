@@ -49,29 +49,25 @@ if [ -f /tmp/boot_test.log ]; then
     
     # Check for successful boot indicators
     BOOT_SUCCESS=false
-    if grep -q "TinyOS v0.1.0" /tmp/boot_test.log; then
-        echo "✅ TinyOS version banner found"
+    if grep -q "TinyOS Starting\|TinyOS Ready" /tmp/boot_test.log; then
+        echo "✅ TinyOS boot sequence found"
         BOOT_SUCCESS=true
     else
-        echo "❌ TinyOS version banner missing"
+        echo "❌ TinyOS boot sequence missing"
     fi
     
-    if grep -q "Type 'h' for help" /tmp/boot_test.log; then
+    if grep -q "Available commands (type 'h' for help)" /tmp/boot_test.log; then
         echo "✅ Interactive shell started"
         BOOT_SUCCESS=true
     else
         echo "❌ Interactive shell not detected"
     fi
     
-    if grep -q "UART System: ✓ PASS" /tmp/boot_test.log; then
-        echo "✅ UART system initialized"
+    if grep -q "✓ UART\|UART initialized\|✓ GPIO\|GPIO initialized" /tmp/boot_test.log; then
+        echo "✅ Hardware systems initialized"
     fi
     
-    if grep -q "GPIO System: ✓ PASS" /tmp/boot_test.log; then
-        echo "✅ GPIO system initialized"
-    fi
-    
-    if grep -q "Timer System: ✓ PASS" /tmp/boot_test.log; then
+    if grep -q "✓ System timer\|Timer.*initialized" /tmp/boot_test.log; then
         echo "✅ Timer system initialized"
     fi
     

@@ -101,8 +101,8 @@ for file in "src/main.rs" "src/boot.s" "src/memory.rs" "src/uart.rs" "src/gpio.r
 done
 
 # Check for essential functions in main.rs
-if ! grep -q "_start_rust" src/main.rs; then
-    echo "Missing _start_rust function"
+if ! grep -q "kernel_main" src/main.rs; then
+    echo "Missing kernel_main function"
     STRUCTURE_OK=0
 fi
 
@@ -111,7 +111,7 @@ if ! grep -q "panic_handler" src/main.rs; then
     STRUCTURE_OK=0
 fi
 
-print_status $STRUCTURE_OK "Code structure validation"
+print_status $((1 - STRUCTURE_OK)) "Code structure validation"
 [ $STRUCTURE_OK -eq 1 ] && ((PASSED_TESTS++))
 
 # Test 7: Memory management validation
@@ -129,12 +129,12 @@ if ! grep -q "allocate" src/memory.rs; then
     MEMORY_OK=0
 fi
 
-if ! (grep -q "HEAP_START" src/memory.rs && grep -q "HEAP_SIZE" src/memory.rs); then
+if ! (grep -q "HEAP_START" src/memory.rs && (grep -q "HEAP_SIZE" src/memory.rs || grep -q "HEAP_SIZE" src/lib.rs)); then
     echo "Missing heap constants"
     MEMORY_OK=0
 fi
 
-print_status $MEMORY_OK "Memory management validation"
+print_status $((1 - MEMORY_OK)) "Memory management validation"
 [ $MEMORY_OK -eq 1 ] && ((PASSED_TESTS++))
 
 # Test 8: UART driver validation
@@ -152,7 +152,7 @@ if ! (grep -q "puts" src/uart.rs || grep -q "putc" src/uart.rs); then
     UART_OK=0
 fi
 
-print_status $UART_OK "UART driver validation"
+print_status $((1 - UART_OK)) "UART driver validation"
 [ $UART_OK -eq 1 ] && ((PASSED_TESTS++))
 
 # Test 9: GPIO driver validation
@@ -170,7 +170,7 @@ if ! (grep -q "set_high\|set_low\|set_function" src/gpio.rs); then
     GPIO_OK=0
 fi
 
-print_status $GPIO_OK "GPIO driver validation"
+print_status $((1 - GPIO_OK)) "GPIO driver validation"
 [ $GPIO_OK -eq 1 ] && ((PASSED_TESTS++))
 
 # Test 10: Interrupt system validation
@@ -188,7 +188,7 @@ if ! grep -q "enable_interrupt" src/interrupts.rs; then
     INTERRUPT_OK=0
 fi
 
-print_status $INTERRUPT_OK "Interrupt system validation"
+print_status $((1 - INTERRUPT_OK)) "Interrupt system validation"
 [ $INTERRUPT_OK -eq 1 ] && ((PASSED_TESTS++))
 
 echo

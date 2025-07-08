@@ -47,7 +47,7 @@ sleep 5
 kill $QEMU_PID 2>/dev/null
 wait $QEMU_PID 2>/dev/null
 
-if grep -q "Interrupt Controller initialized" /tmp/interrupt_boot_test.log; then
+if grep -q "✓ Interrupt controller initialized\|Interrupt controller initialized" /tmp/interrupt_boot_test.log; then
     print_success "Interrupt controller initialization verified"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
@@ -77,7 +77,7 @@ fi
 
 # Test 4: Timer interrupt setup
 print_status "Test 4: Timer interrupt verification"
-if grep -q "Timer" /tmp/interrupt_boot_test.log; then
+if grep -q "✓ System timer\|Timer.*initialized" /tmp/interrupt_boot_test.log; then
     print_success "Timer system detected"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
