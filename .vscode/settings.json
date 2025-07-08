@@ -14,9 +14,16 @@
         "clippy::all"
     ],
     "rust-analyzer.procMacro.enable": false,
+    "rust-analyzer.imports.granularity.group": "module",
+    "rust-analyzer.cargo.buildScripts.enable": false,
+    "rust-analyzer.diagnostics.experimental.enable": false,
     "rust-analyzer.diagnostics.disabled": [
         "unresolved-proc-macro",
-        "macro-error"
+        "macro-error",
+        "unresolved-import",
+        "no-such-crate",
+        "missing-unsafe",
+        "inactive-code"
     ],
     "rust-analyzer.completion.callable.snippets": "none",
     "rust-analyzer.hover.actions.enable": false,
@@ -24,8 +31,15 @@
     "rust-analyzer.inlayHints.enable": false,
     // Force rust-analyzer to use project-specific cargo config
     "rust-analyzer.server.extraEnv": {
-        "CARGO_BUILD_TARGET": "aarch64-unknown-none"
+        "CARGO_BUILD_TARGET": "aarch64-unknown-none",
+        "RUSTFLAGS": "-C link-arg=-Tlinker.ld"
     },
+    // Disable test-related features completely to prevent "can't find crate for test" errors
+    "rust-analyzer.cargo.unsetTest": true,
+    "rust-analyzer.runnables.command": null,
+    "rust-analyzer.lens.run.enable": false,
+    "rust-analyzer.lens.debug.enable": false,
+    "rust-analyzer.cargo.runBuildScripts": false,
     // Explicit workspace override to ignore global cargo settings
     "rust-analyzer.cargo.configPath": ".cargo/config.toml",
     "files.associations": {

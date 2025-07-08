@@ -23,10 +23,6 @@ panic = "abort"
 lto = true
 opt-level = "s"
 
-# Test profile (currently unused in no_std embedded environment)
-[profile.test]
-panic = "unwind"  # Allow panics in tests for better error reporting
-
 # Embedded binary target
 [[bin]]
 name = "tiny_os"

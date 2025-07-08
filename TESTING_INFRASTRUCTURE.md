@@ -17,6 +17,9 @@ Traditional Rust unit tests require the standard library (`std`), which is incom
 - Validating real-world system behavior
 - Enabling interactive debugging and exploration
 - Supporting both automated and manual test scenarios
+- **Avoiding "can't find crate for test" errors** - Common issue in `no_std` projects resolved
+
+> 📋 **Note**: The "can't find crate for test" error has been completely resolved through comprehensive rust-analyzer configuration. See `RUST_ANALYZER_CONFIG.md` for details.
 
 ## Main Test Runner
 
