@@ -3,11 +3,7 @@
 //! This module provides comprehensive memory usage statistics, fragmentation
 //! analysis, and performance metrics for the memory management system.
 
-use super::{
-    allocator::BlockAllocator,
-    protection::CorruptionDetection,
-    layout::BLOCK_SIZE,
-};
+use super::{allocator::BlockAllocator, layout::BLOCK_SIZE, protection::CorruptionDetection};
 
 /// Memory usage statistics
 #[derive(Debug, Clone)]
@@ -40,7 +36,7 @@ impl<'a> MemoryStatistics<'a> {
     /// Get comprehensive memory statistics
     pub fn get_stats(&self) -> MemoryStats {
         let config = self.allocator.config();
-        
+
         MemoryStats {
             total_blocks: self.allocator.total_blocks(),
             allocated_blocks: self.allocator.allocated_blocks(),
@@ -77,9 +73,10 @@ impl<'a> MemoryStatistics<'a> {
     }
 
     /// Calculate memory fragmentation percentage (0-100)
-    /// 
-    /// Fragmentation is calculated as the difference between the total free space
-    /// and the largest contiguous free block, expressed as a percentage.
+    ///
+    /// Fragmentation is calculated as the difference between the total free
+    /// space and the largest contiguous free block, expressed as a
+    /// percentage.
     pub fn get_fragmentation(&self) -> u32 {
         let largest_free_blocks = self.get_largest_free_block() / BLOCK_SIZE;
         let total_free_blocks = self.allocator.free_blocks();
@@ -132,7 +129,7 @@ impl<'a> MemoryStatistics<'a> {
         let total_segments = free_segments.len() as u32;
         let largest_segment = free_segments.iter().max().copied().unwrap_or(0);
         let smallest_segment = free_segments.iter().min().copied().unwrap_or(0);
-        
+
         let average_segment = if total_segments > 0 {
             free_segments.iter().sum::<u32>() / total_segments
         } else {
@@ -246,12 +243,13 @@ impl<'a> MemoryDefragmenter<'a> {
     }
 
     /// Perform simple defragmentation
-    /// 
-    /// This is a simplified defragmentation that just updates the free block hint.
-    /// In a more advanced system, we'd actually move allocated blocks.
+    ///
+    /// This is a simplified defragmentation that just updates the free block
+    /// hint. In a more advanced system, we'd actually move allocated
+    /// blocks.
     pub fn defragment(&mut self) -> DefragmentationResult {
         let stats_before = MemoryStatistics::new(self.allocator).get_stats();
-        
+
         // Find the first free block for our next_free_block hint
         for i in 0..self.allocator.total_blocks() {
             if !self.allocator.is_block_used(i) {
@@ -293,10 +291,11 @@ struct Vec<T> {
 impl<T> Vec<T> {
     fn new() -> Self {
         Self {
-            data: [None, None, None, None, None, None, None, None,
-                   None, None, None, None, None, None, None, None,
-                   None, None, None, None, None, None, None, None,
-                   None, None, None, None, None, None, None, None],
+            data: [
+                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None, None, None,
+            ],
             len: 0,
         }
     }

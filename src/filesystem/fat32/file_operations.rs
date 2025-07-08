@@ -1,13 +1,13 @@
+use super::{
+    boot_sector::FilesystemLayout, cluster_chain::ClusterChain, Fat32Error, FileContent, FileInfo,
+    MAX_FILE_SIZE,
+};
 /// FAT32 File Operations
 ///
-/// This module handles FAT32 file read/write operations including reading file content,
-/// following cluster chains, and managing file data.
+/// This module handles FAT32 file read/write operations including reading file
+/// content, following cluster chains, and managing file data.
 /// It provides no_std-compliant file operations for embedded environments.
-
 use crate::sdcard::SdCard;
-use super::{Fat32Error, FileContent, FileInfo, MAX_FILE_SIZE};
-use super::boot_sector::FilesystemLayout;
-use super::cluster_chain::ClusterChain;
 
 /// File operations manager for FAT32
 pub struct FileOperations {
@@ -41,8 +41,8 @@ impl FileOperations {
         let mut bytes_read = 0;
 
         // Calculate clusters needed
-        let clusters_needed = (file_info.size + self.layout.bytes_per_cluster - 1) 
-            / self.layout.bytes_per_cluster;
+        let clusters_needed =
+            (file_info.size + self.layout.bytes_per_cluster - 1) / self.layout.bytes_per_cluster;
 
         for _ in 0..clusters_needed {
             if !self.layout.is_valid_cluster(current_cluster) {
@@ -58,7 +58,7 @@ impl FileOperations {
             )?;
 
             bytes_read += bytes_in_cluster;
-            
+
             if bytes_read >= file_info.size {
                 break;
             }
@@ -83,7 +83,9 @@ impl FileOperations {
         bytes_remaining: u32,
     ) -> Result<u32, Fat32Error> {
         let sector = self.layout.cluster_to_sector(cluster);
-        let sectors_to_read = self.layout.sectors_per_cluster
+        let sectors_to_read = self
+            .layout
+            .sectors_per_cluster
             .min((bytes_remaining + 511) / 512);
 
         let mut bytes_read = 0;
@@ -105,7 +107,7 @@ impl FileOperations {
             }
 
             bytes_read += bytes_in_sector;
-            
+
             if bytes_read >= bytes_remaining {
                 break;
             }
@@ -133,8 +135,8 @@ impl FileOperations {
         let mut bytes_read = 0;
 
         // Calculate clusters needed
-        let clusters_needed = (file_info.size + self.layout.bytes_per_cluster - 1) 
-            / self.layout.bytes_per_cluster;
+        let clusters_needed =
+            (file_info.size + self.layout.bytes_per_cluster - 1) / self.layout.bytes_per_cluster;
 
         for _ in 0..clusters_needed {
             if !self.layout.is_valid_cluster(current_cluster) {
@@ -150,7 +152,7 @@ impl FileOperations {
             )?;
 
             bytes_read += bytes_in_cluster;
-            
+
             if bytes_read >= file_info.size {
                 break;
             }
@@ -178,7 +180,9 @@ impl FileOperations {
         F: FnMut(&[u8]) -> Result<(), Fat32Error>,
     {
         let sector = self.layout.cluster_to_sector(cluster);
-        let sectors_to_read = self.layout.sectors_per_cluster
+        let sectors_to_read = self
+            .layout
+            .sectors_per_cluster
             .min((bytes_remaining + 511) / 512);
 
         let mut bytes_read = 0;
@@ -198,7 +202,7 @@ impl FileOperations {
             chunk_handler(&sector_data[..bytes_in_sector as usize])?;
 
             bytes_read += bytes_in_sector;
-            
+
             if bytes_read >= bytes_remaining {
                 break;
             }
@@ -215,7 +219,7 @@ impl FileOperations {
         file_info: &FileInfo,
     ) -> Result<FileValidationResult, Fat32Error> {
         let mut result = FileValidationResult::new();
-        
+
         if file_info.size == 0 {
             result.is_valid = true;
             return Ok(result);
@@ -233,11 +237,11 @@ impl FileOperations {
             }
 
             result.clusters_validated += 1;
-            
+
             // Validate cluster exists on disk
             let sector = self.layout.cluster_to_sector(current_cluster);
             let mut sector_data = [0u8; 512];
-            
+
             // Try to read first sector of cluster
             if sd_card.read_block(sector, &mut sector_data).is_err() {
                 result.is_valid = false;
@@ -246,7 +250,9 @@ impl FileOperations {
             }
 
             // Count bytes in this cluster
-            let bytes_in_cluster = self.layout.bytes_per_cluster
+            let bytes_in_cluster = self
+                .layout
+                .bytes_per_cluster
                 .min(file_info.size - bytes_validated);
             bytes_validated += bytes_in_cluster;
 
@@ -279,7 +285,7 @@ impl FileOperations {
         file_info: &FileInfo,
     ) -> Result<(), Fat32Error> {
         let uart = crate::uart::Uart::new();
-        
+
         uart.puts("=== File Content ===\n");
         uart.puts("Size: ");
         uart.put_hex(file_info.size as u64);
@@ -321,7 +327,7 @@ impl FileOperations {
         file_info: &FileInfo,
     ) -> Result<(), Fat32Error> {
         let uart = crate::uart::Uart::new();
-        
+
         uart.puts("=== File Hex Dump ===\n");
         uart.puts("Size: ");
         uart.put_hex(file_info.size as u64);
@@ -333,7 +339,7 @@ impl FileOperations {
         }
 
         let mut offset = 0;
-        
+
         // Read file in chunks and print hex
         self.read_file_chunked(sd_card, cluster_chain, file_info, |chunk| {
             for &byte in chunk {
@@ -341,14 +347,14 @@ impl FileOperations {
                     uart.put_hex(offset as u64);
                     uart.puts(": ");
                 }
-                
+
                 uart.put_hex(byte as u64);
                 uart.putc(b' ');
-                
+
                 if offset % 16 == 15 {
                     uart.putc(b'\n');
                 }
-                
+
                 offset += 1;
             }
             Ok(())
@@ -385,7 +391,7 @@ impl FileValidationResult {
     pub fn print_result(&self) {
         let uart = crate::uart::Uart::new();
         uart.puts("=== File Validation Result ===\n");
-        
+
         if self.is_valid {
             uart.puts("File is valid\n");
         } else {

@@ -1,19 +1,21 @@
+use super::{
+    boot_sector::FilesystemLayout, Fat32Error, CLUSTER_BAD, CLUSTER_EOC_MAX, CLUSTER_EOC_MIN,
+    CLUSTER_FREE,
+};
 /// FAT32 Cluster Chain Management
 ///
-/// This module handles FAT32 cluster chain operations including reading and writing
-/// FAT entries, following cluster chains, and managing cluster allocation.
-/// It provides no_std-compliant cluster operations for embedded environments.
-
+/// This module handles FAT32 cluster chain operations including reading and
+/// writing FAT entries, following cluster chains, and managing cluster
+/// allocation. It provides no_std-compliant cluster operations for embedded
+/// environments.
 use crate::sdcard::SdCard;
-use super::{Fat32Error, CLUSTER_EOC_MIN, CLUSTER_EOC_MAX, CLUSTER_FREE, CLUSTER_BAD};
-use super::boot_sector::FilesystemLayout;
 
 /// FAT32 cluster chain manager
 pub struct ClusterChain {
     layout: FilesystemLayout,
-    fat_cache: [u8; 512],     // Cache for FAT sector
-    fat_cache_sector: u32,    // Cached FAT sector number
-    fat_cache_dirty: bool,    // FAT cache needs writing
+    fat_cache: [u8; 512],  // Cache for FAT sector
+    fat_cache_sector: u32, // Cached FAT sector number
+    fat_cache_dirty: bool, // FAT cache needs writing
 }
 
 impl ClusterChain {
@@ -175,7 +177,11 @@ impl ClusterChain {
     }
 
     /// Load FAT sector from SD card
-    pub fn load_fat_sector_from_sd(&mut self, sd_card: &mut SdCard, fat_sector: u32) -> Result<(), Fat32Error> {
+    pub fn load_fat_sector_from_sd(
+        &mut self,
+        sd_card: &mut SdCard,
+        fat_sector: u32,
+    ) -> Result<(), Fat32Error> {
         if fat_sector != self.fat_cache_sector {
             // Write cache if dirty
             if self.fat_cache_dirty {
@@ -197,7 +203,7 @@ impl ClusterChain {
         // Scan all clusters to count free/used
         for cluster in 2..(self.layout.cluster_count + 2) {
             let next_cluster = self.get_next_cluster(cluster)?;
-            
+
             if self.is_free_cluster(next_cluster) {
                 stats.free_clusters += 1;
             } else if self.is_bad_cluster(next_cluster) {
@@ -314,7 +320,7 @@ impl ClusterStats {
     pub fn print_stats(&self) {
         let uart = crate::uart::Uart::new();
         uart.puts("=== Cluster Statistics ===\n");
-        
+
         uart.puts("Total clusters: ");
         uart.put_hex(self.total_clusters() as u64);
         uart.putc(b'\n');

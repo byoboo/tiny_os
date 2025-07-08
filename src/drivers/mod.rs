@@ -24,29 +24,29 @@ pub mod traits {
     pub trait Initialize {
         /// Initialize the driver with default settings
         fn init(&mut self) -> Result<(), DriverError>;
-        
+
         /// Initialize the driver with custom configuration
         fn init_with_config(&mut self, config: &Self::Config) -> Result<(), DriverError>
         where
             Self: Sized,
             Self::Config: Sized;
-        
+
         /// Associated configuration type
         type Config;
     }
-    
+
     /// Trait for drivers that support resetting
     pub trait Reset {
         /// Reset the driver to its initial state
         fn reset(&mut self) -> Result<(), DriverError>;
     }
-    
+
     /// Trait for drivers that can report their status
     pub trait Status {
         /// Get the current driver status
         fn status(&self) -> DriverStatus;
     }
-    
+
     /// Common driver error types
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum DriverError {
@@ -63,7 +63,7 @@ pub mod traits {
         /// Invalid input parameters
         InvalidInput,
     }
-    
+
     /// Common driver status types
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum DriverStatus {
@@ -87,27 +87,27 @@ pub mod config {
         const TIMER_BASE: u32;
         const EMMC_BASE: u32;
     }
-    
+
     /// Raspberry Pi 4 configuration
     pub struct RaspberryPi4;
-    
+
     impl HardwareVersion for RaspberryPi4 {
         const GPIO_BASE: u32 = 0xFE200000;
         const UART_BASE: u32 = 0xFE201000;
         const TIMER_BASE: u32 = 0xFE003000;
         const EMMC_BASE: u32 = 0xFE300000;
     }
-    
+
     /// Raspberry Pi 5 configuration (same as Pi 4 for most peripherals)
     pub struct RaspberryPi5;
-    
+
     impl HardwareVersion for RaspberryPi5 {
         const GPIO_BASE: u32 = 0xFE200000;
         const UART_BASE: u32 = 0xFE201000;
         const TIMER_BASE: u32 = 0xFE003000;
         const EMMC_BASE: u32 = 0xFE300000;
     }
-    
+
     /// Default hardware version (Pi 4/5 compatible)
     pub type DefaultHardware = RaspberryPi4;
 }

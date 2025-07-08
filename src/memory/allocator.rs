@@ -3,10 +3,7 @@
 //! This module contains the core block-based memory allocation algorithm
 //! using a bitmap to track allocated and free blocks.
 
-use super::{
-    hardware::MemoryHardware,
-    layout::MemoryHardwareConfig,
-};
+use super::{hardware::MemoryHardware, layout::MemoryHardwareConfig};
 
 /// Core block allocator using bitmap-based allocation
 pub struct BlockAllocator {
@@ -35,7 +32,7 @@ impl BlockAllocator {
     }
 
     /// Initialize the allocator
-    /// 
+    ///
     /// This clears the bitmap and marks the bitmap blocks themselves as used.
     pub fn init(&mut self) {
         // Clear the bitmap (all blocks free)
@@ -54,7 +51,7 @@ impl BlockAllocator {
     }
 
     /// Allocate a single block of memory
-    /// 
+    ///
     /// Returns the address of the allocated block, or None if allocation fails.
     #[inline]
     pub fn allocate_block(&mut self) -> Option<u32> {
@@ -62,8 +59,9 @@ impl BlockAllocator {
     }
 
     /// Allocate multiple contiguous blocks of memory
-    /// 
-    /// Returns the address of the first allocated block, or None if allocation fails.
+    ///
+    /// Returns the address of the first allocated block, or None if allocation
+    /// fails.
     pub fn allocate_blocks(&mut self, num_blocks: u32) -> Option<u32> {
         if num_blocks == 0 || num_blocks > self.config.total_blocks {
             return None;
@@ -96,7 +94,8 @@ impl BlockAllocator {
                 self.next_free_block = (start_block + num_blocks) % self.config.total_blocks;
 
                 // Calculate the actual memory address
-                let block_address = self.config.usable_heap_start() + (start_block * self.config.block_size);
+                let block_address =
+                    self.config.usable_heap_start() + (start_block * self.config.block_size);
 
                 return Some(block_address);
             }
@@ -106,7 +105,7 @@ impl BlockAllocator {
     }
 
     /// Free a block of memory at the given address
-    /// 
+    ///
     /// Returns true if the block was successfully freed, false otherwise.
     pub fn free_block(&mut self, address: u32) -> bool {
         // Check if address is within heap bounds

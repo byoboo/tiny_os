@@ -1,12 +1,12 @@
+use super::{
+    boot_sector::FilesystemLayout, cluster_chain::ClusterChain, Fat32Error, FileInfo, FileList,
+    ATTR_DIRECTORY, ATTR_LONG_NAME, ATTR_VOLUME_ID,
+};
 /// FAT32 Directory Operations
 ///
 /// This module handles FAT32 directory entry parsing, reading, and management.
 /// It provides no_std-compliant directory operations for embedded environments.
-
 use crate::sdcard::SdCard;
-use super::{Fat32Error, FileInfo, FileList, ATTR_LONG_NAME, ATTR_VOLUME_ID, ATTR_DIRECTORY};
-use super::boot_sector::FilesystemLayout;
-use super::cluster_chain::ClusterChain;
 
 // FAT32 Directory Entry (32 bytes)
 #[repr(C, packed)]
@@ -70,7 +70,7 @@ impl Fat32DirEntry {
         }
 
         file_info.size = self.file_size;
-        file_info.first_cluster = 
+        file_info.first_cluster =
             ((self.first_cluster_high as u32) << 16) | (self.first_cluster_low as u32);
         file_info.attributes = self.attr;
         file_info.is_directory = (self.attr & ATTR_DIRECTORY) != 0;
@@ -155,9 +155,7 @@ impl DirectoryReader {
         sd_card.read_block(sector, &mut dir_data)?;
 
         // Convert to directory entries
-        let entries = unsafe { 
-            core::mem::transmute::<[u8; 512], [Fat32DirEntry; 16]>(dir_data) 
-        };
+        let entries = unsafe { core::mem::transmute::<[u8; 512], [Fat32DirEntry; 16]>(dir_data) };
 
         Ok(entries)
     }
@@ -280,7 +278,7 @@ impl DirectoryReader {
 
         for i in 0..files.len() {
             let file = &files[i];
-            
+
             // Print file type
             if file.is_directory {
                 uart.puts("DIR   ");

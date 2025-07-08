@@ -4,6 +4,7 @@
 //! memory-mapped I/O operations for the GPIO peripheral.
 
 use core::ptr::{read_volatile, write_volatile};
+
 use crate::drivers::config::HardwareVersion;
 
 /// GPIO register offsets from base address
@@ -45,91 +46,91 @@ impl<H: HardwareVersion> GpioHardware<H> {
             _phantom: core::marker::PhantomData,
         }
     }
-    
+
     /// Get the base address for this hardware version
     #[inline]
     const fn base_addr() -> u32 {
         H::GPIO_BASE
     }
-    
+
     /// Write to a GPIO register
     #[inline]
     pub unsafe fn write_register(&self, offset: u32, value: u32) {
         let addr = (Self::base_addr() + offset) as *mut u32;
         write_volatile(addr, value);
     }
-    
+
     /// Read from a GPIO register
     #[inline]
     pub unsafe fn read_register(&self, offset: u32) -> u32 {
         let addr = (Self::base_addr() + offset) as *const u32;
         read_volatile(addr)
     }
-    
+
     /// Set GPIO pin function
     pub fn set_function(&self, pin: u32, function: GpioFunction) {
         if pin > 53 {
             return; // Pi has 54 GPIO pins (0-53)
         }
-        
+
         let reg_index = pin / 10;
         let bit_offset = (pin % 10) * 3;
-        
+
         unsafe {
             let reg_addr = registers::FSEL + reg_index * 4;
             let mut reg_val = self.read_register(reg_addr);
-            
+
             // Clear the 3 bits for this pin
             reg_val &= !(0b111 << bit_offset);
             // Set the new function
             reg_val |= (function as u32) << bit_offset;
-            
+
             self.write_register(reg_addr, reg_val);
         }
     }
-    
+
     /// Set a GPIO pin high
     #[inline]
     pub fn set_high(&self, pin: u32) {
         if pin > 53 {
             return;
         }
-        
+
         let reg_index = pin / 32;
         let bit_offset = pin % 32;
-        
+
         unsafe {
             let reg_addr = registers::SET + reg_index * 4;
             self.write_register(reg_addr, 1 << bit_offset);
         }
     }
-    
+
     /// Set a GPIO pin low
     #[inline]
     pub fn set_low(&self, pin: u32) {
         if pin > 53 {
             return;
         }
-        
+
         let reg_index = pin / 32;
         let bit_offset = pin % 32;
-        
+
         unsafe {
             let reg_addr = registers::CLR + reg_index * 4;
             self.write_register(reg_addr, 1 << bit_offset);
         }
     }
-    
+
     /// Read the current level of a GPIO pin
     #[inline]
     pub fn read_pin(&self, pin: u32) -> bool {
         if pin > 53 {
             return false;
         }
-        
+
         let reg_index = pin / 32;
         let bit_offset = pin % 32;
-        
+
         unsafe {
             let reg_addr = registers::LEV + reg_index * 4;
             let reg_val = self.read_register(reg_addr);

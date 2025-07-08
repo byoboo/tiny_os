@@ -2,15 +2,11 @@
 //!
 //! This module provides comprehensive testing utilities for validating
 //! memory allocator functionality, performance, and corruption detection.
-//! 
+//!
 //! All testing is designed to be no_std compatible and uses static strings
 //! and direct UART output for reporting instead of heap-allocated strings.
 
-use super::{
-    allocator::BlockAllocator,
-    hardware::MemoryHardware,
-    protection::MemoryProtection,
-};
+use super::{allocator::BlockAllocator, hardware::MemoryHardware, protection::MemoryProtection};
 use crate::uart::Uart;
 
 /// Memory testing utility - provides comprehensive memory testing functionality
@@ -25,7 +21,7 @@ impl<'a> MemoryTester<'a> {
     }
 
     /// Run basic memory allocation/deallocation test
-    /// 
+    ///
     /// Allocates several blocks, writes test patterns, verifies the patterns,
     /// then frees the blocks and verifies we're back to the initial state.
     pub fn run_basic_test(&mut self, uart: &Uart) -> bool {
@@ -186,10 +182,10 @@ impl<'a> MemoryTester<'a> {
     /// Run fragmentation test
     pub fn run_fragmentation_test(&mut self, uart: &Uart) -> bool {
         uart.puts("Running fragmentation test...\r\n");
-        
+
         let initial_allocated = self.allocator.allocated_blocks();
         let mut test_blocks = [0u32; 20];
-        
+
         // Allocate many blocks
         for i in 0..20 {
             if let Some(addr) = self.allocator.allocate_block() {
@@ -198,7 +194,7 @@ impl<'a> MemoryTester<'a> {
                 break;
             }
         }
-        
+
         // Free every other block to create fragmentation
         let mut freed_count: usize = 0;
         for i in (1..20).step_by(2) {
@@ -237,7 +233,7 @@ impl<'a> MemoryTester<'a> {
     /// Run boundary test (test allocation limits)
     pub fn run_boundary_test(&mut self, uart: &Uart) -> bool {
         uart.puts("Running boundary test...\r\n");
-        
+
         let initial_allocated = self.allocator.allocated_blocks();
         let mut allocated_blocks = [0u32; 100];
         let mut allocated_count: usize = 0;
@@ -291,21 +287,21 @@ impl<'a> MemoryTester<'a> {
     /// Run comprehensive test suite
     pub fn run_comprehensive_test(&mut self, uart: &Uart) -> bool {
         uart.puts("\r\n=== Comprehensive Memory Test Suite ===\r\n");
-        
+
         let mut all_passed = true;
-        
+
         all_passed &= self.run_basic_test(uart);
         uart.puts("\r\n");
-        
+
         all_passed &= self.run_stress_test(uart);
         uart.puts("\r\n");
-        
+
         all_passed &= self.run_corruption_test(uart);
         uart.puts("\r\n");
-        
+
         all_passed &= self.run_fragmentation_test(uart);
         uart.puts("\r\n");
-        
+
         all_passed &= self.run_boundary_test(uart);
         uart.puts("\r\n");
 
@@ -314,7 +310,7 @@ impl<'a> MemoryTester<'a> {
         } else {
             uart.puts("❌ Some memory tests FAILED!\r\n");
         }
-        
+
         uart.puts("=====================================\r\n");
         all_passed
     }

@@ -4,6 +4,7 @@
 //! memory-mapped I/O operations for the System Timer peripheral.
 
 use core::ptr::{read_volatile, write_volatile};
+
 use crate::drivers::config::HardwareVersion;
 
 /// Timer register offsets from base address
@@ -59,27 +60,27 @@ impl<H: HardwareVersion> TimerHardware<H> {
             _phantom: core::marker::PhantomData,
         }
     }
-    
+
     /// Get the base address for this hardware version
     #[inline]
     const fn base_addr() -> u32 {
         H::TIMER_BASE
     }
-    
+
     /// Write to a timer register
     #[inline]
     pub unsafe fn write_register(&self, offset: u32, value: u32) {
         let addr = (Self::base_addr() + offset) as *mut u32;
         write_volatile(addr, value);
     }
-    
+
     /// Read from a timer register
     #[inline]
     pub unsafe fn read_register(&self, offset: u32) -> u32 {
         let addr = (Self::base_addr() + offset) as *const u32;
         read_volatile(addr)
     }
-    
+
     /// Get the current timer value (64-bit)
     #[inline]
     pub fn get_time_64(&self) -> u64 {
@@ -89,22 +90,20 @@ impl<H: HardwareVersion> TimerHardware<H> {
             ((high as u64) << 32) | (low as u64)
         }
     }
-    
+
     /// Get the current timer value (32-bit, lower part only)
     #[inline]
     pub fn get_time_32(&self) -> u32 {
-        unsafe {
-            self.read_register(registers::CLO)
-        }
+        unsafe { self.read_register(registers::CLO) }
     }
-    
+
     /// Set compare register for timer channel
     #[inline]
     pub fn set_compare(&self, channel: u8, value: u32) {
         if channel > 3 {
             return;
         }
-        
+
         let offset = match channel {
             0 => registers::C0,
             1 => registers::C1,
@@ -112,19 +111,19 @@ impl<H: HardwareVersion> TimerHardware<H> {
             3 => registers::C3,
             _ => return,
         };
-        
+
         unsafe {
             self.write_register(offset, value);
         }
     }
-    
+
     /// Check if timer channel has matched
     #[inline]
     pub fn has_matched(&self, channel: u8) -> bool {
         if channel > 3 {
             return false;
         }
-        
+
         let bit = match channel {
             0 => control_status::M0,
             1 => control_status::M1,
@@ -132,19 +131,17 @@ impl<H: HardwareVersion> TimerHardware<H> {
             3 => control_status::M3,
             _ => return false,
         };
-        
-        unsafe {
-            (self.read_register(registers::CS) & bit) != 0
-        }
+
+        unsafe { (self.read_register(registers::CS) & bit) != 0 }
     }
-    
+
     /// Clear timer channel match flag
     #[inline]
     pub fn clear_match(&self, channel: u8) {
         if channel > 3 {
             return;
         }
-        
+
         let bit = match channel {
             0 => control_status::M0,
             1 => control_status::M1,
@@ -152,7 +149,7 @@ impl<H: HardwareVersion> TimerHardware<H> {
             3 => control_status::M3,
             _ => return,
         };
-        
+
         unsafe {
             self.write_register(registers::CS, bit);
         }

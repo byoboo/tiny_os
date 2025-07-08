@@ -1,15 +1,16 @@
+use super::{
+    boot_sector::{Fat32BootSector, FilesystemLayout},
+    cluster_chain::ClusterChain,
+    directory::DirectoryReader,
+    file_operations::FileOperations,
+    Fat32Error, FileContent, FileInfo, FileList,
+};
 /// FAT32 Filesystem Interface
 ///
 /// This module provides the main FAT32 filesystem interface that coordinates
 /// all the other modules. It maintains the filesystem state and provides
 /// high-level operations for file and directory management.
-
 use crate::sdcard::SdCard;
-use super::{Fat32Error, FileContent, FileInfo, FileList};
-use super::boot_sector::{Fat32BootSector, FilesystemLayout};
-use super::directory::DirectoryReader;
-use super::file_operations::FileOperations;
-use super::cluster_chain::ClusterChain;
 
 /// Main FAT32 filesystem interface
 pub struct Fat32FileSystem {
@@ -32,7 +33,7 @@ impl Fat32FileSystem {
 
         // Read and validate boot sector
         let boot_sector = Fat32BootSector::read_from_sd(&mut sd_card)?;
-        
+
         // Calculate filesystem layout
         let layout = boot_sector.calculate_layout()?;
 
@@ -64,7 +65,7 @@ impl Fat32FileSystem {
         // Print filesystem information
         let uart = crate::uart::Uart::new();
         uart.puts("FAT32 filesystem mounted successfully!\n");
-        
+
         // Print volume label
         uart.puts("Volume label: ");
         let label = self.boot_sector.get_volume_label();
@@ -102,11 +103,8 @@ impl Fat32FileSystem {
 
     /// List files in specified directory cluster
     pub fn list_directory_cluster(&mut self, cluster: u32) -> Result<FileList, Fat32Error> {
-        self.directory_reader.list_directory(
-            &mut self.sd_card,
-            &mut self.cluster_chain,
-            cluster,
-        )
+        self.directory_reader
+            .list_directory(&mut self.sd_card, &mut self.cluster_chain, cluster)
     }
 
     /// Get current directory cluster
@@ -194,11 +192,8 @@ impl Fat32FileSystem {
     /// Print file hex dump
     pub fn print_file_hex(&mut self, filename: &str) -> Result<(), Fat32Error> {
         let file_info = self.find_file(filename)?;
-        self.file_operations.print_file_hex(
-            &mut self.sd_card,
-            &mut self.cluster_chain,
-            &file_info,
-        )
+        self.file_operations
+            .print_file_hex(&mut self.sd_card, &mut self.cluster_chain, &file_info)
     }
 
     /// Print cluster chain information for file
@@ -220,7 +215,7 @@ impl Fat32FileSystem {
     pub fn print_info(&self) {
         let uart = crate::uart::Uart::new();
         uart.puts("=== FAT32 Filesystem Information ===\n");
-        
+
         self.boot_sector.print_info();
         self.layout.print_info();
     }
@@ -228,11 +223,11 @@ impl Fat32FileSystem {
     /// Print detailed filesystem statistics
     pub fn print_detailed_info(&mut self) -> Result<(), Fat32Error> {
         self.print_info();
-        
+
         // Print cluster statistics
         let stats = self.cluster_chain.get_cluster_stats(&mut self.sd_card)?;
         stats.print_stats();
-        
+
         Ok(())
     }
 
@@ -261,10 +256,10 @@ impl Fat32FileSystem {
     /// Unmount filesystem (flush and cleanup)
     pub fn unmount(&mut self) -> Result<(), Fat32Error> {
         self.flush()?;
-        
+
         let uart = crate::uart::Uart::new();
         uart.puts("FAT32 filesystem unmounted\n");
-        
+
         Ok(())
     }
 

@@ -46,14 +46,14 @@ pub mod testing;
 
 // Re-export key types for convenience
 pub use allocator::BlockAllocator;
-pub use hardware::{MemoryHardware, HardwareMemoryInfo};
-pub use layout::{MemoryHardwareConfig, HEAP_START, HEAP_SIZE, BLOCK_SIZE, TOTAL_BLOCKS};
-pub use protection::{MemoryProtection, CorruptionReport, CorruptionDetection};
-pub use statistics::{MemoryStats, MemoryStatistics, FragmentationAnalysis, MemoryDefragmenter};
+pub use hardware::{HardwareMemoryInfo, MemoryHardware};
+pub use layout::{MemoryHardwareConfig, BLOCK_SIZE, HEAP_SIZE, HEAP_START, TOTAL_BLOCKS};
+pub use protection::{CorruptionDetection, CorruptionReport, MemoryProtection};
+pub use statistics::{FragmentationAnalysis, MemoryDefragmenter, MemoryStatistics, MemoryStats};
 pub use testing::MemoryTester;
 
 /// Unified Memory Manager Interface
-/// 
+///
 /// This is the main interface that coordinates all memory management modules
 /// while maintaining backward compatibility with the existing TinyOS codebase.
 pub struct MemoryManager {
@@ -76,7 +76,7 @@ impl MemoryManager {
     }
 
     /// Initialize the memory manager
-    /// 
+    ///
     /// This must be called before any memory allocation operations.
     /// It clears the bitmap and sets up the initial allocator state.
     pub fn init(&mut self) {
@@ -84,34 +84,35 @@ impl MemoryManager {
     }
 
     /// Allocate a single block of memory
-    /// 
+    ///
     /// Returns the address of the allocated block, or None if allocation fails.
-    /// The returned address is guaranteed to be aligned to BLOCK_SIZE boundaries.
+    /// The returned address is guaranteed to be aligned to BLOCK_SIZE
+    /// boundaries.
     #[inline]
     pub fn allocate_block(&mut self) -> Option<u32> {
         let addr = self.allocator.allocate_block()?;
-        
+
         // Add protection canaries for debugging
         MemoryProtection::add_canaries(addr, 1);
-        
+
         Some(addr)
     }
 
     /// Allocate multiple contiguous blocks of memory
-    /// 
-    /// Returns the address of the first allocated block, or None if allocation fails.
-    /// All blocks are guaranteed to be contiguous in memory.
+    ///
+    /// Returns the address of the first allocated block, or None if allocation
+    /// fails. All blocks are guaranteed to be contiguous in memory.
     pub fn allocate_blocks(&mut self, num_blocks: u32) -> Option<u32> {
         let addr = self.allocator.allocate_blocks(num_blocks)?;
-        
+
         // Add protection canaries for debugging
         MemoryProtection::add_canaries(addr, num_blocks);
-        
+
         Some(addr)
     }
 
     /// Free a block of memory at the given address
-    /// 
+    ///
     /// Returns true if the block was successfully freed, false otherwise.
     /// The address must be a valid block address returned by allocate_block().
     pub fn free_block(&mut self, address: u32) -> bool {
@@ -125,22 +126,22 @@ impl MemoryManager {
     }
 
     /// Allocate memory with specific alignment
-    /// 
+    ///
     /// Allocates memory that is aligned to the specified boundary.
     /// Currently supports alignments up to BLOCK_SIZE.
     pub fn allocate_aligned(&mut self, size_bytes: u32, alignment: u32) -> Option<u32> {
         let addr = self.allocator.allocate_aligned(size_bytes, alignment)?;
-        
+
         // Calculate number of blocks for canary protection
         #[allow(clippy::manual_div_ceil)]
         let num_blocks = (size_bytes + BLOCK_SIZE - 1) / BLOCK_SIZE;
         MemoryProtection::add_canaries(addr, num_blocks);
-        
+
         Some(addr)
     }
 
     /// Get comprehensive memory statistics
-    /// 
+    ///
     /// Returns detailed information about memory usage, fragmentation,
     /// and allocator state.
     pub fn get_stats(&self) -> MemoryStats {
@@ -149,7 +150,7 @@ impl MemoryManager {
     }
 
     /// Get a memory statistics collector
-    /// 
+    ///
     /// Returns a statistics collector that can be used for detailed analysis
     /// without borrowing the entire memory manager.
     pub fn get_statistics(&self) -> MemoryStatistics {
@@ -157,7 +158,7 @@ impl MemoryManager {
     }
 
     /// Get a memory tester for running diagnostic tests
-    /// 
+    ///
     /// Returns a tester that can run various memory validation tests
     /// to ensure the allocator is working correctly.
     pub fn get_tester(&mut self) -> MemoryTester {
@@ -165,7 +166,7 @@ impl MemoryManager {
     }
 
     /// Check for memory corruption
-    /// 
+    ///
     /// Performs a quick corruption check by validating the allocator's
     /// internal state consistency.
     pub fn check_corruption(&self) -> bool {
@@ -173,7 +174,7 @@ impl MemoryManager {
     }
 
     /// Perform memory defragmentation
-    /// 
+    ///
     /// Attempts to reduce fragmentation by optimizing the free block layout.
     /// Returns the number of blocks that were coalesced.
     pub fn defragment(&mut self) -> u32 {
@@ -220,7 +221,7 @@ impl MemoryManager {
     }
 
     // Getters for compatibility with shell commands
-    
+
     /// Get heap start address
     #[inline]
     pub fn heap_start(&self) -> u32 {
@@ -262,7 +263,8 @@ impl Default for MemoryManager {
     }
 }
 
-// Implement the CorruptionDetection trait for MemoryManager to maintain compatibility
+// Implement the CorruptionDetection trait for MemoryManager to maintain
+// compatibility
 impl CorruptionDetection for MemoryManager {
     fn is_block_used(&self, block_number: u32) -> bool {
         self.allocator.is_block_used(block_number)

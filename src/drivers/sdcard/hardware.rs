@@ -4,6 +4,7 @@
 //! memory-mapped I/O operations for the EMMC controller.
 
 use core::ptr::{read_volatile, write_volatile};
+
 use crate::drivers::config::HardwareVersion;
 
 /// EMMC register offsets from base address
@@ -73,27 +74,27 @@ impl<H: HardwareVersion> SdCardHardware<H> {
             _phantom: core::marker::PhantomData,
         }
     }
-    
+
     /// Get the base address for this hardware version
     #[inline]
     const fn base_addr() -> u32 {
         H::EMMC_BASE
     }
-    
+
     /// Write to an EMMC register
     #[inline]
     pub unsafe fn write_register(&self, offset: u32, value: u32) {
         let addr = (Self::base_addr() + offset) as *mut u32;
         write_volatile(addr, value);
     }
-    
+
     /// Read from an EMMC register
     #[inline]
     pub unsafe fn read_register(&self, offset: u32) -> u32 {
         let addr = (Self::base_addr() + offset) as *const u32;
         read_volatile(addr)
     }
-    
+
     /// Check if EMMC is available (basic check)
     pub fn is_available(&self) -> bool {
         // In QEMU, EMMC might not be properly emulated
@@ -104,26 +105,27 @@ impl<H: HardwareVersion> SdCardHardware<H> {
             status != 0xFFFFFFFF && status != 0
         }
     }
-    
+
     /// Send a command to the SD card
     pub fn send_command(&self, cmd: SdCommand, arg: u32) -> Result<u32, SdCardError> {
         if !self.is_available() {
             return Err(SdCardError::HardwareNotAvailable);
         }
-        
+
         unsafe {
             // Set argument
             self.write_register(registers::ARG1, arg);
-            
+
             // Send command (simplified - real implementation would set proper flags)
             let cmd_value = (cmd as u32) << 24;
             self.write_register(registers::CMDTM, cmd_value);
-            
+
             // Wait for command complete (timeout after reasonable time)
             let mut timeout = 1000000;
             while timeout > 0 {
                 let status = self.read_register(registers::INTERRUPT);
-                if (status & 0x1) != 0 { // Command complete
+                if (status & 0x1) != 0 {
+                    // Command complete
                     // Clear interrupt
                     self.write_register(registers::INTERRUPT, 0x1);
                     // Return response
@@ -131,7 +133,7 @@ impl<H: HardwareVersion> SdCardHardware<H> {
                 }
                 timeout -= 1;
             }
-            
+
             Err(SdCardError::Timeout)
         }
     }

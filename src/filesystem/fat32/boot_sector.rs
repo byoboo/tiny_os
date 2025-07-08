@@ -1,10 +1,10 @@
+use super::Fat32Error;
 /// FAT32 Boot Sector Handling
 ///
 /// This module handles parsing and validation of FAT32 boot sectors.
-/// It provides no_std-compliant boot sector operations for embedded environments.
-
+/// It provides no_std-compliant boot sector operations for embedded
+/// environments.
 use crate::sdcard::SdCard;
-use super::Fat32Error;
 
 // FAT32 Boot Sector Structure (512 bytes)
 #[repr(C, packed)]
@@ -51,9 +51,8 @@ impl Fat32BootSector {
         sd_card.read_block(0, &mut boot_sector_data)?;
 
         // Parse boot sector
-        let boot_sector = unsafe { 
-            core::mem::transmute::<[u8; 512], Fat32BootSector>(boot_sector_data) 
-        };
+        let boot_sector =
+            unsafe { core::mem::transmute::<[u8; 512], Fat32BootSector>(boot_sector_data) };
 
         // Validate boot sector
         boot_sector.validate()?;
@@ -122,14 +121,14 @@ impl Fat32BootSector {
     pub fn get_volume_label(&self) -> [u8; 12] {
         let mut label = [0u8; 12];
         let mut len = 0;
-        
+
         for &byte in self.volume_label.iter() {
             if byte != 0x20 && byte != 0x00 && len < 11 {
                 label[len] = byte;
                 len += 1;
             }
         }
-        
+
         label
     }
 
@@ -137,7 +136,7 @@ impl Fat32BootSector {
     pub fn print_info(&self) {
         let uart = crate::uart::Uart::new();
         uart.puts("=== FAT32 Boot Sector Information ===\n");
-        
+
         uart.puts("OEM Name: ");
         for &byte in &self.oem_name {
             if byte != 0 && byte != 0x20 {
@@ -231,7 +230,7 @@ impl FilesystemLayout {
     pub fn print_info(&self) {
         let uart = crate::uart::Uart::new();
         uart.puts("=== Filesystem Layout ===\n");
-        
+
         uart.puts("FAT start sector: ");
         uart.put_hex(self.fat_start_sector as u64);
         uart.putc(b'\n');

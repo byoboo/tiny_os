@@ -3,9 +3,11 @@
 //! This module provides a safe, high-level interface to the SD card
 //! with block-level read/write operations and error handling.
 
-use crate::drivers::config::{DefaultHardware, HardwareVersion};
-use crate::drivers::traits::{DriverError, DriverStatus, Initialize, Status};
 use super::hardware::{SdCardError, SdCardHardware, SdCommand};
+use crate::drivers::{
+    config::{DefaultHardware, HardwareVersion},
+    traits::{DriverError, DriverStatus, Initialize, Status},
+};
 
 /// SD card information structure
 #[derive(Debug, Clone, Copy)]
@@ -68,123 +70,137 @@ impl<H: HardwareVersion> SdCardDriver<H> {
             card_initialized: false,
         }
     }
-    
+
     /// Check if SD card hardware is available
     pub fn is_available(&self) -> bool {
         self.hardware.is_available()
     }
-    
+
     /// Initialize the SD card
     pub fn init_card(&mut self) -> Result<(), SdCardError> {
         if !self.hardware.is_available() {
             return Err(SdCardError::HardwareNotAvailable);
         }
-        
+
         // Reset card
         self.hardware.send_command(SdCommand::GoIdleState, 0)?;
-        
+
         // Send interface condition
         let response = self.hardware.send_command(SdCommand::SendIfCond, 0x1AA)?;
         if (response & 0xFF) != 0xAA {
             return Err(SdCardError::HardwareError);
         }
-        
+
         self.card_initialized = true;
         Ok(())
     }
-    
+
     /// Read a single block from the SD card
     pub fn read_block(&self, block_addr: u32, buffer: &mut [u8]) -> Result<(), SdCardError> {
         if !self.card_initialized {
             return Err(SdCardError::NotInitialized);
         }
-        
+
         if buffer.len() < self.block_size as usize {
             return Err(SdCardError::InvalidAddress);
         }
-        
+
         // For now, just return a placeholder implementation
         // Real implementation would involve complex EMMC protocol
-        let _response = self.hardware.send_command(SdCommand::ReadSingle, block_addr)?;
-        
+        let _response = self
+            .hardware
+            .send_command(SdCommand::ReadSingle, block_addr)?;
+
         // Fill buffer with test data for demo purposes
         for (i, byte) in buffer.iter_mut().enumerate().take(self.block_size as usize) {
             *byte = (i % 256) as u8;
         }
-        
+
         Ok(())
     }
-    
+
     /// Write a single block to the SD card
     pub fn write_block(&mut self, block_addr: u32, buffer: &[u8]) -> Result<(), SdCardError> {
         if !self.card_initialized {
             return Err(SdCardError::NotInitialized);
         }
-        
+
         if buffer.len() < self.block_size as usize {
             return Err(SdCardError::InvalidAddress);
         }
-        
+
         // For now, just return a placeholder implementation
-        let _response = self.hardware.send_command(SdCommand::WriteSingle, block_addr)?;
-        
+        let _response = self
+            .hardware
+            .send_command(SdCommand::WriteSingle, block_addr)?;
+
         // In a real implementation, we would write the buffer data
         // to the EMMC data register
         Ok(())
     }
-    
+
     /// Read multiple blocks from the SD card
-    pub fn read_blocks(&self, start_block: u32, num_blocks: u32, buffer: &mut [u8]) -> Result<(), SdCardError> {
+    pub fn read_blocks(
+        &self,
+        start_block: u32,
+        num_blocks: u32,
+        buffer: &mut [u8],
+    ) -> Result<(), SdCardError> {
         let total_size = (num_blocks * self.block_size) as usize;
         if buffer.len() < total_size {
             return Err(SdCardError::InvalidAddress);
         }
-        
+
         for block in 0..num_blocks {
             let block_addr = start_block + block;
             let offset = (block * self.block_size) as usize;
             let block_buffer = &mut buffer[offset..offset + self.block_size as usize];
             self.read_block(block_addr, block_buffer)?;
         }
-        
+
         Ok(())
     }
-    
+
     /// Write multiple blocks to the SD card
-    pub fn write_blocks(&mut self, start_block: u32, num_blocks: u32, buffer: &[u8]) -> Result<(), SdCardError> {
+    pub fn write_blocks(
+        &mut self,
+        start_block: u32,
+        num_blocks: u32,
+        buffer: &[u8],
+    ) -> Result<(), SdCardError> {
         let total_size = (num_blocks * self.block_size) as usize;
         if buffer.len() < total_size {
             return Err(SdCardError::InvalidAddress);
         }
-        
+
         for block in 0..num_blocks {
             let block_addr = start_block + block;
             let offset = (block * self.block_size) as usize;
             let block_buffer = &buffer[offset..offset + self.block_size as usize];
             self.write_block(block_addr, block_buffer)?;
         }
-        
+
         Ok(())
     }
-    
+
     /// Get the block size
     #[inline]
     pub fn block_size(&self) -> u32 {
         self.block_size
     }
-    
+
     /// Check if the card is initialized
     #[inline]
     pub fn is_initialized(&self) -> bool {
         self.card_initialized
     }
-    
+
     /// Get SD card information
     pub fn get_card_info(&self) -> Option<SdCardInfo> {
         if !self.card_initialized {
             return None;
         }
-        
+
         // Return mock card info for compatibility
         // In a real implementation, this would read actual card registers
         Some(SdCardInfo {
@@ -196,7 +212,7 @@ impl<H: HardwareVersion> SdCardDriver<H> {
             scr: [0, 0],
         })
     }
-    
+
     /// Legacy init method for backward compatibility
     pub fn init(&mut self) -> Result<(), SdCardError> {
         self.init_card()
@@ -205,15 +221,15 @@ impl<H: HardwareVersion> SdCardDriver<H> {
 
 impl<H: HardwareVersion> Initialize for SdCardDriver<H> {
     type Config = SdCardConfig;
-    
+
     fn init(&mut self) -> Result<(), DriverError> {
         let config = SdCardConfig::default();
         self.init_with_config(&config)
     }
-    
+
     fn init_with_config(&mut self, config: &Self::Config) -> Result<(), DriverError> {
         self.block_size = config.block_size;
-        
+
         match self.init_card() {
             Ok(()) => {
                 self.status = DriverStatus::Ready;

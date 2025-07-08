@@ -1,8 +1,8 @@
 /// FAT32 Filesystem Implementation Module
 ///
 /// This module implements FAT32 filesystem support for TinyOS with a modular,
-/// no_std-compliant design. The implementation is split into specialized components
-/// for better maintainability and testing.
+/// no_std-compliant design. The implementation is split into specialized
+/// components for better maintainability and testing.
 ///
 /// # Architecture
 ///
@@ -19,22 +19,22 @@
 /// - **Fixed-size buffers**: All structures use compile-time known sizes
 /// - **Direct hardware access**: No heap allocation, direct SD card I/O
 /// - **Error handling**: Comprehensive error types for embedded environments
-/// - **Backward compatibility**: Maintains existing API while improving structure
-
+/// - **Backward compatibility**: Maintains existing API while improving
+///   structure
 pub mod boot_sector;
+pub mod cluster_chain;
 pub mod directory;
 pub mod file_operations;
-pub mod cluster_chain;
-pub mod interface;
 pub mod filename;
+pub mod interface;
 
 // Re-export main types
 pub use boot_sector::*;
+pub use cluster_chain::*;
 pub use directory::*;
 pub use file_operations::*;
-pub use cluster_chain::*;
-pub use interface::Fat32FileSystem;
 pub use filename::*;
+pub use interface::Fat32FileSystem;
 
 // Constants and types that are used across modules
 pub const MAX_FILE_SIZE: u32 = 1024 * 1024; // 1MB max file size

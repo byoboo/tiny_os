@@ -115,7 +115,7 @@ fn is_reserved_name(name: &str) -> bool {
     let name_bytes = name.as_bytes();
     let mut upper_name = [0u8; 32]; // Buffer for uppercase name
     let mut len = 0;
-    
+
     // Convert to uppercase
     for &byte in name_bytes {
         if len < upper_name.len() {
@@ -123,37 +123,60 @@ fn is_reserved_name(name: &str) -> bool {
             len += 1;
         }
     }
-    
+
     // Find the name part (before any dot)
-    let name_part_len = upper_name[..len].iter().position(|&b| b == b'.').unwrap_or(len);
-    
+    let name_part_len = upper_name[..len]
+        .iter()
+        .position(|&b| b == b'.')
+        .unwrap_or(len);
+
     // Check against reserved names
-    matches!(&upper_name[..name_part_len],
-        b"CON" | b"PRN" | b"AUX" | b"NUL" |
-        b"COM1" | b"COM2" | b"COM3" | b"COM4" | b"COM5" | b"COM6" | b"COM7" | b"COM8" | b"COM9" |
-        b"LPT1" | b"LPT2" | b"LPT3" | b"LPT4" | b"LPT5" | b"LPT6" | b"LPT7" | b"LPT8" | b"LPT9"
+    matches!(
+        &upper_name[..name_part_len],
+        b"CON"
+            | b"PRN"
+            | b"AUX"
+            | b"NUL"
+            | b"COM1"
+            | b"COM2"
+            | b"COM3"
+            | b"COM4"
+            | b"COM5"
+            | b"COM6"
+            | b"COM7"
+            | b"COM8"
+            | b"COM9"
+            | b"LPT1"
+            | b"LPT2"
+            | b"LPT3"
+            | b"LPT4"
+            | b"LPT5"
+            | b"LPT6"
+            | b"LPT7"
+            | b"LPT8"
+            | b"LPT9"
     )
 }
 
 /// Generate 8.3 short name with numeric suffix if needed
 pub fn generate_short_name(long_name: &str) -> [u8; 11] {
     let mut short_name = name_to_83(long_name);
-    
+
     // If the name was truncated, we might need to add a numeric suffix
     // For simplicity, we'll just use the basic conversion
     // A full implementation would check for collisions and add ~1, ~2, etc.
-    
+
     short_name
 }
 
 /// Calculate LFN checksum for 8.3 name
 pub fn calculate_lfn_checksum(short_name: &[u8; 11]) -> u8 {
     let mut checksum = 0u8;
-    
+
     for &byte in short_name {
         checksum = ((checksum & 1) << 7) + (checksum >> 1) + byte;
     }
-    
+
     checksum
 }
 
@@ -181,13 +204,13 @@ pub fn compare_filenames(name1: &str, name2: &str) -> bool {
     if name1.len() != name2.len() {
         return false;
     }
-    
+
     for (c1, c2) in name1.chars().zip(name2.chars()) {
         if c1.to_ascii_uppercase() != c2.to_ascii_uppercase() {
             return false;
         }
     }
-    
+
     true
 }
 
@@ -201,16 +224,16 @@ pub fn matches_pattern(filename: &str, pattern: &str) -> bool {
 /// Normalize filename for FAT32 (no_std compatible)
 pub fn normalize_filename(filename: &str, output: &mut [u8]) -> Result<usize, FilenameError> {
     validate_filename(filename)?;
-    
+
     let mut len = 0;
-    
+
     for ch in filename.chars() {
         if is_valid_filename_char(ch) && len < output.len() {
             output[len] = ch.to_ascii_uppercase() as u8;
             len += 1;
         }
     }
-    
+
     Ok(len)
 }
 
@@ -237,18 +260,18 @@ impl FilenameError {
 /// Filename utilities for shell commands
 pub mod shell {
     use super::*;
-    
+
     /// Print filename validation result
     pub fn print_filename_validation(filename: &str) {
         let uart = crate::uart::Uart::new();
         uart.puts("Validating filename: ");
         uart.puts(filename);
         uart.putc(b'\n');
-        
+
         match validate_filename(filename) {
             Ok(()) => {
                 uart.puts("Filename is valid\n");
-                
+
                 // Show 8.3 conversion
                 let short_name = name_to_83(filename);
                 uart.puts("8.3 name: ");
@@ -266,12 +289,12 @@ pub mod shell {
             }
         }
     }
-    
+
     /// Print filename conversion examples
     pub fn print_filename_examples() {
         let uart = crate::uart::Uart::new();
         uart.puts("=== Filename Conversion Examples ===\n");
-        
+
         let examples = [
             "readme.txt",
             "LONGFILENAME.DOC",
@@ -279,12 +302,12 @@ pub mod shell {
             "document.html",
             "test.c",
         ];
-        
+
         for example in &examples {
             uart.puts("Long name: ");
             uart.puts(example);
             uart.puts(" -> 8.3: ");
-            
+
             let short_name = name_to_83(example);
             for &byte in &short_name {
                 if byte != 0x20 {
@@ -308,18 +331,18 @@ pub fn compare_names_no_std(name1: &[u8], name2: &str) -> bool {
     if name1.len() != name2.len() {
         return false;
     }
-    
+
     let name2_bytes = name2.as_bytes();
     for (i, &byte1) in name1.iter().enumerate() {
         if i >= name2_bytes.len() {
             return false;
         }
-        
+
         let byte2 = name2_bytes[i];
         if byte1.to_ascii_uppercase() != byte2.to_ascii_uppercase() {
             return false;
         }
     }
-    
+
     true
 }

@@ -79,7 +79,7 @@ impl HardwareMemoryInfo {
     /// Get hardware memory information for Raspberry Pi 4/5
     pub fn get() -> Self {
         Self {
-            total_memory: 0x40000000, // 1GB (minimum for Pi 4)
+            total_memory: 0x40000000,     // 1GB (minimum for Pi 4)
             available_memory: 0x3F000000, // ~1016MB (allowing for GPU)
             cache_line_size: 64,
             page_size: 4096,

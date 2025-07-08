@@ -6,7 +6,7 @@
 use super::{
     allocator::BlockAllocator,
     hardware::MemoryHardware,
-    layout::{CANARY_VALUE, BLOCK_SIZE},
+    layout::{BLOCK_SIZE, CANARY_VALUE},
 };
 
 /// Memory protection utilities
@@ -14,7 +14,7 @@ pub struct MemoryProtection;
 
 impl MemoryProtection {
     /// Add canary values to allocated blocks for corruption detection
-    /// 
+    ///
     /// Places canary values at the beginning and end of the allocated region
     /// to detect buffer overruns and other memory corruption.
     pub fn add_canaries(address: u32, num_blocks: u32) {
@@ -31,8 +31,9 @@ impl MemoryProtection {
     }
 
     /// Check if canaries are intact
-    /// 
-    /// Returns true if both canary values are intact, false if corruption is detected.
+    ///
+    /// Returns true if both canary values are intact, false if corruption is
+    /// detected.
     pub fn check_canaries(address: u32, num_blocks: u32) -> bool {
         // Check canary at the beginning
         unsafe {
@@ -55,7 +56,7 @@ impl MemoryProtection {
     }
 
     /// Check for memory corruption in the allocator
-    /// 
+    ///
     /// Validates the integrity of the allocator's internal state by comparing
     /// the allocated block count with a manual scan of the bitmap.
     pub fn check_corruption(allocator: &BlockAllocator) -> bool {
@@ -75,7 +76,7 @@ impl MemoryProtection {
     }
 
     /// Validate heap integrity
-    /// 
+    ///
     /// Performs comprehensive heap validation including boundary checks
     /// and bitmap consistency verification.
     pub fn validate_heap_integrity(allocator: &BlockAllocator) -> bool {
@@ -106,7 +107,7 @@ impl MemoryProtection {
     }
 
     /// Scan for common corruption patterns
-    /// 
+    ///
     /// Looks for patterns that might indicate memory corruption such as
     /// repeated values, null pointers, or invalid addresses.
     pub fn scan_corruption_patterns(start: u32, size: u32) -> CorruptionReport {
@@ -122,7 +123,7 @@ impl MemoryProtection {
                 }
 
                 let value = MemoryHardware::read_u32(start + offset);
-                
+
                 // Check for excessive zeros
                 if value == 0 {
                     consecutive_zeros += 1;
