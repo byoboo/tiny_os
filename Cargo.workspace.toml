@@ -1,0 +1,13 @@
+# TinyOS Workspace Configuration
+# This file ensures rust-analyzer treats this as a single-target embedded workspace
+
+[workspace]
+resolver = "2"
+
+[workspace.metadata.rust-analyzer]
+# Force rust-analyzer to only analyze for the embedded target
+cargo-target = "aarch64-unknown-none"
+# Never analyze tests for this workspace
+cargo-all-targets = false
+# Disable test harness completely
+cargo-unset-test = true

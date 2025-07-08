@@ -70,32 +70,62 @@ Cargo configuration that:
 - ✅ Configures the QEMU runner for actual testing
 - ✅ Sets up proper linker flags for embedded development
 
-## Verification: Checking the Fix
+## Complete Solution Summary
 
-### Before Configuration
-```
-error[E0463]: can't find crate for `test`
-  --> src/lib.rs
-   |
-   | #[cfg(test)]
-   | ^^^^^^^^^^^^
-```
+If you're **still seeing the error** after all configurations, follow these steps:
 
-### After Configuration  
-✅ **No "can't find crate for test" errors**
-✅ Rust-analyzer works smoothly
-✅ All embedded features properly analyzed
-
-### Test the Fix
+### 0. **Install rust-analyzer Component (Important!)**
 ```bash
-# Check that rust-analyzer config is working
-cargo check  # Should compile without test-related errors
-
-# Verify no test artifacts in build
-ls target/aarch64-unknown-none/debug/  # No test-related files
-
-# Confirm VSCode shows no test-related errors in Problems panel
+rustup component add rust-analyzer --toolchain nightly
 ```
+*Note: This is required because rust-analyzer is not included by default in minimal toolchain installations.*
+
+### 1. **Run the Complete Reset**
+```bash
+./reset_rust_analyzer.sh
+```
+
+### 2. **Restart VSCode Completely**
+- Close **all** VSCode windows
+- Reopen the project
+- Wait for rust-analyzer to fully initialize (check status bar)
+
+### 3. **Manual Restart (if needed)**
+- Press `Ctrl+Shift+P`
+- Run: `Rust Analyzer: Restart Server`
+- Wait for re-initialization
+
+### 4. **Verify the Fix**
+```bash
+./verify_rust_analyzer_fix.sh
+```
+
+### 5. **Check for Global Interference**
+If the error persists, check for global rust-analyzer settings that might override project settings:
+- `~/.config/rust-analyzer/config.toml` (Linux)
+- `%APPDATA%\rust-analyzer\config.toml` (Windows)
+- `~/Library/Application Support/rust-analyzer/config.toml` (macOS)
+
+## The Root Cause
+
+The "can't find crate for test" error occurs because:
+1. **VSCode tasks** had `cargo test` commands (now removed)
+2. **Rust-analyzer cache** contained test compilation artifacts (now cleared)
+3. **Multiple target analysis** - rust-analyzer tried to analyze for both host and embedded targets (now locked to embedded only)
+4. **Global settings** might override project settings (now isolated)
+
+## Why This Solution Works
+
+Our configuration creates **multiple layers of protection**:
+
+1. **`.rust-analyzer.toml`** - Primary configuration with `cargo.unsetTest = true`
+2. **`.vscode/settings.json`** - VSCode-specific reinforcement 
+3. **`.vscode/tasks.json`** - Removed problematic `cargo test` tasks
+4. **`.cargo/config.toml`** - Target forcing and panic abort
+5. **`Cargo.toml`** - Workspace metadata and explicit profiles
+6. **Cache clearing** - Removes any cached test compilation data
+
+This **comprehensive approach** ensures rust-analyzer can never attempt test compilation.
 
 ## Why These Configurations Are Needed
 

@@ -36,23 +36,17 @@
             "label": "run-qemu",
             "type": "shell",
             "command": "./run.sh",
-            "group": "test",
+            "group": "build",
             "dependsOn": "build-debug",
             "isBackground": true,
             "problemMatcher": []
         },
         {
-            "label": "test",
+            "label": "run-tests",
             "type": "shell",
-            "command": "cargo",
-            "args": [
-                "test",
-                "--lib"
-            ],
-            "group": "test",
-            "problemMatcher": [
-                "$rustc"
-            ],
+            "command": "./test_tinyos.sh",
+            "group": "build",
+            "problemMatcher": [],
             "isBackground": false
         },
         {

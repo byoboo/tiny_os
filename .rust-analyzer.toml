@@ -10,12 +10,14 @@ cargo.noDefaultFeatures = true
 # Explicitly disable test builds to prevent "can't find crate for test" errors
 cargo.unsetTest = true
 cargo.features = []
+cargo.allTargets = false
+cargo.loadOutDirsFromCheck = false
 
 # Disable proc macros and build scripts for embedded target
 procMacro.enable = false
 cargo.buildScripts.enable = false
 
-# Check configuration for embedded target only
+# Check configuration for embedded target only (no duplicates)
 check.command = "clippy"
 check.targets = ["aarch64-unknown-none"]
 check.allTargets = false

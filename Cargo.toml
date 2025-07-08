@@ -32,3 +32,8 @@ path = "src/main.rs"
 [lib]
 name = "tiny_os_lib"
 path = "src/lib.rs"
+
+# Workspace metadata to prevent rust-analyzer test issues
+[workspace.metadata.rust-analyzer]
+cargo-target = "aarch64-unknown-none"
+cargo-all-targets = false
