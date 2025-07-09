@@ -119,20 +119,36 @@ impl MemoryFaultAnalyzer {
     
     /// Read the Fault Address Register (FAR_EL1)
     fn read_far_el1() -> u64 {
-        let far_el1: u64;
-        unsafe {
-            asm!("mrs {}, far_el1", out(reg) far_el1);
+        #[cfg(target_arch = "aarch64")]
+        {
+            let far_el1: u64;
+            unsafe {
+                asm!("mrs {}, far_el1", out(reg) far_el1);
+            }
+            far_el1
         }
-        far_el1
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // For unit tests on host platform, return a mock value
+            0x0000_0000_DEAD_BEEF
+        }
     }
     
     /// Read the Exception Link Register (ELR_EL1) to get instruction address
     fn read_elr_el1() -> u64 {
-        let elr_el1: u64;
-        unsafe {
-            asm!("mrs {}, elr_el1", out(reg) elr_el1);
+        #[cfg(target_arch = "aarch64")]
+        {
+            let elr_el1: u64;
+            unsafe {
+                asm!("mrs {}, elr_el1", out(reg) elr_el1);
+            }
+            elr_el1
         }
-        elr_el1
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // For unit tests on host platform, return a mock value
+            0x0000_0000_CAFE_BABE
+        }
     }
     
     /// Classify fault based on fault status

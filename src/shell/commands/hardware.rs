@@ -428,10 +428,17 @@ fn test_exception_handlers(context: &ShellContext) {
     #[cfg(target_arch = "aarch64")]
     {
         // Read VBAR_EL1 to verify vector table is set
-        let vbar: u64;
-        unsafe {
-            core::arch::asm!("mrs {}, vbar_el1", out(reg) vbar);
-        }
+        #[cfg(target_arch = "aarch64")]
+        let vbar: u64 = {
+            let vbar: u64;
+            unsafe {
+                core::arch::asm!("mrs {}, vbar_el1", out(reg) vbar);
+            }
+            vbar
+        };
+        #[cfg(not(target_arch = "aarch64"))]
+        let vbar: u64 = 0x0000_0000_DEAD_BEEF; // Mock value for unit tests
+        
         if vbar != 0 {
             context.uart.puts("✓ CONFIGURED (0x");
             context.uart.put_hex(vbar);

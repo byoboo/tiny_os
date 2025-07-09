@@ -177,25 +177,43 @@ impl NestedInterruptManager {
     
     /// Check if interrupts are enabled
     fn are_interrupts_enabled(&self) -> bool {
-        let daif: u64;
-        unsafe {
-            asm!("mrs {}, daif", out(reg) daif);
+        #[cfg(target_arch = "aarch64")]
+        {
+            let daif: u64;
+            unsafe {
+                asm!("mrs {}, daif", out(reg) daif);
+            }
+            // Check if IRQ (bit 1) is not masked
+            (daif & (1 << 1)) == 0
         }
-        // Check if IRQ (bit 1) is not masked
-        (daif & (1 << 1)) == 0
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // For unit tests on host platform, return a mock value
+            true
+        }
     }
     
     /// Enable interrupts
     fn enable_interrupts(&self) {
+        #[cfg(target_arch = "aarch64")]
         unsafe {
             asm!("msr daifclr, #2"); // Clear IRQ mask (bit 1)
+        }
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // For unit tests on host platform, do nothing
         }
     }
     
     /// Disable interrupts
     fn disable_interrupts(&self) {
+        #[cfg(target_arch = "aarch64")]
         unsafe {
             asm!("msr daifset, #2"); // Set IRQ mask (bit 1)
+        }
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // For unit tests on host platform, do nothing
         }
     }
     
