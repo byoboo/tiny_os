@@ -100,6 +100,18 @@ pub fn handle_help(context: &ShellContext) {
     context
         .uart
         .puts("  !   - Test memory fault analysis (Phase 1)\r\n");
+    context
+        .uart
+        .puts("Advanced Exception Testing (Phase 2):\r\n");
+    context
+        .uart
+        .puts("  #   - Test IRQ integration and routing\r\n");
+    context
+        .uart
+        .puts("  $   - Test nested interrupt handling\r\n");
+    context
+        .uart
+        .puts("  %   - Test deferred processing system\r\n");
     context.uart.puts("Storage & SD Card:\r\n");
     context.uart.puts("  p/P - Show SD card information\r\n");
     context.uart.puts("  q/Q - Read SD card block\r\n");

@@ -1,16 +1,20 @@
 //! Exception system initialization for TinyOS
 //!
 //! This module handles the initialization of the ARM64 exception
-//! vector table and exception handling system.
+//! vector table, exception handling system, and Phase 2 enhancements.
 
 #[cfg(target_arch = "aarch64")]
 use core::arch::global_asm;
+
+// Import Phase 2 initialization functions
+use super::nested_irq::init_nested_interrupts;
+use super::deferred_processing::init_deferred_processing;
 
 // Import the exception vector table assembly
 #[cfg(target_arch = "aarch64")]
 global_asm!(include_str!("../exception_vectors.s"));
 
-/// Initialize the exception vector table
+/// Initialize the exception vector table and Phase 2 enhancements
 #[cfg(target_arch = "aarch64")]
 pub fn init_exceptions() {
     unsafe {
@@ -23,10 +27,16 @@ pub fn init_exceptions() {
             options(nomem, nostack)
         );
     }
+    
+    // Initialize Phase 2 components
+    init_nested_interrupts();
+    init_deferred_processing();
 }
 
 /// Initialize the exception vector table (mock for non-aarch64 targets)
 #[cfg(not(target_arch = "aarch64"))]
 pub fn init_exceptions() {
     // Mock implementation for testing on non-aarch64 targets
+    init_nested_interrupts();
+    init_deferred_processing();
 }

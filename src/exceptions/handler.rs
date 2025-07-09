@@ -24,6 +24,9 @@ use super::esr_decoder::{EsrDecoder, EsrInfo, EsrDetails, ExceptionClass};
 use super::types::{ExceptionContext, ExceptionType, EXCEPTION_STATS};
 use super::syscall::handle_syscall;
 use super::memory_faults::{MemoryFaultAnalyzer, MEMORY_FAULT_STATS};
+use super::irq_integration::handle_irq_integration;
+use super::nested_irq::{InterruptPriority, enter_interrupt_with_priority, exit_current_interrupt};
+use super::deferred_processing::process_pending_work;
 
 /// Handle synchronous exceptions with comprehensive ESR decoding
 #[no_mangle]
@@ -92,17 +95,43 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
     }
 }
 
-/// Handle IRQ exceptions
+/// Handle IRQ exceptions with Phase 2 enhancements
 #[no_mangle]
-pub extern "C" fn handle_irq_exception(_ctx: &mut ExceptionContext, exc_level: u32) {
+pub extern "C" fn handle_irq_exception(ctx: &mut ExceptionContext, exc_level: u32) {
     unsafe {
         EXCEPTION_STATS.record_exception(ExceptionType::Irq, transmute(exc_level));
     }
 
-    // For now, just acknowledge and return
-    // In a full implementation, this would dispatch to specific IRQ handlers
-    let uart = Uart::new();
-    uart.puts("IRQ received\r\n");
+    // Enter interrupt with normal priority
+    if !enter_interrupt_with_priority(InterruptPriority::Normal) {
+        // Interrupt was masked, shouldn't happen for IRQ
+        let uart = Uart::new();
+        uart.puts("IRQ masked - should not happen\r\n");
+        return;
+    }
+
+    // Handle the IRQ through the integration layer
+    let irq_info = handle_irq_integration(ctx);
+    
+    if irq_info.is_valid {
+        let uart = Uart::new();
+        uart.puts("IRQ handled: ");
+        match irq_info.source {
+            super::irq_integration::IrqSource::Timer => uart.puts("Timer"),
+            super::irq_integration::IrqSource::Uart => uart.puts("UART"),
+            super::irq_integration::IrqSource::Gpio => uart.puts("GPIO"),
+            super::irq_integration::IrqSource::Unknown => uart.puts("Unknown"),
+        }
+        uart.puts(" (ID: ");
+        uart.put_hex(irq_info.interrupt_id as u64);
+        uart.puts(")\r\n");
+    }
+
+    // Process any pending deferred work
+    process_pending_work();
+
+    // Exit interrupt context
+    exit_current_interrupt();
 }
 
 /// Handle FIQ exceptions

@@ -93,6 +93,11 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                 b'9' => hardware::handle_syscall_test(&context),
                 b'!' => hardware::handle_memory_fault_test(&context),
 
+                // Phase 2 advanced IRQ and interrupt testing
+                b'#' => hardware::handle_irq_integration_test(&context),
+                b'$' => hardware::handle_nested_interrupt_test(&context),
+                b'%' => hardware::handle_deferred_processing_test(&context),
+
                 // Memory commands
                 b'm' | b'M' => memory::handle_memory_stats(&context.uart, &context.memory_manager),
                 b'a' | b'A' => {
