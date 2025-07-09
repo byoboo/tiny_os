@@ -278,6 +278,25 @@ run_hardware_tests() {
             print_warning "Automated hardware test suite not found: tests/test_hardware_automated.sh"
         fi
     fi
+    
+    # Run modular driver tests (Phase 2 validation)
+    if [[ -f "${TESTS_DIR}/test_drivers_modular.sh" ]]; then
+        print_info "Running modular driver architecture tests"
+        if $VERBOSE; then
+            bash "${TESTS_DIR}/test_drivers_modular.sh"
+            exit_code=$?
+        else
+            error_output=$(bash "${TESTS_DIR}/test_drivers_modular.sh" 2>&1)
+            exit_code=$?
+            if [ $exit_code -ne 0 ] && $DIAGNOSTIC; then
+                print_warning "Modular driver tests failed. Last error output:"
+                echo "$error_output" | tail -5 | sed 's/^/  /'
+            fi
+        fi
+        print_status $exit_code "Modular driver architecture"
+    else
+        print_warning "Modular driver test suite not found: tests/test_drivers_modular.sh"
+    fi
 }
 
 run_unit_tests() {

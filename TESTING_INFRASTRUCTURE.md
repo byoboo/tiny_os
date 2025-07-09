@@ -1,7 +1,25 @@
 # TinyOS Testing Infrastructure
 
 ## Overview
-The TinyOS project now has a clean, comprehensive, and well-organized testing infrastructure that validates all major components and functionality.
+TinyOS uses a **hardware-focused testing approach** optimized for embedded `no_std` development with comprehensive shell-based validation suites.
+
+## Testing Philosophy
+
+### Hardware-First Approach
+- **Shell-driven testing** - Interactive and automated validation via command interface
+- **Real hardware simulation** - Tests actual embedded behavior, not mocked components  
+- **`no_std` native** - Pure embedded environment testing
+- **QEMU-enabled development** - Full testing without physical hardware required
+
+### Why Shell-Based Testing?
+Traditional Rust unit tests require the standard library (`std`), which is incompatible with embedded `no_std` targets. Our shell-based approach provides superior validation by:
+- Testing actual hardware interfaces and drivers
+- Validating real-world system behavior
+- Enabling interactive debugging and exploration
+- Supporting both automated and manual test scenarios
+- **Avoiding "can't find crate for test" errors** - Common issue in `no_std` projects resolved
+
+> 📋 **Note**: The "can't find crate for test" error has been completely resolved through comprehensive rust-analyzer configuration. See `RUST_ANALYZER_CONFIG.md` for details.
 
 ## Main Test Runner
 
@@ -18,46 +36,46 @@ The unified test runner that organizes tests by OS features:
 ```
 
 **Features Tested:**
-- `boot` - Boot system tests and validation
-- `memory` - Memory management and allocation tests
-- `interrupts` - Interrupt handling and priority tests
-- `hardware` - Hardware abstraction and driver tests
-- `unit` - Rust unit tests
+- `boot` - Boot system tests and QEMU validation
+- `memory` - Memory management via shell commands
+- `interrupts` - Interrupt handling and simulation
+- `hardware` - Hardware drivers (UART, GPIO, Timer)
 
 ## Test Components
 
-### 1. Boot System Tests (`/tests/`)
+### 1. Build & Boot Validation
+- **Build validation** - Ensures clean compilation for `aarch64-unknown-none` target
 - **`test_qemu_boot.sh`** - Validates TinyOS boots successfully in QEMU
 - **`validate_tinyos.sh`** - Comprehensive code structure and build validation
 
-### 2. Feature-Specific Automated Tests
-- **`test_memory_automated.sh`** - Memory manager initialization and functionality
+### 2. Hardware-Focused Automated Tests
+- **`test_memory_automated.sh`** - Memory manager via shell commands
 - **`test_interrupt_automated.sh`** - Interrupt controller validation
-- **`test_hardware_automated.sh`** - Hardware driver validation
+- **`test_hardware_automated.sh`** - Hardware driver validation (GPIO, UART, Timer)
 
 ### 3. Interactive Test Suites (Optional)
 - **`test_memory_suite.sh`** - Interactive memory testing (requires expect)
 - **`test_interrupt_suite.sh`** - Interactive interrupt testing (requires expect)
 - **`test_hardware_suite.sh`** - Interactive hardware testing (requires expect)
 
-### 4. Unit Tests
-- Located in `src/simple_tests.rs`
-- Run on host target for maximum compatibility
-- Test core functionality without hardware dependencies
+### 4. Archived Testing Components
+Traditional Rust unit tests and integration tests are archived in `archived_tests/` as they require `std` and are incompatible with our embedded `no_std` target.
 
 ## Test Categories
 
-### ✅ Passing Tests
-- **Boot Tests**: QEMU boot validation, system initialization
-- **Unit Tests**: All 13 Rust unit tests pass
-- **Memory Tests**: Memory manager initialization and functionality
-- **Interrupt Tests**: Interrupt controller and management
-- **Hardware Tests**: GPIO, UART, Timer driver validation
-- **Validation Tests**: Code structure, build verification, symbol table
+### ✅ Current Testing Status
+- **✅ Build Validation** - Clean compilation for embedded target
+- **✅ Boot Tests** - QEMU boot validation, system initialization  
+- **✅ Memory Tests** - Shell-based memory system validation
+- **✅ Interrupt Tests** - Hardware simulation and validation
+- **✅ Hardware Tests** - UART, GPIO, Timer validation via shell commands
+- **✅ Interactive Testing** - Real-time validation via shell interface
 
-### 🧹 Removed/Cleaned Up
-- Removed redundant `test_fat32.sh` (functionality covered by main tests)
-- Removed simple `quick_test.sh` (superseded by comprehensive tests)
+### 🏗️ Testing Architecture
+- **Automated by default** - CI/CD ready with QEMU support
+- **Feature-organized** - Tests grouped by OS functionality
+- **Hardware-realistic** - Tests match actual deployment scenarios
+- **Development-friendly** - Interactive debugging and exploration
 - Fixed all test patterns to match actual TinyOS output
 - Updated boot test to recognize correct initialization messages
 - Aligned memory and interrupt tests with current implementation

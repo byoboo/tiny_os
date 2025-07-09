@@ -14,33 +14,76 @@ if [ $? -eq 0 ]; then
     echo "Creating kernel binary for Raspberry Pi..."
     
     # Check if llvm-tools-preview is installed, install if needed
-    if ! command -v rust-objcopy >/dev/null 2>&1; then
-        echo "Installing llvm-tools-preview component..."
-        rustup component add llvm-tools-preview
-        if [ $? -ne 0 ]; then
-            echo "Failed to install llvm-tools-preview. Trying alternative methods..."
-            
-            # Try using llvm-objcopy directly
-            if command -v llvm-objcopy >/dev/null 2>&1; then
-                llvm-objcopy -j .text -O binary target/aarch64-unknown-none/release/tiny_os kernel8.img
-            elif command -v objcopy >/dev/null 2>&1; then
-                objcopy -j .text -O binary target/aarch64-unknown-none/release/tiny_os kernel8.img
-            else
-                echo "❌ No objcopy tool available. Please install llvm-tools-preview:"
-                echo "   rustup component add llvm-tools-preview"
-                echo ""
-                echo "✅ Kernel ELF file is ready at: target/aarch64-unknown-none/release/tiny_os"
-                echo "   (You can use this directly with QEMU)"
-                exit 1
-            fi
+    echo "Installing llvm-tools-preview component..."
+    rustup component add llvm-tools-preview
+    
+    # Find the correct objcopy tool - prioritize LLVM tools
+    OBJCOPY_TOOL=""
+    RUST_TOOLCHAIN=$(rustc --print sysroot)
+    echo "Rust toolchain: $RUST_TOOLCHAIN"
+    
+    # First, try to find objcopy in rustup toolchain directory (most reliable)
+    POSSIBLE_PATHS=(
+        "$RUST_TOOLCHAIN/lib/rustlib/x86_64-apple-darwin/bin/llvm-objcopy"
+        "$RUST_TOOLCHAIN/lib/rustlib/aarch64-apple-darwin/bin/llvm-objcopy"
+        "$RUST_TOOLCHAIN/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-objcopy"
+        "$RUST_TOOLCHAIN/lib/rustlib/aarch64-unknown-linux-gnu/bin/llvm-objcopy"
+    )
+    
+    echo "Searching for LLVM objcopy in toolchain..."
+    for path in "${POSSIBLE_PATHS[@]}"; do
+        echo "  Checking: $path"
+        if [ -f "$path" ]; then
+            OBJCOPY_TOOL="$path"
+            echo "  ✓ Found LLVM objcopy in toolchain: $path"
+            break
         else
-            # llvm-tools-preview installed successfully, try again
-            rust-objcopy -j .text -O binary target/aarch64-unknown-none/release/tiny_os kernel8.img
+            echo "  ✗ Not found"
         fi
-    else
-        # rust-objcopy is available
-        rust-objcopy -j .text -O binary target/aarch64-unknown-none/release/tiny_os kernel8.img
+    done
+    
+    # If not found in toolchain, try system-wide LLVM tools
+    if [ -z "$OBJCOPY_TOOL" ]; then
+        echo "Searching for system-wide LLVM tools..."
+        if command -v llvm-objcopy >/dev/null 2>&1; then
+            OBJCOPY_TOOL="llvm-objcopy"
+            echo "  ✓ Found system-wide llvm-objcopy: $(which llvm-objcopy)"
+        elif command -v rust-objcopy >/dev/null 2>&1; then
+            OBJCOPY_TOOL="rust-objcopy"
+            echo "  ✓ Found rust-objcopy: $(which rust-objcopy)"
+        else
+            echo "  ✗ No system-wide LLVM tools found"
+        fi
     fi
+    
+    # Last resort: try system objcopy (but warn this often fails with ARM64)
+    if [ -z "$OBJCOPY_TOOL" ]; then
+        echo "Checking for system objcopy as last resort..."
+        if command -v objcopy >/dev/null 2>&1; then
+            OBJCOPY_TOOL="objcopy"
+            echo "  ⚠️  WARNING: Using system objcopy: $(which objcopy)"
+            echo "     This may fail with ARM64 binaries!"
+        else
+            echo "  ✗ No system objcopy found"
+        fi
+    fi
+    
+    # Final check
+    if [ -z "$OBJCOPY_TOOL" ]; then
+        echo "❌ No objcopy tool found. Please make sure llvm-tools-preview is installed:"
+        echo "   rustup component add llvm-tools-preview"
+        echo ""
+        echo "If the problem persists, try installing LLVM tools directly:"
+        echo "   Ubuntu/Debian: sudo apt-get install llvm"
+        echo "   macOS: brew install llvm"
+        echo ""
+        echo "✅ Kernel ELF file is ready at: target/aarch64-unknown-none/release/tiny_os"
+        echo "   (You can use this directly with QEMU)"
+        exit 1
+    fi
+    
+    echo "Using objcopy tool: $OBJCOPY_TOOL"
+    $OBJCOPY_TOOL -j .text -O binary target/aarch64-unknown-none/release/tiny_os kernel8.img
     
     if [ -f kernel8.img ]; then
         echo "Kernel image created: kernel8.img ($(ls -lh kernel8.img | cut -d' ' -f5))"

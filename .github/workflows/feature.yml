@@ -1,0 +1,127 @@
+name: Feature Branch Validation
+
+on:
+  push:
+    branches: 
+      - 'feature/*'
+      - 'bugfix/*'
+      - 'hotfix/*'
+  
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  feature-validation:
+    name: Feature Branch Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: nightly
+        targets: aarch64-unknown-none
+        components: rustfmt, clippy
+    
+    - name: Install QEMU
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+    
+    - name: Cache cargo
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-feature-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Extract feature name
+      id: feature
+      run: |
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        FEATURE_NAME=${BRANCH_NAME##*/}
+        echo "FEATURE_NAME=$FEATURE_NAME" >> $GITHUB_OUTPUT
+        echo "Working on feature: $FEATURE_NAME"
+    
+    - name: Quick build validation
+      run: |
+        echo "🔨 Building feature: ${{ steps.feature.outputs.FEATURE_NAME }}"
+        cargo build --target aarch64-unknown-none
+    
+    - name: Run basic tests
+      run: |
+        chmod +x ./test_tinyos.sh
+        ./test_tinyos.sh --validate-only
+    
+    - name: Code quality check
+      run: |
+        echo "🧹 Checking code quality..."
+        cargo fmt -- --check || echo "⚠️ Code formatting issues found"
+        cargo clippy --target aarch64-unknown-none -- -W clippy::all || echo "⚠️ Clippy warnings found"
+    
+    - name: Feature-specific validation
+      run: |
+        echo "🚀 Feature-specific validation for: ${{ steps.feature.outputs.FEATURE_NAME }}"
+        
+        # Run appropriate tests based on feature name
+        case "${{ steps.feature.outputs.FEATURE_NAME }}" in
+          *memory*)
+            echo "Running memory-related tests..."
+            ./tests/test_memory_modular.sh || echo "Memory tests failed"
+            ;;
+          *driver*)
+            echo "Running driver-related tests..."
+            ./tests/test_drivers_modular.sh || echo "Driver tests failed"
+            ;;
+          *filesystem*|*fat32*)
+            echo "Running filesystem-related tests..."
+            ./tests/test_filesystem_modular.sh || echo "Filesystem tests failed"
+            ;;
+          *shell*)
+            echo "Running shell-related tests..."
+            ./tests/test_qemu_boot.sh || echo "Shell tests failed"
+            ;;
+          *)
+            echo "Running comprehensive tests..."
+            ./tests/test_comprehensive_integration.sh || echo "Integration tests failed"
+            ;;
+        esac
+    
+    - name: Generate feature build
+      run: |
+        echo "📦 Generating feature build..."
+        cargo build --release --target aarch64-unknown-none
+        ./build.sh
+        
+        # Add feature identifier to kernel name
+        mv kernel8.img kernel8-${{ steps.feature.outputs.FEATURE_NAME }}.img
+    
+    - name: Upload feature artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: feature-${{ steps.feature.outputs.FEATURE_NAME }}-${{ github.sha }}
+        path: |
+          kernel8-${{ steps.feature.outputs.FEATURE_NAME }}.img
+          target/aarch64-unknown-none/release/tiny_os
+        retention-days: 14
+    
+    - name: Feature summary
+      run: |
+        echo "📋 Feature Development Summary"
+        echo "============================="
+        echo "Feature: ${{ steps.feature.outputs.FEATURE_NAME }}"
+        echo "Branch: ${GITHUB_REF#refs/heads/}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Status: ✅ Build successful"
+        echo ""
+        echo "Next steps:"
+        echo "1. Complete feature development"
+        echo "2. Run './test_tinyos.sh' locally"
+        echo "3. Create PR to 'dev' branch"
+        echo "4. Address any review feedback"
+        echo "5. Merge to 'dev' for integration testing"

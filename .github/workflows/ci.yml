@@ -1,0 +1,372 @@
+name: TinyOS CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, dev ]
+  pull_request:
+    branches: [ master, dev ]
+  schedule:
+    # Weekly dev release every Monday at 10 AM UTC
+    - cron: '0 10 * * 1'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Build and test job that runs on all pushes and PRs
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for version calculation
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: nightly
+        targets: aarch64-unknown-none
+        components: rustfmt, clippy, llvm-tools-preview
+    
+    - name: Install QEMU and LLVM tools
+      run: |
+        sudo apt-get update
+        # Install QEMU from Ubuntu repos first
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+        # Install LLVM tools as a fallback
+        sudo apt-get install -y llvm
+        
+        # Check QEMU version and available machine types
+        echo "QEMU version:"
+        qemu-system-aarch64 --version
+        echo "Available Raspberry Pi machine types:"
+        qemu-system-aarch64 -machine help | grep -i raspi || echo "No Raspberry Pi machine types found"
+        
+        # Check LLVM tools
+        echo "LLVM version:"
+        llvm-objcopy --version || echo "llvm-objcopy not available"
+    
+    - name: Verify LLVM tools
+      run: |
+        echo "Checking for LLVM objcopy tools..."
+        RUST_TOOLCHAIN=$(rustc --print sysroot)
+        echo "Rust toolchain: $RUST_TOOLCHAIN"
+        
+        # List available LLVM tools
+        find "$RUST_TOOLCHAIN/lib/rustlib" -name "llvm-objcopy" -type f 2>/dev/null || echo "No llvm-objcopy found in toolchain"
+        
+        # Try to run llvm-objcopy to verify it works
+        if command -v llvm-objcopy >/dev/null 2>&1; then
+            echo "System llvm-objcopy found: $(which llvm-objcopy)"
+        else
+            echo "No system llvm-objcopy found"
+        fi
+        
+        # Ensure llvm-tools-preview is installed
+        rustup component add llvm-tools-preview
+        echo "llvm-tools-preview component added"
+        
+        # Run comprehensive verification
+        chmod +x ./verify_objcopy.sh
+        ./verify_objcopy.sh
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Cache cargo build
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Check code formatting
+      run: cargo fmt -- --check
+    
+    - name: Run clippy
+      run: cargo clippy --target aarch64-unknown-none -- -W clippy::all
+    
+    - name: Build debug
+      run: cargo build --target aarch64-unknown-none
+    
+    - name: Build release
+      run: cargo build --release --target aarch64-unknown-none
+    
+    - name: Run comprehensive tests
+      run: |
+        chmod +x ./test_tinyos.sh
+        ./test_tinyos.sh --validate-only
+    
+    - name: Run modular tests
+      run: |
+        chmod +x ./tests/test_*.sh
+        echo "Running comprehensive integration test..."
+        ./tests/test_comprehensive_integration.sh
+        echo "Running memory modular test..."
+        ./tests/test_memory_modular.sh
+        echo "Running drivers modular test..."
+        ./tests/test_drivers_modular.sh
+        echo "Running filesystem modular test..."
+        ./tests/test_filesystem_modular.sh
+    
+    - name: Test QEMU boot
+      run: |
+        chmod +x ./tests/test_qemu_boot.sh
+        ./tests/test_qemu_boot.sh
+    
+    - name: Generate kernel binary
+      run: |
+        chmod +x ./build.sh
+        ./build.sh
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: tinyos-build-${{ github.sha }}
+        path: |
+          target/aarch64-unknown-none/release/tiny_os
+          kernel8.img
+          target/aarch64-unknown-none/debug/tiny_os
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ github.sha }}
+        path: |
+          validation_report.md
+          test_*.log
+        retention-days: 30
+
+  # Development releases (both push and scheduled)
+  dev-release:
+    name: Dev Release
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: (github.ref == 'refs/heads/dev' && github.event_name == 'push') || github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: nightly
+        targets: aarch64-unknown-none
+    
+    - name: Install QEMU
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+    
+    - name: Run tests for scheduled builds
+      if: github.event_name == 'schedule'
+      run: |
+        # Build and test for scheduled releases
+        cargo build --target aarch64-unknown-none
+        cargo build --release --target aarch64-unknown-none
+        
+        # Run comprehensive tests
+        chmod +x ./test_tinyos.sh
+        ./test_tinyos.sh --validate-only
+        
+        # Run modular tests
+        chmod +x ./tests/test_*.sh
+        ./tests/test_comprehensive_integration.sh
+    
+    - name: Calculate build number
+      id: build_number
+      run: |
+        # Get the number of commits on dev branch
+        BUILD_NUMBER=$(git rev-list --count HEAD)
+        echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "Build number: $BUILD_NUMBER"
+        
+        # Determine release type and tag prefix
+        if [ "${{ github.event_name }}" = "schedule" ]; then
+          echo "RELEASE_TYPE=Weekly Scheduled" >> $GITHUB_OUTPUT
+          echo "RELEASE_TITLE=Weekly Dev Release" >> $GITHUB_OUTPUT
+          echo "TAG_PREFIX=dev-weekly" >> $GITHUB_OUTPUT
+        else
+          echo "RELEASE_TYPE=Push Event" >> $GITHUB_OUTPUT
+          echo "RELEASE_TITLE=Development Build" >> $GITHUB_OUTPUT
+          echo "TAG_PREFIX=dev" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Update version in Cargo.toml
+      run: |
+        # Update version to 0.2.0-dev.{build}
+        sed -i "s/^version = \".*\"/version = \"0.2.0-dev.${{ steps.build_number.outputs.BUILD_NUMBER }}\"/" Cargo.toml
+        echo "Updated version to: $(grep '^version = ' Cargo.toml)"
+    
+    - name: Build with updated version
+      run: |
+        cargo build --release --target aarch64-unknown-none
+        chmod +x ./build.sh
+        ./build.sh
+    
+    - name: Create dev release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.build_number.outputs.TAG_PREFIX }}-v0.2.0-dev.${{ steps.build_number.outputs.BUILD_NUMBER }}
+        name: "TinyOS ${{ steps.build_number.outputs.RELEASE_TITLE }} v0.2.0-dev.${{ steps.build_number.outputs.BUILD_NUMBER }}"
+        body: |
+          🚀 **TinyOS ${{ steps.build_number.outputs.RELEASE_TITLE }}**
+          
+          **Build Information:**
+          - Branch: `dev`
+          - Commit: ${{ github.sha }}
+          - Build Number: ${{ steps.build_number.outputs.BUILD_NUMBER }}
+          - Release Type: ${{ steps.build_number.outputs.RELEASE_TYPE }}
+          - Built on: ${{ github.run_number }}
+          ${{ github.event_name == 'schedule' && '- Schedule: Every Monday 10 AM UTC' || '' }}
+          
+          **What's New:**
+          - Latest development features
+          - All tests passing ✅
+          - Modular architecture complete
+          - Pi 4/5 optimized
+          
+          **Files:**
+          - `kernel8.img` - Ready-to-use kernel for Pi 4/5
+          - `tiny_os` - ELF binary for debugging
+          
+          **⚠️ Development Release**
+          This is a pre-release build from the development branch. Use for testing and development only.
+          
+          **Installation:**
+          1. Download `kernel8.img`
+          2. Follow the [hardware deployment guide](https://github.com/${{ github.repository }}#real-hardware-deployment)
+          3. Copy to SD card with Pi firmware files
+        prerelease: true
+        files: |
+          kernel8.img
+          target/aarch64-unknown-none/release/tiny_os
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Production release for master branch
+  production-release:
+    name: Production Release
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: nightly
+        targets: aarch64-unknown-none
+    
+    - name: Install QEMU
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+    
+    - name: Get version from Cargo.toml
+      id: get_version
+      run: |
+        VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Release version: $VERSION"
+    
+    - name: Build production release
+      run: |
+        cargo build --release --target aarch64-unknown-none
+        chmod +x ./build.sh
+        ./build.sh
+    
+    - name: Create production release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: production-v${{ steps.get_version.outputs.VERSION }}
+        name: "TinyOS Production Release v${{ steps.get_version.outputs.VERSION }}"
+        body: |
+          🎉 **TinyOS Production Release**
+          
+          **Release Information:**
+          - Version: ${{ steps.get_version.outputs.VERSION }}
+          - Branch: `master`
+          - Commit: ${{ github.sha }}
+          - Release Date: ${{ github.event.head_commit.timestamp }}
+          
+          **Features:**
+          - ✅ Complete modular architecture (Shell, Drivers, Memory, Filesystem)
+          - ✅ 26+ modular components with clear separation
+          - ✅ Comprehensive testing infrastructure (12+ test suites)
+          - ✅ Pi 4/5 hardware optimization
+          - ✅ FAT32 filesystem with modular implementation
+          - ✅ Interactive shell with 30+ commands
+          - ✅ Memory management with protection and statistics
+          - ✅ Hardware abstraction layer for all drivers
+          
+          **Files:**
+          - `kernel8.img` - Production-ready kernel for Pi 4/5
+          - `tiny_os` - ELF binary for debugging
+          
+          **📋 Production Ready**
+          This is a stable release suitable for production use and hardware deployment.
+          
+          **Installation:**
+          1. Download `kernel8.img`
+          2. Follow the [hardware deployment guide](https://github.com/${{ github.repository }}#real-hardware-deployment)
+          3. Copy to SD card with Pi firmware files
+          
+          **Documentation:**
+          - [README.md](https://github.com/${{ github.repository }}/blob/master/README.md)
+          - [TECHNICAL_DOCS.md](https://github.com/${{ github.repository }}/blob/master/TECHNICAL_DOCS.md)
+          - [TESTING_INFRASTRUCTURE.md](https://github.com/${{ github.repository }}/blob/master/TESTING_INFRASTRUCTURE.md)
+        prerelease: false
+        files: |
+          kernel8.img
+          target/aarch64-unknown-none/release/tiny_os
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Security and dependency scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: nightly
+    
+    - name: Install cargo-audit
+      run: cargo install cargo-audit
+    
+    - name: Run security audit
+      run: cargo audit
+    
+    - name: Check for outdated dependencies
+      run: |
+        cargo install cargo-outdated
+        cargo outdated --exit-code 1 || echo "Some dependencies are outdated"

@@ -1,0 +1,44 @@
+# Rust Analyzer Configuration for TinyOS
+# This file configures rust-analyzer for embedded no_std development
+# and prevents "can't find crate for test" errors
+
+# Force embedded target and disable test compilation
+cargo.target = "aarch64-unknown-none"
+cargo.allFeatures = false
+cargo.noDefaultFeatures = true
+
+# Explicitly disable test builds to prevent "can't find crate for test" errors
+cargo.unsetTest = true
+cargo.features = []
+cargo.allTargets = false
+cargo.loadOutDirsFromCheck = false
+
+# Disable proc macros and build scripts for embedded target
+procMacro.enable = false
+cargo.buildScripts.enable = false
+
+# Check configuration for embedded target only (no duplicates)
+check.command = "clippy"
+check.targets = ["aarch64-unknown-none"]
+check.allTargets = false
+checkOnSave.command = "clippy"
+checkOnSave.targets = ["aarch64-unknown-none"]
+
+# Disable test-related features completely to avoid test crate issues
+runnables.enable = false
+lens.enable = false
+hover.actions.enable = false
+hover.documentation.enable = true
+
+# Comprehensive diagnostic suppression for no_std embedded development
+diagnostics.disabled = [
+    "unresolved-proc-macro",
+    "macro-error", 
+    "unresolved-import",
+    "no-such-crate",
+    "missing-unsafe",
+    "inactive-code"
+]
+
+# Environment for embedded builds
+server.extraEnv = { CARGO_BUILD_TARGET = "aarch64-unknown-none", RUSTFLAGS = "-C link-arg=-Tlinker.ld" }

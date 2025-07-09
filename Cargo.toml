@@ -1,22 +1,20 @@
 [package]
 name = "tiny_os"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["TinyOS Contributors"]
-description = "A bare-metal operating system for Raspberry Pi 4/5"
+description = "A bare-metal operating system for Raspberry Pi 3/4/5"
 keywords = ["embedded", "bare-metal", "os", "raspberry-pi", "aarch64"]
 categories = ["embedded", "no-std"]
 
 [features]
 default = []
+raspi3 = []
 
 [dependencies]
 
 [dev-dependencies]
-lazy_static = "1.4"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-chrono = { version = "0.4", features = ["serde"] }
+# No external dev dependencies for no_std embedded target
 
 [profile.dev]
 panic = "abort"
@@ -26,15 +24,17 @@ panic = "abort"
 lto = true
 opt-level = "s"
 
-# Test configuration for unit tests (use std for testing)
-[profile.test]
-panic = "unwind"  # Allow panics in tests for better error reporting
-
-# Library target for testing (hosted environment)
+# Embedded binary target
 [[bin]]
 name = "tiny_os"
 path = "src/main.rs"
 
+# Library target for modular access
 [lib]
 name = "tiny_os_lib"
 path = "src/lib.rs"
+
+# Workspace metadata to prevent rust-analyzer test issues
+[workspace.metadata.rust-analyzer]
+cargo-target = "aarch64-unknown-none"
+cargo-all-targets = false

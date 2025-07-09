@@ -75,9 +75,9 @@ else
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
-# Test 4: Source code validation
+# Test 4: Source code validation (updated for modular memory)
 print_status "Test 4: Memory manager source validation"
-if grep -q "fn allocate_block\|fn allocate_blocks" src/memory.rs && grep -q "fn deallocate\|fn free" src/memory.rs; then
+if grep -q "fn allocate_block\|fn allocate_blocks" src/memory/mod.rs && grep -q "fn deallocate\|fn free" src/memory/mod.rs; then
     print_success "Allocation/deallocation functions present"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
@@ -85,9 +85,9 @@ else
     TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
-# Test 5: Memory constants validation
+# Test 5: Memory constants validation (updated for modular memory)
 print_status "Test 5: Memory constants validation"
-if grep -q "HEAP_SIZE" src/memory.rs && grep -q "BLOCK_SIZE" src/memory.rs; then
+if grep -q "HEAP_SIZE" src/memory/layout.rs && grep -q "BLOCK_SIZE" src/memory/layout.rs; then
     print_success "Memory constants defined"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
