@@ -86,6 +86,12 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                 b'p' | b'P' => hardware::handle_sdcard_info(&context),
                 b'q' | b'Q' => hardware::handle_sdcard_read(&mut context),
                 b'y' | b'Y' => hardware::handle_sdcard_write(&mut context),
+                // Phase 1 enhanced exception testing commands
+                b'7' => hardware::handle_exception_test_advanced(&context),
+                b'8' => hardware::handle_esr_test(&context),
+                // Phase 1 system call and memory fault testing
+                b'9' => hardware::handle_syscall_test(&context),
+                b'!' => hardware::handle_memory_fault_test(&context),
 
                 // Memory commands
                 b'm' | b'M' => memory::handle_memory_stats(&context.uart, &context.memory_manager),

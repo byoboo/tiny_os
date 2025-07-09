@@ -22,6 +22,8 @@ use super::esr_decoder::{EsrDecoder, EsrInfo, EsrDetails, ExceptionClass};
 
 // Import types from the main exceptions module
 use super::types::{ExceptionContext, ExceptionType, EXCEPTION_STATS};
+use super::syscall::handle_syscall;
+use super::memory_faults::{MemoryFaultAnalyzer, MEMORY_FAULT_STATS};
 
 /// Handle synchronous exceptions with comprehensive ESR decoding
 #[no_mangle]
@@ -192,7 +194,7 @@ fn report_exception_details(uart: &Uart, esr_info: &EsrInfo) {
 }
 
 /// Handle system calls (SVC instructions)
-fn handle_system_call(_ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
+fn handle_system_call(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
     
     if let EsrDetails::SystemCall { immediate } = &esr_info.details {
@@ -200,9 +202,26 @@ fn handle_system_call(_ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         uart.put_hex(*immediate as u64);
         uart.puts("\r\n");
         
-        // TODO: Implement system call dispatcher
-        // For now, just log the call
-        uart.puts("System call handling not yet implemented\r\n");
+        // Extract system call arguments from general registers
+        // In ARM64, syscall arguments are passed in x0-x5
+        let args = [
+            ctx.gpr[0], // x0
+            ctx.gpr[1], // x1
+            ctx.gpr[2], // x2
+            ctx.gpr[3], // x3
+            ctx.gpr[4], // x4
+            ctx.gpr[5], // x5
+        ];
+        
+        // Call the system call handler
+        let result = handle_syscall(*immediate as u64, &args);
+        
+        // Store the result in x0 (return value register)
+        ctx.gpr[0] = result as i64 as u64;
+        
+        uart.puts("System call completed with result: ");
+        uart.put_hex(result as u64);
+        uart.puts("\r\n");
     }
 }
 
@@ -220,8 +239,16 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         uart.puts(fault_status.description());
         uart.puts("\r\n");
         
-        // TODO: Implement memory fault recovery if possible
-        uart.puts("Memory fault recovery not yet implemented\r\n");
+        // Use memory fault analyzer for detailed analysis
+        let fault_info = MemoryFaultAnalyzer::analyze_fault(ctx.esr as u32);
+        let _report = MemoryFaultAnalyzer::generate_fault_report(&fault_info);
+        
+        // Update statistics
+        unsafe {
+            MEMORY_FAULT_STATS.record_fault(fault_info.fault_type);
+        }
+        
+        uart.puts("Memory fault analysis completed\r\n");
     }
 }
 

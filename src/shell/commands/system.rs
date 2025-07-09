@@ -90,6 +90,16 @@ pub fn handle_help(context: &ShellContext) {
     context
         .uart
         .puts("  w/W - Test exception handling (safe)\r\n");
+    context
+        .uart
+        .puts("  7   - Advanced exception testing (Phase 1)\r\n");
+    context.uart.puts("  8   - Test ESR_EL1 decoder\r\n");
+    context
+        .uart
+        .puts("  9   - Test system call interface (Phase 1)\r\n");
+    context
+        .uart
+        .puts("  !   - Test memory fault analysis (Phase 1)\r\n");
     context.uart.puts("Storage & SD Card:\r\n");
     context.uart.puts("  p/P - Show SD card information\r\n");
     context.uart.puts("  q/Q - Read SD card block\r\n");
