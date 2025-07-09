@@ -22,6 +22,7 @@ use tiny_os_lib::{
     fat32::Fat32FileSystem,
     interrupts::InterruptController,
     memory::MemoryManager,
+    process,
     shell::{run_shell, ShellContext},
 };
 
@@ -45,6 +46,10 @@ pub extern "C" fn kernel_main() {
     init_exceptions();
     uart.puts("✓ Exception handling initialized\r\n");
 
+    // Initialize process management
+    process::init_process_management();
+    uart.puts("✓ Process management initialized\r\n");
+
     // Initialize GPIO
     let gpio = Gpio::new();
 
@@ -66,33 +71,18 @@ pub extern "C" fn kernel_main() {
     uart.puts("✓ Interrupt controller initialized\r\n");
 
     // Initialize SD Card (defer FAT32 mounting to avoid stack overflow)
-    uart.puts("Initializing SD Card...\r\n");
+    uart.puts("About to initialize SD Card...\r\n");
+
+    // Create a stub SD card to avoid hardware initialization in QEMU
     let mut sdcard = SdCard::new();
+    uart.puts("SD Card object created\r\n");
+
     let fat32_fs: Option<Fat32FileSystem> = None;
 
-    let _sd_init_success = match sdcard.init() {
-        Ok(()) => {
-            uart.puts("SD Card initialized successfully!\r\n");
-            if let Some(info) = sdcard.get_card_info() {
-                uart.puts("SD Card Info: ");
-                if info.high_capacity {
-                    uart.puts("SDHC/SDXC, ");
-                } else {
-                    uart.puts("Standard, ");
-                }
-                uart.puts("RCA: ");
-                uart.put_hex(info.rca as u64);
-                uart.puts("\r\n");
-            }
-
-            uart.puts("✓ SD Card ready (use 'n' command to mount FAT32)\r\n");
-            true
-        }
-        Err(_) => {
-            uart.puts("SD Card initialization failed\r\n");
-            false
-        }
-    };
+    // For now, skip SD card initialization in QEMU to prevent hanging
+    // This can be re-enabled when proper QEMU emulation is available
+    let _sd_init_success = false;
+    uart.puts("SD Card initialization skipped (QEMU compatibility)\r\n");
 
     // System ready
     uart.puts("================================\r\n");

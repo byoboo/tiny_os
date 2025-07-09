@@ -10,6 +10,7 @@ categories = ["embedded", "no-std"]
 [features]
 default = []
 raspi3 = []
+std = []
 
 [dependencies]
 

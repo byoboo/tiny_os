@@ -12,6 +12,7 @@ pub mod exceptions;
 pub mod filesystem; // New modular filesystem system
 pub mod interrupts;
 pub mod memory;
+pub mod process; // New process management system
 pub mod shell;
 
 // Legacy filesystem module (for backward compatibility)

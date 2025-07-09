@@ -91,12 +91,40 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                 b'8' => hardware::handle_esr_test(&context),
                 // Phase 1 system call and memory fault testing
                 b'9' => hardware::handle_syscall_test(&context),
-                b'!' => hardware::handle_memory_fault_test(&context),
-
-                // Phase 2 advanced IRQ and interrupt testing
+                b'!' => hardware::handle_memory_fault_test(&context), /* Phase 2 advanced IRQ and interrupt testing */
                 b'#' => hardware::handle_irq_integration_test(&context),
                 b'$' => hardware::handle_nested_interrupt_test(&context),
                 b'%' => hardware::handle_deferred_processing_test(&context),
+
+                // Phase 3 Process Management Testing
+                b'&' => {
+                    // Process management submenu
+                    context.uart.puts("\r\nProcess Management Commands:\r\n");
+                    context.uart.puts("  1 - Process Context Test\r\n");
+                    context.uart.puts("  2 - Privilege Level Test\r\n");
+                    context.uart.puts("  3 - Scheduler Test\r\n");
+                    context.uart.puts("  4 - Process Stats\r\n");
+                    context.uart.puts("  5 - Scheduler Stats\r\n");
+                    context.uart.puts("  6 - Privilege Stats\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::process::handle_process_context_test(&context),
+                            b'2' => commands::process::handle_privilege_test(&context),
+                            b'3' => commands::process::handle_scheduler_test(&context),
+                            b'4' => commands::process::handle_process_stats(&context),
+                            b'5' => commands::process::handle_scheduler_stats(&context),
+                            b'6' => commands::process::handle_privilege_stats(&context),
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
+                // Direct process management test commands (for automated testing)
+                b'[' => commands::process::handle_process_context_test(&context), // pctx
+                b'\\' => commands::process::handle_privilege_test(&context),      // priv
+                b']' => commands::process::handle_scheduler_test(&context),       // sched
 
                 // Memory commands
                 b'm' | b'M' => memory::handle_memory_stats(&context.uart, &context.memory_manager),

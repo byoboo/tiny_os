@@ -112,6 +112,14 @@ pub fn handle_help(context: &ShellContext) {
     context
         .uart
         .puts("  %   - Test deferred processing system\r\n");
+    context.uart.puts("Process Management (Phase 3):\r\n");
+    context.uart.puts("  &   - Process management submenu\r\n");
+    context.uart.puts("    1 - Process context test\r\n");
+    context.uart.puts("    2 - Privilege level test\r\n");
+    context.uart.puts("    3 - Task scheduler test\r\n");
+    context.uart.puts("    4 - Process statistics\r\n");
+    context.uart.puts("    5 - Scheduler statistics\r\n");
+    context.uart.puts("    6 - Privilege statistics\r\n");
     context.uart.puts("Storage & SD Card:\r\n");
     context.uart.puts("  p/P - Show SD card information\r\n");
     context.uart.puts("  q/Q - Read SD card block\r\n");

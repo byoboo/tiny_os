@@ -6,4 +6,5 @@
 pub mod filesystem;
 pub mod hardware;
 pub mod memory;
+pub mod process;
 pub mod system;
