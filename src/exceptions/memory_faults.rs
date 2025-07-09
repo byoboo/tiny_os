@@ -3,9 +3,11 @@
 //! This module provides comprehensive memory fault analysis capabilities
 //! for data aborts, instruction aborts, and other memory-related exceptions.
 //! It implements Phase 1 memory fault handling as outlined in the enhancement plan.
+//! In Phase 4, this integrates with MMU exception handling for advanced memory management.
 
 use core::arch::asm;
 use crate::uart::Uart;
+use crate::memory::{MemoryManager, handle_mmu_exception_global, MmuRecoveryAction};
 
 /// Memory fault types based on ESR_EL1 exception class
 #[repr(u32)]
@@ -283,6 +285,36 @@ pub static mut MEMORY_FAULT_STATS: MemoryFaultStats = MemoryFaultStats::new();
 /// Get current memory fault statistics
 pub fn get_memory_fault_stats() -> MemoryFaultStats {
     unsafe { MEMORY_FAULT_STATS }
+}
+
+/// Integrate memory fault analysis with MMU exception handling (Phase 4)
+pub fn handle_memory_fault_with_mmu(
+    esr_el1: u32,
+    far_el1: u64,
+    elr_el1: u64,
+    user_mode: bool,
+    memory_manager: &mut MemoryManager,
+) -> MmuRecoveryAction {
+    // First, analyze the fault using our existing system
+    let fault_info = MemoryFaultAnalyzer::analyze_fault(esr_el1);
+    
+    // Update statistics
+    unsafe {
+        MEMORY_FAULT_STATS.record_fault(fault_info.fault_type);
+    }
+    
+    // Print fault information for debugging
+    let mut uart = Uart::new();
+    uart.init();
+    uart.puts("MMU Memory Fault Integration:\r\n");
+    uart.puts("Fault Address: 0x");
+    MemoryFaultAnalyzer::print_hex(&uart, far_el1);
+    uart.puts("\r\nInstruction Address: 0x");
+    MemoryFaultAnalyzer::print_hex(&uart, elr_el1);
+    uart.puts("\r\n");
+    
+    // Delegate to MMU exception handler for advanced processing
+    handle_mmu_exception_global(esr_el1, far_el1, user_mode, elr_el1, memory_manager)
 }
 
 /// Test function to validate memory fault analysis

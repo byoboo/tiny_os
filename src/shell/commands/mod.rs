@@ -3,6 +3,7 @@
 //! This module contains all the individual command handlers organized by
 //! category.
 
+pub mod exceptions;
 pub mod filesystem;
 pub mod hardware;
 pub mod memory;

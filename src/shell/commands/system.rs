@@ -120,6 +120,13 @@ pub fn handle_help(context: &ShellContext) {
     context.uart.puts("    4 - Process statistics\r\n");
     context.uart.puts("    5 - Scheduler statistics\r\n");
     context.uart.puts("    6 - Privilege statistics\r\n");
+    context.uart.puts("MMU & Exception Management (Phase 4):\r\n");
+    context.uart.puts("  ^   - Exception management submenu\r\n");
+    context.uart.puts("    1 - Exception statistics\r\n");
+    context.uart.puts("    2 - MMU exception statistics\r\n");
+    context.uart.puts("    3 - MMU control (on/off)\r\n");
+    context.uart.puts("    4 - Exception testing (safe)\r\n");
+    context.uart.puts("    5 - Reset exception stats\r\n");
     context.uart.puts("Storage & SD Card:\r\n");
     context.uart.puts("  p/P - Show SD card information\r\n");
     context.uart.puts("  q/Q - Read SD card block\r\n");

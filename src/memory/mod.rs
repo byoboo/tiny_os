@@ -40,6 +40,7 @@
 pub mod allocator;
 pub mod hardware;
 pub mod layout;
+pub mod mmu_exceptions;
 pub mod protection;
 pub mod statistics;
 pub mod testing;
@@ -48,6 +49,11 @@ pub mod testing;
 pub use allocator::BlockAllocator;
 pub use hardware::{HardwareMemoryInfo, MemoryHardware};
 pub use layout::{MemoryHardwareConfig, BLOCK_SIZE, HEAP_SIZE, HEAP_START, TOTAL_BLOCKS};
+pub use mmu_exceptions::{
+    MmuExceptionHandler, MmuExceptionStats, MmuExceptionType, MmuFaultInfo, MmuRecoveryAction,
+    AccessType, handle_mmu_exception_global, init_mmu_exceptions, get_mmu_exception_stats,
+    is_mmu_exception_handling_enabled, set_mmu_exception_handling_enabled,
+};
 pub use protection::{CorruptionDetection, CorruptionReport, MemoryProtection};
 pub use statistics::{FragmentationAnalysis, MemoryDefragmenter, MemoryStatistics, MemoryStats};
 pub use testing::MemoryTester;

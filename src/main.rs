@@ -21,7 +21,7 @@ use tiny_os_lib::{
     exceptions::init_exceptions,
     fat32::Fat32FileSystem,
     interrupts::InterruptController,
-    memory::MemoryManager,
+    memory::{MemoryManager, init_mmu_exceptions},
     process,
     shell::{run_shell, ShellContext},
 };
@@ -45,6 +45,10 @@ pub extern "C" fn kernel_main() {
     // Initialize exceptions
     init_exceptions();
     uart.puts("✓ Exception handling initialized\r\n");
+
+    // Initialize MMU exception handling
+    init_mmu_exceptions();
+    uart.puts("✓ MMU exception handling initialized\r\n");
 
     // Initialize process management
     process::init_process_management();

@@ -121,6 +121,47 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     }
                 }
 
+                // Phase 4 MMU and Exception Management
+                b'^' => {
+                    // Exception management submenu
+                    context.uart.puts("\r\nException Management Commands:\r\n");
+                    context.uart.puts("  1 - Exception Statistics\r\n");
+                    context.uart.puts("  2 - MMU Exception Statistics\r\n");
+                    context.uart.puts("  3 - MMU Control (on/off)\r\n");
+                    context.uart.puts("  4 - Exception Testing (safe)\r\n");
+                    context.uart.puts("  5 - Reset Exception Stats\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::exceptions::cmd_exception_stats(&["ex"], &mut context),
+                            b'2' => commands::exceptions::cmd_mmu_stats(&["mmu"], &mut context),
+                            b'3' => {
+                                context.uart.puts("Enable (1) or Disable (2) MMU handling? ");
+                                if let Some(choice) = context.uart.getc() {
+                                    match choice {
+                                        b'1' => commands::exceptions::cmd_mmu_control(&["mmuctl", "on"], &mut context),
+                                        b'2' => commands::exceptions::cmd_mmu_control(&["mmuctl", "off"], &mut context),
+                                        _ => context.uart.puts("Invalid choice\r\n"),
+                                    }
+                                }
+                            }
+                            b'4' => {
+                                context.uart.puts("Test type: (1) Alignment, (2) Null deref: ");
+                                if let Some(choice) = context.uart.getc() {
+                                    match choice {
+                                        b'1' => commands::exceptions::cmd_test_exceptions(&["extest", "alignment"], &mut context),
+                                        b'2' => commands::exceptions::cmd_test_exceptions(&["extest", "nullderef"], &mut context),
+                                        _ => context.uart.puts("Invalid choice\r\n"),
+                                    }
+                                }
+                            }
+                            b'5' => commands::exceptions::cmd_reset_exception_stats(&["exreset"], &mut context),
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
                 // Direct process management test commands (for automated testing)
                 b'[' => commands::process::handle_process_context_test(&context), // pctx
                 b'\\' => commands::process::handle_privilege_test(&context),      // priv

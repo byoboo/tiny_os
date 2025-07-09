@@ -254,7 +254,7 @@ fn handle_system_call(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     }
 }
 
-/// Handle data aborts (memory access faults)
+/// Handle data aborts (memory access faults) with MMU integration
 fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
     
@@ -277,12 +277,39 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
             MEMORY_FAULT_STATS.record_fault(fault_info.fault_type);
         }
         
+        // Phase 4 MMU Integration: Check if we have a memory manager available
+        // For now, we'll create a stub memory manager for demonstration
+        // In a real system, this would be passed in or accessed globally
+        let mut memory_manager = crate::memory::MemoryManager::new();
+        
+        // Determine if we're in user mode (simplified check)
+        let user_mode = (ctx.spsr & 0xF) == 0x0; // EL0 = user mode
+        
+        // Call the integrated MMU memory fault handler
+        use crate::exceptions::memory_faults::handle_memory_fault_with_mmu;
+        let recovery_action = handle_memory_fault_with_mmu(
+            ctx.esr as u32,
+            ctx.far,
+            ctx.elr,
+            user_mode,
+            &mut memory_manager,
+        );
+        
+        uart.puts("MMU Recovery Action: ");
+        match recovery_action {
+            crate::memory::MmuRecoveryAction::Continue => uart.puts("Continue"),
+            crate::memory::MmuRecoveryAction::Retry => uart.puts("Retry"),
+            crate::memory::MmuRecoveryAction::TerminateProcess => uart.puts("Terminate Process"),
+            crate::memory::MmuRecoveryAction::SystemPanic => uart.puts("System Panic"),
+        }
+        uart.puts("\r\n");
+        
         uart.puts("Memory fault analysis completed\r\n");
     }
 }
 
-/// Handle instruction aborts (code execution faults)
-fn handle_instruction_abort(_ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
+/// Handle instruction aborts (code execution faults) with MMU integration
+fn handle_instruction_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
     
     uart.puts("Instruction abort analysis:\r\n");
@@ -293,8 +320,30 @@ fn handle_instruction_abort(_ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         uart.puts("\r\n");
     }
     
-    // TODO: Implement instruction fault analysis
-    uart.puts("Instruction fault analysis not yet implemented\r\n");
+    // Phase 4 MMU Integration for instruction aborts
+    let mut memory_manager = crate::memory::MemoryManager::new();
+    let user_mode = (ctx.spsr & 0xF) == 0x0; // EL0 = user mode
+    
+    // Call the integrated MMU memory fault handler for instruction faults
+    use crate::exceptions::memory_faults::handle_memory_fault_with_mmu;
+    let recovery_action = handle_memory_fault_with_mmu(
+        ctx.esr as u32,
+        ctx.far,
+        ctx.elr,
+        user_mode,
+        &mut memory_manager,
+    );
+    
+    uart.puts("MMU Recovery Action: ");
+    match recovery_action {
+        crate::memory::MmuRecoveryAction::Continue => uart.puts("Continue"),
+        crate::memory::MmuRecoveryAction::Retry => uart.puts("Retry"),
+        crate::memory::MmuRecoveryAction::TerminateProcess => uart.puts("Terminate Process"),
+        crate::memory::MmuRecoveryAction::SystemPanic => uart.puts("System Panic"),
+    }
+    uart.puts("\r\n");
+    
+    uart.puts("Instruction fault analysis completed\r\n");
 }
 
 /// Handle illegal execution state
