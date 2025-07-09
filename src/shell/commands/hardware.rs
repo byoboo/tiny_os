@@ -4,7 +4,7 @@
 //! LED control, interrupt management, exception handling, and SD card
 //! operations.
 
-use crate::{exceptions::get_exception_stats, shell::ShellContext};
+use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 
 /// Helper function to print numbers  
 #[inline]
@@ -154,7 +154,7 @@ pub fn handle_interrupt_test(context: &mut ShellContext) {
 
 /// Handle exception statistics command (v/V)
 pub fn handle_exception_stats(context: &ShellContext) {
-    let stats = get_exception_stats();
+    let stats = ExceptionStats::get_stats();
     context.uart.puts("\r\n=== Exception Statistics ===\r\n");
     context.uart.puts("Exception Handler Status:\r\n");
     context.uart.puts("  Exception vectors: ✓ ACTIVE\r\n");
@@ -193,7 +193,7 @@ pub fn handle_exception_test(context: &ShellContext) {
     context.uart.puts("2. Exception handlers: ✓ ACTIVE\r\n");
     context.uart.puts("3. Exception statistics: ✓ TRACKING\r\n");
 
-    let stats = get_exception_stats();
+    let stats = ExceptionStats::get_stats();
     context.uart.puts("4. Exception history: ");
     if stats.total_exceptions > 0 {
         context.uart.puts("✓ RECORDED (");

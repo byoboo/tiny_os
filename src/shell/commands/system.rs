@@ -3,7 +3,7 @@
 //! This module contains handlers for system-level commands like help, time,
 //! system info, and health checks.
 
-use crate::{exceptions::get_exception_stats, shell::ShellContext};
+use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 
 /// Helper function to print time in a readable format
 fn print_time(uart: &crate::uart::Uart, ms: u32) {
@@ -186,7 +186,7 @@ pub fn handle_health_check(context: &mut ShellContext) {
         .uart
         .puts("4. Exception System: Handler validation...\r\n");
     context.uart.puts("   - Exception stats available: ");
-    let stats = get_exception_stats();
+    let stats = ExceptionStats::get_stats();
     context.uart.puts("✓ PASS\r\n");
     context.uart.puts("   - Total exceptions handled: ");
     print_number(&context.uart, stats.total_exceptions as u32);
