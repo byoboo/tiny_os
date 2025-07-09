@@ -5,8 +5,7 @@
     "rust-analyzer.cargo.features": [],
     "rust-analyzer.cargo.noDefaultFeatures": true,
     "rust-analyzer.cargo.allFeatures": false,
-    "rust-analyzer.checkOnSave.command": "clippy",
-    "rust-analyzer.checkOnSave.extraArgs": [
+    "rust-analyzer.check.extraArgs": [
         "--target",
         "aarch64-unknown-none",
         "--",
