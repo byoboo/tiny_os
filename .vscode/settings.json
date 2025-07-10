@@ -25,7 +25,8 @@
         "inactive-code",
         "test-unknown-config",
         "test-not-found",
-        "test-ignored"
+        "test-ignored",
+        "unresolved-extern-crate"
     ],
     "rust-analyzer.completion.callable.snippets": "none",
     "rust-analyzer.hover.actions.enable": false,
@@ -55,6 +56,10 @@
     // Explicit workspace override to ignore global cargo settings
     "rust-analyzer.cargo.configPath": ".cargo/config.toml",
     "rust-analyzer.files.watcher": "client",
+    // Force sysroot to use the embedded target
+    "rust-analyzer.rustcSource": "discover",
+    "rust-analyzer.cargo.sysroot": "discover",
+    "rust-analyzer.cargo.useRustcWrapperForBuildScripts": false,
     "files.associations": {
         "*.s": "arm",
         "*.ld": "ld-script"

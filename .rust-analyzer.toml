@@ -17,6 +17,9 @@ cargo.loadOutDirsFromCheck = false
 procMacro.enable = false
 cargo.buildScripts.enable = false
 
+# Exclude test directories from analysis
+files.excludeDirs = ["tests", "archived_tests"]
+
 # Check configuration for embedded target only (no duplicates)
 check.command = "clippy"
 check.targets = ["aarch64-unknown-none"]
@@ -37,8 +40,12 @@ diagnostics.disabled = [
     "unresolved-import",
     "no-such-crate",
     "missing-unsafe",
-    "inactive-code"
+    "inactive-code",
+    "unresolved-extern-crate"
 ]
 
 # Environment for embedded builds
 server.extraEnv = { CARGO_BUILD_TARGET = "aarch64-unknown-none", RUSTFLAGS = "-C link-arg=-Tlinker.ld" }
+
+# Force cargo to never build test targets
+cargo.cfgs = { test = false }

@@ -31,3 +31,5 @@ runner = ["echo", "Tests disabled for no_std target"]
 # Override any global target settings for this workspace
 [env]
 CARGO_BUILD_TARGET = "aarch64-unknown-none"
+# Force no test compilation
+CARGO_CFG_TEST = "0"
