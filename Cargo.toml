@@ -32,6 +32,7 @@ path = "src/main.rs"
 
 # Library target for modular access
 [lib]
+test =  false # Disable tests in the library due to no_std
 name = "tiny_os_lib"
 path = "src/lib.rs"
 
