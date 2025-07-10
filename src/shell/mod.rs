@@ -134,29 +134,50 @@ pub fn run_shell(mut context: ShellContext) -> ! {
 
                     if let Some(option) = context.uart.getc() {
                         match option {
-                            b'1' => commands::exceptions::cmd_exception_stats(&["ex"], &mut context),
+                            b'1' => {
+                                commands::exceptions::cmd_exception_stats(&["ex"], &mut context)
+                            }
                             b'2' => commands::exceptions::cmd_mmu_stats(&["mmu"], &mut context),
                             b'3' => {
-                                context.uart.puts("Enable (1) or Disable (2) MMU handling? ");
+                                context
+                                    .uart
+                                    .puts("Enable (1) or Disable (2) MMU handling? ");
                                 if let Some(choice) = context.uart.getc() {
                                     match choice {
-                                        b'1' => commands::exceptions::cmd_mmu_control(&["mmuctl", "on"], &mut context),
-                                        b'2' => commands::exceptions::cmd_mmu_control(&["mmuctl", "off"], &mut context),
+                                        b'1' => commands::exceptions::cmd_mmu_control(
+                                            &["mmuctl", "on"],
+                                            &mut context,
+                                        ),
+                                        b'2' => commands::exceptions::cmd_mmu_control(
+                                            &["mmuctl", "off"],
+                                            &mut context,
+                                        ),
                                         _ => context.uart.puts("Invalid choice\r\n"),
                                     }
                                 }
                             }
                             b'4' => {
-                                context.uart.puts("Test type: (1) Alignment, (2) Null deref: ");
+                                context
+                                    .uart
+                                    .puts("Test type: (1) Alignment, (2) Null deref: ");
                                 if let Some(choice) = context.uart.getc() {
                                     match choice {
-                                        b'1' => commands::exceptions::cmd_test_exceptions(&["extest", "alignment"], &mut context),
-                                        b'2' => commands::exceptions::cmd_test_exceptions(&["extest", "nullderef"], &mut context),
+                                        b'1' => commands::exceptions::cmd_test_exceptions(
+                                            &["extest", "alignment"],
+                                            &mut context,
+                                        ),
+                                        b'2' => commands::exceptions::cmd_test_exceptions(
+                                            &["extest", "nullderef"],
+                                            &mut context,
+                                        ),
                                         _ => context.uart.puts("Invalid choice\r\n"),
                                     }
                                 }
                             }
-                            b'5' => commands::exceptions::cmd_reset_exception_stats(&["exreset"], &mut context),
+                            b'5' => commands::exceptions::cmd_reset_exception_stats(
+                                &["exreset"],
+                                &mut context,
+                            ),
                             _ => context.uart.puts("Invalid option\r\n"),
                         }
                     }
