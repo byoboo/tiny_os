@@ -89,7 +89,7 @@ run_integration_test() {
 
 # Build the project first
 echo "Building TinyOS..."
-cd /home/byoboo/projects/tiny_os
+cd "${TINY_OS_DIR:-$(pwd)/../tiny_os}"
 cargo build --target aarch64-unknown-none || {
     echo -e "${RED}Build failed!${NC}"
     exit 1
