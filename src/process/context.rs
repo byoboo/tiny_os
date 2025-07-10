@@ -85,7 +85,6 @@ impl ProcessContext {
         // Save general purpose registers from exception context
         // This would normally be done by the exception handler
         // For now, we'll just mark the context as saved
-        self.context_switches += 1;
         
         // Save FPU context (ARM64 specific)
         self.save_fpu_context();
