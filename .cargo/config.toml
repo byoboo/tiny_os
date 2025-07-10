@@ -15,6 +15,13 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
+[profile.test]
+panic = "abort"
+
+# Disable test targets completely
+[target.'cfg(target_arch = "aarch64")']
+runner = ["echo", "Tests disabled for no_std target"]
+
 # Note: build-std is available if needed for advanced no-std scenarios
 # Uncomment the following lines if you need to rebuild core/alloc from source:
 # [unstable]

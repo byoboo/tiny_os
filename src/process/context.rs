@@ -1,7 +1,6 @@
 // TinyOS Process Context Management
 // Phase 3.1: Process Context Management
 
-use core::mem;
 use crate::exceptions::types::ExceptionContext;
 
 /// Process state enumeration
@@ -348,22 +347,32 @@ pub fn init_process_context_management() {
 
 /// Get current process context
 pub fn get_current_context() -> Option<ProcessContext> {
-    unsafe { CONTEXT_MANAGER.get_current_context().cloned() }
+    unsafe { 
+        let manager = core::ptr::addr_of!(CONTEXT_MANAGER);
+        (*manager).get_current_context().cloned()
+    }
 }
 
 /// Set current process context
 pub fn set_current_context(context: ProcessContext) {
     unsafe {
-        CONTEXT_MANAGER.set_current_context(context);
+        let manager = core::ptr::addr_of_mut!(CONTEXT_MANAGER);
+        (*manager).set_current_context(context);
     }
 }
 
 /// Perform context switch
 pub fn context_switch(new_context: ProcessContext) -> ContextSwitchResult {
-    unsafe { CONTEXT_MANAGER.context_switch(new_context) }
+    unsafe { 
+        let manager = core::ptr::addr_of_mut!(CONTEXT_MANAGER);
+        (*manager).context_switch(new_context)
+    }
 }
 
 /// Get context management statistics
 pub fn get_context_stats() -> (u64, u64) {
-    unsafe { CONTEXT_MANAGER.get_stats() }
+    unsafe { 
+        let manager = core::ptr::addr_of!(CONTEXT_MANAGER);
+        (*manager).get_stats()
+    }
 }

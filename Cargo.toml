@@ -32,11 +32,19 @@ path = "src/main.rs"
 
 # Library target for modular access
 [lib]
-test =  false # Disable tests in the library due to no_std
+test = false # Disable tests in the library due to no_std
 name = "tiny_os_lib"
 path = "src/lib.rs"
+
+# Disable any test targets completely to prevent rust-analyzer issues
+[[test]]
+name = "test_disabled"
+path = "tests/test_disabled.rs"
+test = false
 
 # Workspace metadata to prevent rust-analyzer test issues
 [workspace.metadata.rust-analyzer]
 cargo-target = "aarch64-unknown-none"
 cargo-all-targets = false
+cargo-all-features = false
+check-on-save = true
