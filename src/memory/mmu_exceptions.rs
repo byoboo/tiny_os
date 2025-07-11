@@ -245,7 +245,8 @@ impl MmuExceptionHandler {
                             }
                             Err(_) => {
                                 // COW fault handling failed
-                                // Fall through to standard permission fault handling
+                                // Fall through to standard permission fault
+                                // handling
                             }
                         }
                     }

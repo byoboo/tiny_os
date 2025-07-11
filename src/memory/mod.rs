@@ -47,12 +47,13 @@ pub mod protection;
 pub mod stack;
 pub mod statistics;
 pub mod testing;
+pub mod user_space;
 
 // Re-export key types for convenience
 pub use allocator::BlockAllocator;
 pub use cow::{
-    get_cow_manager, init_cow_manager, create_cow_fault_from_exception,
-    CowFault, CowFaultType, CowManager, CowPage, CowStatistics,
+    create_cow_fault_from_exception, get_cow_manager, init_cow_manager, CowFault, CowFaultType,
+    CowManager, CowPage, CowStatistics,
 };
 pub use hardware::{HardwareMemoryInfo, MemoryHardware};
 pub use layout::{MemoryHardwareConfig, BLOCK_SIZE, HEAP_SIZE, HEAP_START, TOTAL_BLOCKS};
@@ -74,6 +75,10 @@ pub use stack::{
 };
 pub use statistics::{FragmentationAnalysis, MemoryDefragmenter, MemoryStatistics, MemoryStats};
 pub use testing::MemoryTester;
+pub use user_space::{
+    get_user_space_manager, init_user_space_manager, UserPageTable, UserSpaceManager,
+    UserSpaceStats, VirtualMemoryArea, VmaList, VmaType, USER_SPACE_END, USER_SPACE_START,
+};
 
 /// Unified Memory Manager Interface
 ///

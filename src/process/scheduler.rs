@@ -192,6 +192,9 @@ pub struct Task {
 
     /// Task flags
     pub flags: u32,
+
+    /// User space page table ID (for user tasks)
+    pub user_page_table_id: Option<usize>,
 }
 
 impl Task {
@@ -228,6 +231,7 @@ impl Task {
             run_time: 0,
             last_run: 0,
             flags: 0,
+            user_page_table_id: None,
         }
     }
 
@@ -286,6 +290,26 @@ impl Task {
     /// Check if time slice expired
     pub fn time_slice_expired(&mut self) -> bool {
         self.context.decrement_time_slice()
+    }
+
+    /// Set user space page table ID
+    pub fn set_user_page_table_id(&mut self, page_table_id: usize) {
+        self.user_page_table_id = Some(page_table_id);
+    }
+
+    /// Get user space page table ID
+    pub fn get_user_page_table_id(&self) -> Option<usize> {
+        self.user_page_table_id
+    }
+
+    /// Check if task has user space page table
+    pub fn has_user_page_table(&self) -> bool {
+        self.user_page_table_id.is_some()
+    }
+
+    /// Clear user space page table ID
+    pub fn clear_user_page_table_id(&mut self) {
+        self.user_page_table_id = None;
     }
 }
 
@@ -520,6 +544,9 @@ impl Scheduler {
                     self.stats.context_switches += 1;
                 }
 
+                // Handle user space page table switching
+                self.switch_user_page_table(&task);
+
                 self.current_task = Some(task);
                 return self.current_task.as_mut();
             }
@@ -602,6 +629,20 @@ impl Scheduler {
     /// Check if scheduler is enabled
     pub fn is_enabled(&self) -> bool {
         self.enabled
+    }
+
+    /// Switch user space page table for a task
+    fn switch_user_page_table(&mut self, task: &Task) {
+        if let Some(page_table_id) = task.get_user_page_table_id() {
+            // Get user space manager and activate the page table
+            if let Some(manager) = crate::memory::get_user_space_manager() {
+                if let Err(e) = manager.activate_page_table(page_table_id) {
+                    // Handle error - for now just continue without switching
+                    // In a real implementation, might want to log this
+                    let _ = e; // Suppress unused variable warning
+                }
+            }
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 //! Copy-on-Write (COW) Memory Management
 //!
 //! This module implements Phase 4.4.1 of the TinyOS Exception Enhancement Plan:
-//! Copy-on-Write page tracking and management for memory sharing and efficiency.
+//! Copy-on-Write page tracking and management for memory sharing and
+//! efficiency.
 //!
 //! # Features
 //! - COW page metadata tracking
@@ -13,8 +14,10 @@
 
 use core::ptr::{read_volatile, write_volatile};
 
-use crate::memory::mmu::{RegionType, PAGE_SIZE};
-use crate::memory::MemoryManager;
+use crate::memory::{
+    mmu::{RegionType, PAGE_SIZE},
+    MemoryManager,
+};
 
 /// Maximum number of COW pages that can be tracked
 const MAX_COW_PAGES: usize = 64;
@@ -54,7 +57,7 @@ impl<T: Copy + Default> SimpleVec<T> {
         if index >= self.len {
             return Err("Index out of bounds");
         }
-        
+
         let item = self.data[index];
         for i in index..self.len - 1 {
             self.data[i] = self.data[i + 1];
@@ -63,8 +66,8 @@ impl<T: Copy + Default> SimpleVec<T> {
         Ok(item)
     }
 
-    pub fn contains(&self, item: &T) -> bool 
-    where 
+    pub fn contains(&self, item: &T) -> bool
+    where
         T: PartialEq,
     {
         for i in 0..self.len {
@@ -143,7 +146,11 @@ impl CowPage {
     }
 
     /// Increment reference count
-    pub fn add_reference(&mut self, virtual_addr: u64, process_id: usize) -> Result<(), &'static str> {
+    pub fn add_reference(
+        &mut self,
+        virtual_addr: u64,
+        process_id: usize,
+    ) -> Result<(), &'static str> {
         self.ref_count += 1;
         self.virtual_addresses.push(virtual_addr)?;
         if !self.process_ids.contains(&process_id) {
@@ -156,7 +163,7 @@ impl CowPage {
     pub fn remove_reference(&mut self, virtual_addr: u64, process_id: usize) -> bool {
         if self.ref_count > 0 {
             self.ref_count -= 1;
-            
+
             // Remove virtual address
             for i in 0..self.virtual_addresses.len() {
                 if self.virtual_addresses.data[i] == virtual_addr {
@@ -164,15 +171,14 @@ impl CowPage {
                     break;
                 }
             }
-            
+
             // Remove process ID if no more virtual addresses for this process
-            let process_has_mappings = self.virtual_addresses.iter()
-                .any(|&_addr| {
-                    // This would need process-specific address space checking
-                    // For now, assume simple removal
-                    false
-                });
-            
+            let process_has_mappings = self.virtual_addresses.iter().any(|&_addr| {
+                // This would need process-specific address space checking
+                // For now, assume simple removal
+                false
+            });
+
             if !process_has_mappings {
                 for i in 0..self.process_ids.len() {
                     if self.process_ids.data[i] == process_id {
@@ -182,7 +188,7 @@ impl CowPage {
                 }
             }
         }
-        
+
         self.ref_count == 0
     }
 
@@ -290,13 +296,10 @@ impl CowManager {
     pub fn new() -> Self {
         Self {
             cow_pages: [
-                None, None, None, None, None, None, None, None,
-                None, None, None, None, None, None, None, None,
-                None, None, None, None, None, None, None, None,
-                None, None, None, None, None, None, None, None,
-                None, None, None, None, None, None, None, None,
-                None, None, None, None, None, None, None, None,
-                None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None, None,
                 None, None, None, None, None, None, None, None,
             ],
             active_pages: 0,
@@ -335,8 +338,13 @@ impl CowManager {
     }
 
     /// Register a page for COW tracking
-    pub fn register_page(&mut self, physical_addr: u64, virtual_addr: u64, 
-                        permissions: RegionType, process_id: usize) -> Result<(), &'static str> {
+    pub fn register_page(
+        &mut self,
+        physical_addr: u64,
+        virtual_addr: u64,
+        permissions: RegionType,
+        process_id: usize,
+    ) -> Result<(), &'static str> {
         // Align addresses to page boundaries
         let aligned_phys = physical_addr & !((PAGE_SIZE as u64) - 1);
         let aligned_virt = virtual_addr & !((PAGE_SIZE as u64) - 1);
@@ -345,7 +353,7 @@ impl CowManager {
             // Page already exists, add reference
             if let Some(ref mut cow_page) = self.cow_pages[index] {
                 cow_page.add_reference(aligned_virt, process_id)?;
-                
+
                 // Enable COW protection if multiple references
                 if cow_page.should_be_cow() {
                     cow_page.enable_cow();
@@ -371,15 +379,19 @@ impl CowManager {
     }
 
     /// Unregister a page from COW tracking
-    pub fn unregister_page(&mut self, physical_addr: u64, virtual_addr: u64, 
-                          process_id: usize) -> Result<bool, &'static str> {
+    pub fn unregister_page(
+        &mut self,
+        physical_addr: u64,
+        virtual_addr: u64,
+        process_id: usize,
+    ) -> Result<bool, &'static str> {
         let aligned_phys = physical_addr & !((PAGE_SIZE as u64) - 1);
         let aligned_virt = virtual_addr & !((PAGE_SIZE as u64) - 1);
 
         if let Some(index) = self.find_cow_page(aligned_phys) {
             if let Some(ref mut cow_page) = self.cow_pages[index] {
                 let should_remove = cow_page.remove_reference(aligned_virt, process_id);
-                
+
                 if should_remove {
                     self.cow_pages[index] = None;
                     self.active_pages -= 1;
@@ -398,14 +410,16 @@ impl CowManager {
     /// Handle COW fault - duplicate page and update mappings
     pub fn handle_cow_fault(&mut self, fault: CowFault) -> Result<u64, &'static str> {
         let aligned_phys = fault.physical_address & !((PAGE_SIZE as u64) - 1);
-        
+
         // Get COW page metadata
-        let cow_page_index = self.find_cow_page(aligned_phys)
+        let cow_page_index = self
+            .find_cow_page(aligned_phys)
             .ok_or("COW page not found")?;
 
         // Extract original permissions before any mutations
         let original_permissions = {
-            let cow_page = self.cow_pages[cow_page_index].as_ref()
+            let cow_page = self.cow_pages[cow_page_index]
+                .as_ref()
                 .ok_or("COW page not found")?;
 
             // Verify this is a COW fault
@@ -429,8 +443,12 @@ impl CowManager {
 
         // Update COW tracking
         self.unregister_page(aligned_phys, fault.virtual_address, fault.process_id)?;
-        self.register_page(new_page, fault.virtual_address, 
-                          original_permissions, fault.process_id)?;
+        self.register_page(
+            new_page,
+            fault.virtual_address,
+            original_permissions,
+            fault.process_id,
+        )?;
 
         // Update statistics
         self.statistics.record_cow_fault();
@@ -494,7 +512,7 @@ impl CowManager {
         unsafe {
             let source_ptr = source_phys as *const u8;
             let dest_ptr = dest_phys as *mut u8;
-            
+
             // Copy page content in chunks for better performance
             for i in 0..(PAGE_SIZE / 8) {
                 let offset = i * 8;
@@ -502,14 +520,20 @@ impl CowManager {
                 write_volatile(dest_ptr.add(offset as usize) as *mut u64, src_u64);
             }
         }
-        
+
         Ok(())
     }
 
     /// Create a COW mapping between two virtual addresses
-    pub fn create_cow_mapping(&mut self, source_virt: u64, dest_virt: u64, 
-                             source_process: usize, dest_process: usize, 
-                             physical_addr: u64, permissions: RegionType) -> Result<(), &'static str> {
+    pub fn create_cow_mapping(
+        &mut self,
+        source_virt: u64,
+        dest_virt: u64,
+        source_process: usize,
+        dest_process: usize,
+        physical_addr: u64,
+        permissions: RegionType,
+    ) -> Result<(), &'static str> {
         // Register both virtual addresses to the same physical page
         self.register_page(physical_addr, source_virt, permissions, source_process)?;
         self.register_page(physical_addr, dest_virt, permissions, dest_process)?;
@@ -531,7 +555,7 @@ impl CowManager {
     /// Force COW protection on a page
     pub fn force_cow_protection(&mut self, physical_addr: u64) -> Result<(), &'static str> {
         let aligned_phys = physical_addr & !((PAGE_SIZE as u64) - 1);
-        
+
         if let Some(index) = self.find_cow_page(aligned_phys) {
             if let Some(ref mut cow_page) = self.cow_pages[index] {
                 cow_page.enable_cow();
@@ -544,7 +568,7 @@ impl CowManager {
     /// Remove COW protection from a page
     pub fn remove_cow_protection(&mut self, physical_addr: u64) -> Result<(), &'static str> {
         let aligned_phys = physical_addr & !((PAGE_SIZE as u64) - 1);
-        
+
         if let Some(index) = self.find_cow_page(aligned_phys) {
             if let Some(ref mut cow_page) = self.cow_pages[index] {
                 cow_page.disable_cow();
@@ -569,14 +593,16 @@ pub fn init_cow_manager(memory_manager: *mut MemoryManager) {
 
 /// Get global COW manager reference
 pub fn get_cow_manager() -> Option<&'static mut CowManager> {
-    unsafe {
-        COW_MANAGER.as_mut()
-    }
+    unsafe { COW_MANAGER.as_mut() }
 }
 
 /// Helper function to create COW fault from exception information
-pub fn create_cow_fault_from_exception(virtual_addr: u64, physical_addr: u64, 
-                                      is_write: bool, process_id: usize) -> CowFault {
+pub fn create_cow_fault_from_exception(
+    virtual_addr: u64,
+    physical_addr: u64,
+    is_write: bool,
+    process_id: usize,
+) -> CowFault {
     let fault_type = if is_write {
         CowFaultType::WriteAccess
     } else {

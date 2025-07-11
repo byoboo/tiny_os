@@ -321,6 +321,35 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     filesystem::handle_change_to_root(&context.uart, &mut context.fat32_fs)
                 }
 
+                // Phase 4.4.2 User Space Page Table Management
+                b'|' => {
+                    // User space page table management submenu
+                    context
+                        .uart
+                        .puts("\r\nUser Space Page Table Management:\r\n");
+                    context.uart.puts("  1 - User Space Status\r\n");
+                    context.uart.puts("  2 - Create User Page Table\r\n");
+                    context.uart.puts("  3 - Destroy User Page Table\r\n");
+                    context.uart.puts("  4 - Switch User Page Table\r\n");
+                    context.uart.puts("  5 - VMA Management\r\n");
+                    context.uart.puts("  6 - User Space Test\r\n");
+                    context.uart.puts("  7 - Initialize User Space Manager\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::user_space::handle_user_space_status(&context),
+                            b'2' => commands::user_space::handle_create_user_page_table(&context),
+                            b'3' => commands::user_space::handle_destroy_user_page_table(&context),
+                            b'4' => commands::user_space::handle_switch_user_page_table(&context),
+                            b'5' => commands::user_space::handle_vma_management(&context),
+                            b'6' => commands::user_space::handle_user_space_test(&mut context),
+                            b'7' => commands::user_space::handle_user_space_init(&mut context),
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
                 // Unknown command
                 _ => {
                     if (32..=126).contains(&ch) {

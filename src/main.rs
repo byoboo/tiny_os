@@ -21,7 +21,10 @@ use tiny_os_lib::{
     exceptions::init_exceptions,
     fat32::Fat32FileSystem,
     interrupts::InterruptController,
-    memory::{init_cow_manager, init_mmu_exceptions, init_stack_manager, init_virtual_memory, MemoryManager},
+    memory::{
+        init_cow_manager, init_mmu_exceptions, init_stack_manager, init_user_space_manager,
+        init_virtual_memory, MemoryManager,
+    },
     process,
     shell::{run_shell, ShellContext},
 };
@@ -95,6 +98,10 @@ pub extern "C" fn kernel_main() {
     let memory_manager_ptr = &mut memory_manager as *mut MemoryManager;
     init_cow_manager(memory_manager_ptr);
     uart.puts("✓ COW manager initialized\r\n");
+
+    // Initialize user space manager
+    init_user_space_manager(memory_manager_ptr);
+    uart.puts("✓ User space manager initialized\r\n");
 
     // Initialize interrupt controller
     let mut interrupt_controller = InterruptController::new();
