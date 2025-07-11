@@ -350,6 +350,84 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     }
                 }
 
+                // Phase 4.4.3 Advanced Memory Protection
+                b'@' => {
+                    // Advanced memory protection submenu
+                    context
+                        .uart
+                        .puts("\r\nAdvanced Memory Protection:\r\n");
+                    context.uart.puts("  1 - Protection Status\r\n");
+                    context.uart.puts("  2 - Page Permissions\r\n");
+                    context.uart.puts("  3 - ASLR Information\r\n");
+                    context.uart.puts("  4 - Stack Protection\r\n");
+                    context.uart.puts("  5 - Protection Test\r\n");
+                    context.uart.puts("  6 - Protection Statistics\r\n");
+                    context.uart.puts("  h - Help\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::advanced_protection::cmd_advanced_protection_status(&[], &mut context),
+                            b'2' => {
+                                context.uart.puts("Page permissions commands:\r\n");
+                                context.uart.puts("  s - Set permissions\r\n");
+                                context.uart.puts("  g - Get permissions\r\n");
+                                context.uart.puts("Select: ");
+                                if let Some(perm_option) = context.uart.getc() {
+                                    match perm_option {
+                                        b's' => {
+                                            context.uart.puts("Set permissions (addr perms): ");
+                                            // For simplicity, use test values
+                                            let args = ["permissions", "set", "0x1000000", "rw"];
+                                            commands::advanced_protection::cmd_advanced_protection_permissions(&args, &mut context);
+                                        }
+                                        b'g' => {
+                                            context.uart.puts("Get permissions (addr): ");
+                                            // For simplicity, use test values
+                                            let args = ["permissions", "get", "0x1000000"];
+                                            commands::advanced_protection::cmd_advanced_protection_permissions(&args, &mut context);
+                                        }
+                                        _ => context.uart.puts("Invalid option\r\n"),
+                                    }
+                                }
+                            }
+                            b'3' => commands::advanced_protection::cmd_advanced_protection_aslr(&[], &mut context),
+                            b'4' => {
+                                context.uart.puts("Stack protection commands:\r\n");
+                                context.uart.puts("  s - Setup protection\r\n");
+                                context.uart.puts("  i - Stack info\r\n");
+                                context.uart.puts("Select: ");
+                                if let Some(stack_option) = context.uart.getc() {
+                                    match stack_option {
+                                        b's' => {
+                                            // For simplicity, use test values
+                                            let args = ["stack", "setup", "1", "0x2000000", "0x10000"];
+                                            commands::advanced_protection::cmd_advanced_protection_stack(&args, &mut context);
+                                        }
+                                        b'i' => {
+                                            let args = ["stack", "info"];
+                                            commands::advanced_protection::cmd_advanced_protection_stack(&args, &mut context);
+                                        }
+                                        _ => context.uart.puts("Invalid option\r\n"),
+                                    }
+                                }
+                            }
+                            b'5' => commands::advanced_protection::cmd_advanced_protection_test(&[], &mut context),
+                            b'6' => commands::advanced_protection::cmd_advanced_protection_stats(&[], &mut context),
+                            b'h' => {
+                                context.uart.puts("Advanced Memory Protection Help:\r\n");
+                                context.uart.puts("  1 - Show protection system status\r\n");
+                                context.uart.puts("  2 - Manage page permissions\r\n");
+                                context.uart.puts("  3 - View ASLR information\r\n");
+                                context.uart.puts("  4 - Stack protection features\r\n");
+                                context.uart.puts("  5 - Run protection tests\r\n");
+                                context.uart.puts("  6 - Show protection statistics\r\n");
+                            }
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
                 // Unknown command
                 _ => {
                     if (32..=126).contains(&ch) {

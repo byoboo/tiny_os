@@ -103,6 +103,11 @@ pub extern "C" fn kernel_main() {
     init_user_space_manager(memory_manager_ptr);
     uart.puts("✓ User space manager initialized\r\n");
 
+    // Initialize advanced memory protection
+    use tiny_os_lib::memory::init_advanced_memory_protection;
+    init_advanced_memory_protection(memory_manager_ptr);
+    uart.puts("✓ Advanced memory protection initialized\r\n");
+
     // Initialize interrupt controller
     let mut interrupt_controller = InterruptController::new();
     interrupt_controller.init();

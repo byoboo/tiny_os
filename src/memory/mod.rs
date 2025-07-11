@@ -301,3 +301,6 @@ impl CorruptionDetection for MemoryManager {
 
 /// Legacy type alias for backward compatibility
 pub type MemoryManagerCore = BlockAllocator;
+
+// Re-export important functions from submodules
+pub use protection::init_advanced_memory_protection;
