@@ -217,6 +217,43 @@ impl MmuExceptionHandler {
 
     /// Handle a permission fault
     fn handle_permission_fault(&mut self, fault_info: MmuFaultInfo) -> MmuRecoveryAction {
+        // Check if this is a COW fault first
+        if fault_info.access_type == AccessType::Write {
+            // This could be a COW fault - check with COW manager
+            if let Some(cow_manager) = crate::memory::get_cow_manager() {
+                // Try to resolve the virtual address to physical address
+                // For now, we'll use a simple approach
+                let physical_addr = self.resolve_virtual_to_physical(fault_info.fault_address);
+
+                if let Some(phys_addr) = physical_addr {
+                    if cow_manager.is_cow_protected(phys_addr) {
+                        // This is a COW fault - create fault info and handle it
+                        let cow_fault = crate::memory::create_cow_fault_from_exception(
+                            fault_info.fault_address,
+                            phys_addr,
+                            true, // is_write
+                            0,    // process_id (simplified for now)
+                        );
+
+                        // Try to handle the COW fault
+                        match cow_manager.handle_cow_fault(cow_fault) {
+                            Ok(_new_page_addr) => {
+                                // COW fault handled successfully
+                                // Update page table mapping to point to new page
+                                // This would require MMU integration
+                                return MmuRecoveryAction::Retry;
+                            }
+                            Err(_) => {
+                                // COW fault handling failed
+                                // Fall through to standard permission fault handling
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Standard permission fault handling
         // Permission faults are generally security violations
         // In user mode, terminate the process
         // In kernel mode, this is likely a bug - panic
@@ -225,6 +262,14 @@ impl MmuExceptionHandler {
         } else {
             MmuRecoveryAction::SystemPanic
         }
+    }
+
+    /// Resolve virtual address to physical address (simplified)
+    fn resolve_virtual_to_physical(&self, virtual_addr: u64) -> Option<u64> {
+        // This is a simplified implementation
+        // In a real system, this would walk the page tables
+        // For now, we'll use the VMM if available
+        crate::memory::translate_address_global(virtual_addr).ok()
     }
 
     /// Handle an alignment fault

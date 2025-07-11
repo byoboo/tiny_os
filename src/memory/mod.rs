@@ -38,6 +38,7 @@
 
 // Public module exports
 pub mod allocator;
+pub mod cow;
 pub mod hardware;
 pub mod layout;
 pub mod mmu;
@@ -49,6 +50,10 @@ pub mod testing;
 
 // Re-export key types for convenience
 pub use allocator::BlockAllocator;
+pub use cow::{
+    get_cow_manager, init_cow_manager, create_cow_fault_from_exception,
+    CowFault, CowFaultType, CowManager, CowPage, CowStatistics,
+};
 pub use hardware::{HardwareMemoryInfo, MemoryHardware};
 pub use layout::{MemoryHardwareConfig, BLOCK_SIZE, HEAP_SIZE, HEAP_START, TOTAL_BLOCKS};
 pub use mmu::{
