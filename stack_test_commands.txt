@@ -1,0 +1,9 @@
+# Test basic stack functionality
+`1
+# Test stack allocation
+`2
+# Test stack status 
+`1
+# Test stack test suite
+`6
+# Exit

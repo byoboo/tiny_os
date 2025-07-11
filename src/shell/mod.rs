@@ -183,6 +183,68 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     }
                 }
 
+                // Phase 4.2 Virtual Memory Management
+                b'~' => {
+                    // Virtual memory management submenu
+                    context.uart.puts("\r\nVirtual Memory Management Commands:\r\n");
+                    context.uart.puts("  1 - Virtual Memory Status\r\n");
+                    context.uart.puts("  2 - Enable MMU\r\n");
+                    context.uart.puts("  3 - Disable MMU\r\n");
+                    context.uart.puts("  4 - Translate Address\r\n");
+                    context.uart.puts("  5 - Flush TLB\r\n");
+                    context.uart.puts("  6 - Virtual Memory Test\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::exceptions::cmd_virtual_memory_status(&["vm"], &mut context),
+                            b'2' => commands::exceptions::cmd_mmu_enable_disable(&["mmuctl", "on"], &mut context),
+                            b'3' => commands::exceptions::cmd_mmu_enable_disable(&["mmuctl", "off"], &mut context),
+                            b'4' => {
+                                context.uart.puts("Enter address (hex): 0x");
+                                // For now, test with a common address
+                                commands::exceptions::cmd_translate_address(&["translate", "0x80000"], &mut context);
+                            },
+                            b'5' => commands::exceptions::cmd_invalidate_tlb(&["tlbflush"], &mut context),
+                            b'6' => commands::exceptions::cmd_virtual_memory_test(&["vmtest"], &mut context),
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
+                // Phase 4.3 Stack Management
+                b'`' => {
+                    // Stack management submenu
+                    context.uart.puts("\r\nStack Management Commands:\r\n");
+                    context.uart.puts("  1 - Stack Status\r\n");
+                    context.uart.puts("  2 - Allocate Kernel Stack\r\n");
+                    context.uart.puts("  3 - Allocate User Stack\r\n");
+                    context.uart.puts("  4 - Deallocate Stack\r\n");
+                    context.uart.puts("  5 - Switch Stack\r\n");
+                    context.uart.puts("  6 - Stack Test\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::system::cmd_stack_status(&["stack_status"], &mut context),
+                            b'2' => commands::system::cmd_stack_alloc(&["stack_alloc", "kernel"], &mut context),
+                            b'3' => commands::system::cmd_stack_alloc(&["stack_alloc", "user"], &mut context),
+                            b'4' => {
+                                context.uart.puts("Enter stack ID: ");
+                                // For now, test with stack ID 1
+                                commands::system::cmd_stack_dealloc(&["stack_dealloc", "1"], &mut context);
+                            },
+                            b'5' => {
+                                context.uart.puts("Enter stack ID: ");
+                                // For now, test with stack ID 0
+                                commands::system::cmd_stack_switch(&["stack_switch", "0"], &mut context);
+                            },
+                            b'6' => commands::system::cmd_stack_test(&["stack_test"], &mut context),
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
                 // Direct process management test commands (for automated testing)
                 b'[' => commands::process::handle_process_context_test(&context), // pctx
                 b'\\' => commands::process::handle_privilege_test(&context),      // priv

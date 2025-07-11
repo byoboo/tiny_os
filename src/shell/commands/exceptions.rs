@@ -231,3 +231,266 @@ fn format_number(num: u64, buffer: &mut [u8]) -> &str {
     // Convert to string slice
     core::str::from_utf8(&buffer[pos..]).unwrap_or("???")
 }
+
+// Phase 4.2 Virtual Memory Management Commands
+
+/// Handle virtual memory status command
+pub fn cmd_virtual_memory_status(args: &[&str], context: &mut ShellContext) {
+    if args.len() != 1 {
+        context.uart.puts("Usage: vm\r\n");
+        return;
+    }
+
+    use crate::memory::{get_virtual_memory_stats, is_mmu_enabled_global};
+
+    context.uart.puts("Virtual Memory Status:\r\n");
+    context.uart.puts("======================\r\n");
+
+    if let Some(stats) = get_virtual_memory_stats() {
+        context.uart.puts("MMU Status: ");
+        if stats.mmu_enabled {
+            context.uart.puts("ENABLED\r\n");
+        } else {
+            context.uart.puts("DISABLED\r\n");
+        }
+
+        // Display page table addresses
+        let mut buffer = [0u8; 32];
+        
+        context.uart.puts("Kernel Table: 0x");
+        format_hex(stats.kernel_table_addr, &mut buffer);
+        context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("???"));
+        context.uart.puts("\r\n");
+
+        context.uart.puts("User Table: 0x");
+        format_hex(stats.user_table_addr, &mut buffer);
+        context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("???"));
+        context.uart.puts("\r\n");
+
+        context.uart.puts("Next Table: 0x");
+        format_hex(stats.next_table_addr, &mut buffer);
+        context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("???"));
+        context.uart.puts("\r\n");
+    } else {
+        context.uart.puts("Virtual memory manager not initialized\r\n");
+    }
+
+    // Show current MMU enable status from hardware
+    context.uart.puts("Hardware MMU: ");
+    if is_mmu_enabled_global() {
+        context.uart.puts("ACTIVE\r\n");
+    } else {
+        context.uart.puts("INACTIVE\r\n");
+    }
+}
+
+/// Handle MMU control command (enable/disable)
+pub fn cmd_mmu_enable_disable(args: &[&str], context: &mut ShellContext) {
+    if args.len() != 2 {
+        context.uart.puts("Usage: mmuctl <on|off>\r\n");
+        return;
+    }
+
+    use crate::memory::{enable_mmu_global, disable_mmu_global};
+
+    match args[1] {
+        "on" | "enable" => {
+            context.uart.puts("Enabling MMU...\r\n");
+            match enable_mmu_global() {
+                Ok(()) => {
+                    context.uart.puts("✓ MMU enabled successfully\r\n");
+                    context.uart.puts("Virtual memory translation is now active\r\n");
+                }
+                Err(e) => {
+                    context.uart.puts("✗ MMU enable failed: ");
+                    context.uart.puts(e);
+                    context.uart.puts("\r\n");
+                }
+            }
+        }
+        "off" | "disable" => {
+            context.uart.puts("Disabling MMU...\r\n");
+            match disable_mmu_global() {
+                Ok(()) => {
+                    context.uart.puts("✓ MMU disabled successfully\r\n");
+                    context.uart.puts("Virtual memory translation is now inactive\r\n");
+                }
+                Err(e) => {
+                    context.uart.puts("✗ MMU disable failed: ");
+                    context.uart.puts(e);
+                    context.uart.puts("\r\n");
+                }
+            }
+        }
+        _ => {
+            context.uart.puts("Invalid option. Use 'on' or 'off'\r\n");
+        }
+    }
+}
+
+/// Handle address translation command
+pub fn cmd_translate_address(args: &[&str], context: &mut ShellContext) {
+    if args.len() != 2 {
+        context.uart.puts("Usage: translate <hex_address>\r\n");
+        context.uart.puts("Example: translate 0x80000\r\n");
+        return;
+    }
+
+    use crate::memory::translate_address_global;
+
+    // Parse hex address
+    let addr_str = args[1];
+    let virtual_addr = if addr_str.starts_with("0x") || addr_str.starts_with("0X") {
+        parse_hex(&addr_str[2..])
+    } else {
+        parse_hex(addr_str)
+    };
+
+    if let Some(virt_addr) = virtual_addr {
+        context.uart.puts("Translating virtual address: 0x");
+        let mut buffer = [0u8; 32];
+        format_hex(virt_addr, &mut buffer);
+        context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("???"));
+        context.uart.puts("\r\n");
+
+        match translate_address_global(virt_addr) {
+            Ok(phys_addr) => {
+                context.uart.puts("Physical address: 0x");
+                format_hex(phys_addr, &mut buffer);
+                context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("???"));
+                context.uart.puts("\r\n");
+            }
+            Err(e) => {
+                context.uart.puts("Translation failed: ");
+                context.uart.puts(e);
+                context.uart.puts("\r\n");
+            }
+        }
+    } else {
+        context.uart.puts("Invalid address format\r\n");
+    }
+}
+
+/// Handle TLB invalidation command
+pub fn cmd_invalidate_tlb(args: &[&str], context: &mut ShellContext) {
+    if args.len() != 1 {
+        context.uart.puts("Usage: tlbflush\r\n");
+        return;
+    }
+
+    use crate::memory::invalidate_tlb_global;
+
+    context.uart.puts("Invalidating TLB...\r\n");
+    invalidate_tlb_global();
+    context.uart.puts("✓ TLB invalidated\r\n");
+}
+
+/// Handle virtual memory test command
+pub fn cmd_virtual_memory_test(args: &[&str], context: &mut ShellContext) {
+    if args.len() != 1 {
+        context.uart.puts("Usage: vmtest\r\n");
+        return;
+    }
+
+    use crate::memory::{is_mmu_enabled_global, translate_address_global};
+
+    context.uart.puts("Virtual Memory Test:\r\n");
+    context.uart.puts("===================\r\n");
+
+    // Test 1: Check MMU status
+    context.uart.puts("1. MMU Status: ");
+    if is_mmu_enabled_global() {
+        context.uart.puts("✓ ENABLED\r\n");
+    } else {
+        context.uart.puts("⚠ DISABLED\r\n");
+    }
+
+    // Test 2: Test address translation for known addresses
+    let test_addresses = [
+        0x80000u64,     // Kernel start
+        0x100000u64,    // Heap start
+        0xFE000000u64,  // Peripheral base
+    ];
+
+    let address_names = [
+        "Kernel start",
+        "Heap start", 
+        "Peripheral base",
+    ];
+
+    for (i, &addr) in test_addresses.iter().enumerate() {
+        context.uart.puts("2.");
+        let mut buffer = [0u8; 4];
+        format_number((i + 1) as u64, &mut buffer);
+        context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
+        context.uart.puts(" ");
+        context.uart.puts(address_names[i]);
+        context.uart.puts(": ");
+
+        match translate_address_global(addr) {
+            Ok(phys_addr) => {
+                context.uart.puts("0x");
+                let mut hex_buffer = [0u8; 32];
+                format_hex(phys_addr, &mut hex_buffer);
+                context.uart.puts(core::str::from_utf8(&hex_buffer).unwrap_or("???"));
+                context.uart.puts(" ✓\r\n");
+            }
+            Err(_) => {
+                context.uart.puts("FAILED ✗\r\n");
+            }
+        }
+    }
+
+    context.uart.puts("\r\nVirtual memory test complete\r\n");
+}
+
+/// Format a 64-bit value as hexadecimal
+fn format_hex(value: u64, buffer: &mut [u8]) -> usize {
+    const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
+    let mut pos = 0;
+    let mut val = value;
+    
+    // Handle zero case
+    if val == 0 {
+        buffer[0] = b'0';
+        return 1;
+    }
+    
+    // Convert to hex (reverse order)
+    let mut temp_buffer = [0u8; 16];
+    let mut temp_pos = 0;
+    
+    while val > 0 && temp_pos < 16 {
+        temp_buffer[temp_pos] = HEX_CHARS[(val & 0xF) as usize];
+        val >>= 4;
+        temp_pos += 1;
+    }
+    
+    // Reverse into final buffer
+    for i in 0..temp_pos {
+        if pos < buffer.len() {
+            buffer[pos] = temp_buffer[temp_pos - 1 - i];
+            pos += 1;
+        }
+    }
+    
+    pos
+}
+
+/// Parse hexadecimal string to u64
+fn parse_hex(hex_str: &str) -> Option<u64> {
+    let mut result = 0u64;
+    
+    for c in hex_str.chars() {
+        let digit = match c {
+            '0'..='9' => (c as u8) - b'0',
+            'a'..='f' => (c as u8) - b'a' + 10,
+            'A'..='F' => (c as u8) - b'A' + 10,
+            _ => return None,
+        };
+        
+        result = result.checked_mul(16)?.checked_add(digit as u64)?;
+    }
+    
+    Some(result)
+}

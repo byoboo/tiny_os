@@ -21,7 +21,7 @@ use tiny_os_lib::{
     exceptions::init_exceptions,
     fat32::Fat32FileSystem,
     interrupts::InterruptController,
-    memory::{init_mmu_exceptions, MemoryManager},
+    memory::{init_mmu_exceptions, init_virtual_memory, init_stack_manager, MemoryManager},
     process,
     shell::{run_shell, ShellContext},
 };
@@ -29,6 +29,10 @@ use tiny_os_lib::{
 // Include the boot assembly
 #[cfg(target_arch = "aarch64")]
 global_asm!(include_str!("boot.s"));
+
+// Include the stack management assembly
+#[cfg(target_arch = "aarch64")]
+global_asm!(include_str!("stack_asm.s"));
 
 #[no_mangle]
 pub extern "C" fn kernel_main() {
@@ -49,6 +53,24 @@ pub extern "C" fn kernel_main() {
     // Initialize MMU exception handling
     init_mmu_exceptions();
     uart.puts("✓ MMU exception handling initialized\r\n");
+
+    // Initialize virtual memory management
+    match init_virtual_memory() {
+        Ok(()) => uart.puts("✓ Virtual memory management initialized\r\n"),
+        Err(e) => {
+            uart.puts("⚠ Virtual memory initialization failed: ");
+            uart.puts(e);
+            uart.puts("\r\n");
+        }
+    }
+
+    // Initialize stack management
+    match init_stack_manager() {
+        Ok(()) => uart.puts("✓ Stack management initialized\r\n"),
+        Err(e) => {
+            uart.puts("⚠ Stack management initialization failed\r\n");
+        }
+    }
 
     // Initialize process management
     process::init_process_management();
