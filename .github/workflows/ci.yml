@@ -70,8 +70,8 @@ jobs:
         echo "llvm-tools-preview component added"
         
         # Run comprehensive verification
-        chmod +x ./verify_objcopy.sh
-        ./verify_objcopy.sh
+        chmod +x ./scripts/verify_objcopy.sh
+        ./scripts/verify_objcopy.sh
     
     - name: Cache cargo registry
       uses: actions/cache@v4
@@ -145,7 +145,7 @@ jobs:
       with:
         name: test-results-${{ github.sha }}
         path: |
-          validation_report.md
+          docs/archived/validation_report.md
           test_*.log
         retention-days: 30
 

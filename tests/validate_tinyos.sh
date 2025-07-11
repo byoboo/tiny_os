@@ -270,7 +270,9 @@ if [ $PASSED_TESTS -eq $TOTAL_TESTS ]; then
     echo -e "${GREEN}TinyOS structure and build are valid${NC}"
     
     # Generate a simple test report
-    cat > validation_report.md << EOF
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    cat > "${PROJECT_ROOT}/docs/archived/validation_report.md" << EOF
 # TinyOS Validation Report
 
 Generated: $(date)
@@ -303,13 +305,13 @@ TinyOS is ready for QEMU testing and hardware deployment.
 ## Next Steps
 
 - Run QEMU tests: \`./run.sh\`
-- Test memory management: \`./test_memory_comprehensive.sh\`
-- Test interrupt system: \`./test_interrupts.sh\`
+- Test memory management: \`./tests/test_memory_automated.sh\`
+- Test interrupt system: \`./tests/test_interrupt_automated.sh\`
 - Deploy to Raspberry Pi hardware
 
 EOF
     
-    echo "Validation report generated: validation_report.md"
+    echo "Validation report generated: docs/archived/validation_report.md"
     EXIT_CODE=0
 else
     echo

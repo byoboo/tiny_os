@@ -130,7 +130,7 @@ fi
 
 # Test that the main test suite passes
 echo "Running main test suite..."
-if ./test_tinyos.sh --validate-only > /dev/null 2>&1; then
+if ../test_tinyos.sh --validate-only > /dev/null 2>&1; then
     echo "✓ Main test suite validation passes"
 else
     echo "✗ Main test suite validation failed"

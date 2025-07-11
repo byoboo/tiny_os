@@ -239,7 +239,7 @@ TinyOS includes comprehensive testing infrastructure:
 
 ```bash
 # Run all validation tests
-./validate_tinyos.sh
+./tests/validate_tinyos.sh
 
 # Test specific components
 ./tests/test_memory_suite.sh

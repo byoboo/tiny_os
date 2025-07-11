@@ -71,20 +71,20 @@ echo "   • Performance benchmarking"
 echo ""
 
 echo "🧪 Testing Summary:"
-if [ -f "scripts/tests/test_tinyos.sh" ]; then
+if [ -f "test_tinyos.sh" ]; then
     echo "Running comprehensive test suite..."
     cd "$(dirname "$0")"
-    if ./scripts/tests/test_tinyos.sh --mode automated all > /tmp/test_results.txt 2>&1; then
+    if ./test_tinyos.sh --mode automated all > /tmp/test_results.txt 2>&1; then
         echo "✅ All tests passed!"
         echo "   Total tests: $(grep -c "Test:" /tmp/test_results.txt 2>/dev/null || echo "28")"
         echo "   Success rate: 100%"
     else
         echo "⚠️  Some tests may need verification"
-        echo "   Run './scripts/tests/test_tinyos.sh' manually for details"
+        echo "   Run './test_tinyos.sh' manually for details"
     fi
 else
-    echo "✅ Test suite available at scripts/tests/"
-    echo "   Run './scripts/tests/test_tinyos.sh' to validate system"
+    echo "✅ Test suite available at tests/"
+    echo "   Run './test_tinyos.sh' to validate system"
 fi
 echo ""
 
@@ -108,7 +108,7 @@ echo ""
 echo "🚀 Quick Start:"
 echo "1. Build:    ./build.sh"
 echo "2. Run:      ./run.sh"
-echo "3. Test:     ./scripts/tests/test_tinyos.sh"
+echo "3. Test:     ./test_tinyos.sh"
 echo "4. Explore:  Type 'help' in the interactive shell"
 echo ""
 
