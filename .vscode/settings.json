@@ -5,8 +5,7 @@
     "rust-analyzer.cargo.features": [],
     "rust-analyzer.cargo.noDefaultFeatures": true,
     "rust-analyzer.cargo.allFeatures": false,
-    "rust-analyzer.checkOnSave.command": "clippy",
-    "rust-analyzer.checkOnSave.extraArgs": [
+    "rust-analyzer.check.extraArgs": [
         "--target",
         "aarch64-unknown-none",
         "--",
@@ -23,7 +22,11 @@
         "unresolved-import",
         "no-such-crate",
         "missing-unsafe",
-        "inactive-code"
+        "inactive-code",
+        "test-unknown-config",
+        "test-not-found",
+        "test-ignored",
+        "unresolved-extern-crate"
     ],
     "rust-analyzer.completion.callable.snippets": "none",
     "rust-analyzer.hover.actions.enable": false,
@@ -44,9 +47,19 @@
     // Force rust-analyzer to never attempt test compilation
     "rust-analyzer.cargo.allTargets": false,
     "rust-analyzer.cargo.loadOutDirsFromCheck": false,
+    // Additional test-related settings
+    "rust-analyzer.completion.postfix.enable": false,
+    "rust-analyzer.assist.importGranularity": "module",
+    "rust-analyzer.checkOnSave.enable": true,
+    "rust-analyzer.checkOnSave.command": "clippy",
+    "rust-analyzer.checkOnSave.extraArgs": ["--target", "aarch64-unknown-none"],
     // Explicit workspace override to ignore global cargo settings
     "rust-analyzer.cargo.configPath": ".cargo/config.toml",
     "rust-analyzer.files.watcher": "client",
+    // Force sysroot to use the embedded target
+    "rust-analyzer.rustcSource": "discover",
+    "rust-analyzer.cargo.sysroot": "discover",
+    "rust-analyzer.cargo.useRustcWrapperForBuildScripts": false,
     "files.associations": {
         "*.s": "arm",
         "*.ld": "ld-script"

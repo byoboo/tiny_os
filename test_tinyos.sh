@@ -14,7 +14,8 @@ NC='\033[0m' # No Color
 
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TESTS_DIR="${SCRIPT_DIR}/tests"
+PROJECT_ROOT="${SCRIPT_DIR}"
+TESTS_DIR="${PROJECT_ROOT}/tests"
 
 # Test results tracking
 TOTAL_TESTS=0

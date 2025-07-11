@@ -1,0 +1,32 @@
+# Additional rust-analyzer configuration
+# This file provides extra settings that may not be available in .rust-analyzer.toml
+
+[rust-analyzer]
+# Completely disable test related features
+cargo.unsetTest = true
+cargo.loadOutDirsFromCheck = false
+cargo.runBuildScripts = false
+runnables.enable = false
+lens.enable = false
+
+# Force the target to be embedded only
+cargo.target = "aarch64-unknown-none"
+cargo.allTargets = false
+
+# Disable all features that might trigger test compilation
+procMacro.enable = false
+assist.importGranularity = "module"
+completion.postfix.enable = false
+
+# Suppress all test-related diagnostics
+diagnostics.disabled = [
+    "unresolved-proc-macro",
+    "macro-error",
+    "unresolved-import", 
+    "no-such-crate",
+    "missing-unsafe",
+    "inactive-code",
+    "unresolved-extern-crate",
+    "test-unknown-config",
+    "test-not-found"
+]

@@ -21,13 +21,21 @@ use tiny_os_lib::{
     exceptions::init_exceptions,
     fat32::Fat32FileSystem,
     interrupts::InterruptController,
-    memory::MemoryManager,
+    memory::{
+        init_cow_manager, init_mmu_exceptions, init_stack_manager, init_user_space_manager,
+        init_virtual_memory, MemoryManager,
+    },
+    process,
     shell::{run_shell, ShellContext},
 };
 
 // Include the boot assembly
 #[cfg(target_arch = "aarch64")]
 global_asm!(include_str!("boot.s"));
+
+// Include the stack management assembly
+#[cfg(target_arch = "aarch64")]
+global_asm!(include_str!("stack_asm.s"));
 
 #[no_mangle]
 pub extern "C" fn kernel_main() {
@@ -45,6 +53,32 @@ pub extern "C" fn kernel_main() {
     init_exceptions();
     uart.puts("✓ Exception handling initialized\r\n");
 
+    // Initialize MMU exception handling
+    init_mmu_exceptions();
+    uart.puts("✓ MMU exception handling initialized\r\n");
+
+    // Initialize virtual memory management
+    match init_virtual_memory() {
+        Ok(()) => uart.puts("✓ Virtual memory management initialized\r\n"),
+        Err(e) => {
+            uart.puts("⚠ Virtual memory initialization failed: ");
+            uart.puts(e);
+            uart.puts("\r\n");
+        }
+    }
+
+    // Initialize stack management
+    match init_stack_manager() {
+        Ok(()) => uart.puts("✓ Stack management initialized\r\n"),
+        Err(e) => {
+            uart.puts("⚠ Stack management initialization failed\r\n");
+        }
+    }
+
+    // Initialize process management
+    process::init_process_management();
+    uart.puts("✓ Process management initialized\r\n");
+
     // Initialize GPIO
     let gpio = Gpio::new();
 
@@ -57,8 +91,29 @@ pub extern "C" fn kernel_main() {
     uart.puts("✓ System timer initialized\r\n");
 
     // Initialize memory manager
-    let memory_manager = MemoryManager::new();
+    let mut memory_manager = MemoryManager::new();
     uart.puts("✓ Memory manager initialized\r\n");
+
+    // Initialize COW manager
+    let memory_manager_ptr = &mut memory_manager as *mut MemoryManager;
+    init_cow_manager(memory_manager_ptr);
+    uart.puts("✓ COW manager initialized\r\n");
+
+    // Initialize user space manager
+    init_user_space_manager(memory_manager_ptr);
+    uart.puts("✓ User space manager initialized\r\n");
+
+    // Initialize advanced memory protection
+    use tiny_os_lib::memory::init_advanced_memory_protection;
+    init_advanced_memory_protection(memory_manager_ptr);
+    uart.puts("✓ Advanced memory protection initialized\r\n");
+
+    // Initialize dynamic memory management
+    use tiny_os_lib::memory::init_dynamic_memory_manager;
+    match init_dynamic_memory_manager() {
+        Ok(()) => uart.puts("✓ Dynamic memory management initialized\r\n"),
+        Err(e) => uart.puts("⚠ Dynamic memory management initialization failed\r\n"),
+    }
 
     // Initialize interrupt controller
     let mut interrupt_controller = InterruptController::new();
@@ -66,33 +121,18 @@ pub extern "C" fn kernel_main() {
     uart.puts("✓ Interrupt controller initialized\r\n");
 
     // Initialize SD Card (defer FAT32 mounting to avoid stack overflow)
-    uart.puts("Initializing SD Card...\r\n");
+    uart.puts("About to initialize SD Card...\r\n");
+
+    // Create a stub SD card to avoid hardware initialization in QEMU
     let mut sdcard = SdCard::new();
+    uart.puts("SD Card object created\r\n");
+
     let fat32_fs: Option<Fat32FileSystem> = None;
 
-    let _sd_init_success = match sdcard.init() {
-        Ok(()) => {
-            uart.puts("SD Card initialized successfully!\r\n");
-            if let Some(info) = sdcard.get_card_info() {
-                uart.puts("SD Card Info: ");
-                if info.high_capacity {
-                    uart.puts("SDHC/SDXC, ");
-                } else {
-                    uart.puts("Standard, ");
-                }
-                uart.puts("RCA: ");
-                uart.put_hex(info.rca as u64);
-                uart.puts("\r\n");
-            }
-
-            uart.puts("✓ SD Card ready (use 'n' command to mount FAT32)\r\n");
-            true
-        }
-        Err(_) => {
-            uart.puts("SD Card initialization failed\r\n");
-            false
-        }
-    };
+    // For now, skip SD card initialization in QEMU to prevent hanging
+    // This can be re-enabled when proper QEMU emulation is available
+    let _sd_init_success = false;
+    uart.puts("SD Card initialization skipped (QEMU compatibility)\r\n");
 
     // System ready
     uart.puts("================================\r\n");

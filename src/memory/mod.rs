@@ -38,19 +38,54 @@
 
 // Public module exports
 pub mod allocator;
+pub mod cow;
+pub mod dynamic;
 pub mod hardware;
 pub mod layout;
+pub mod mmu;
+pub mod mmu_exceptions;
 pub mod protection;
+pub mod stack;
 pub mod statistics;
 pub mod testing;
+pub mod user_space;
 
 // Re-export key types for convenience
 pub use allocator::BlockAllocator;
+pub use cow::{
+    create_cow_fault_from_exception, get_cow_manager, init_cow_manager, CowFault, CowFaultType,
+    CowManager, CowPage, CowStatistics, SimpleVec, SimpleVecIter,
+};
+pub use dynamic::{
+    add_lazy_page, check_dynamic_memory_pressure, create_dynamic_stack, fast_context_switch,
+    get_dynamic_memory_stats, handle_dynamic_memory_fault, init_dynamic_memory_manager,
+    is_dynamic_memory_enabled, DynamicMemoryManager, DynamicMemoryStats, DynamicStack, LazyPage,
+    PressureLevel,
+};
 pub use hardware::{HardwareMemoryInfo, MemoryHardware};
 pub use layout::{MemoryHardwareConfig, BLOCK_SIZE, HEAP_SIZE, HEAP_START, TOTAL_BLOCKS};
+pub use mmu::{
+    disable_mmu_global, enable_mmu_global, get_virtual_memory_manager, get_virtual_memory_stats,
+    init_virtual_memory, invalidate_tlb_global, is_mmu_enabled_global, translate_address_global,
+    MemoryAttribute, PageTableEntry, PageType, RegionType, TranslationTable, VirtualMemoryManager,
+    VirtualMemoryStats, PAGE_SHIFT, PAGE_SIZE,
+};
+pub use mmu_exceptions::{
+    get_mmu_exception_stats, handle_mmu_exception_global, init_mmu_exceptions,
+    is_mmu_exception_handling_enabled, set_mmu_exception_handling_enabled, AccessType,
+    MmuExceptionHandler, MmuExceptionStats, MmuExceptionType, MmuFaultInfo, MmuRecoveryAction,
+};
 pub use protection::{CorruptionDetection, CorruptionReport, MemoryProtection};
+pub use stack::{
+    get_stack_manager, init_stack_manager, StackError, StackInfo, StackManager, StackManagerStats,
+    StackProtection,
+};
 pub use statistics::{FragmentationAnalysis, MemoryDefragmenter, MemoryStatistics, MemoryStats};
 pub use testing::MemoryTester;
+pub use user_space::{
+    get_user_space_manager, init_user_space_manager, UserPageTable, UserSpaceManager,
+    UserSpaceStats, VirtualMemoryArea, VmaList, VmaType, USER_SPACE_END, USER_SPACE_START,
+};
 
 /// Unified Memory Manager Interface
 ///
@@ -273,3 +308,6 @@ impl CorruptionDetection for MemoryManager {
 
 /// Legacy type alias for backward compatibility
 pub type MemoryManagerCore = BlockAllocator;
+
+// Re-export important functions from submodules
+pub use protection::init_advanced_memory_protection;

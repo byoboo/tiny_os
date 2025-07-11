@@ -100,7 +100,7 @@ jobs:
     - name: Check documentation
       run: |
         # Verify all documentation files exist
-        docs=("README.md" "TECHNICAL_DOCS.md" "TESTING_INFRASTRUCTURE.md" "VSCODE_SETUP.md")
+        docs=("README.md" "TECHNICAL_DOCS.md" "docs/TESTING_INFRASTRUCTURE.md" "docs/VSCODE_SETUP.md")
         for doc in "${docs[@]}"; do
           if [ ! -f "$doc" ]; then
             echo "❌ Missing documentation: $doc"

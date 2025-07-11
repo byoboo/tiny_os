@@ -271,3 +271,29 @@ impl<H: HardwareVersion> TimerDriver<H> {
 
 /// Type alias for the default timer driver
 pub type SystemTimer = TimerDriver<DefaultHardware>;
+
+/// Static system timer instance
+static mut SYSTEM_TIMER: Option<SystemTimer> = None;
+
+/// Initialize the system timer
+pub fn init_system_timer() {
+    unsafe {
+        let mut timer = SystemTimer::new();
+        let _ = timer.init();
+        SYSTEM_TIMER = Some(timer);
+    }
+}
+
+/// Get current system time (compatible with process management)
+pub fn get_system_time() -> u64 {
+    unsafe {
+        if let Some(ref timer) = SYSTEM_TIMER {
+            timer.get_time()
+        } else {
+            // Fallback counter if timer not initialized
+            static mut COUNTER: u64 = 0;
+            COUNTER += 1;
+            COUNTER
+        }
+    }
+}

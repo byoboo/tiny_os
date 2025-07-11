@@ -93,8 +93,14 @@ pub enum GpioFunction {
 #[allow(dead_code)]
 pub fn delay_cycles(cycles: u32) {
     for _ in 0..cycles {
+        #[cfg(target_arch = "aarch64")]
         unsafe {
             asm!("nop");
+        }
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // For unit tests, just do a simple loop
+            core::hint::spin_loop();
         }
     }
 }
