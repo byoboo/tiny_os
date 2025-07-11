@@ -4,6 +4,7 @@
 //! category.
 
 pub mod advanced_protection;
+pub mod dynamic_memory;
 pub mod exceptions;
 pub mod filesystem;
 pub mod hardware;

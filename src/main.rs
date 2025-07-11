@@ -108,6 +108,13 @@ pub extern "C" fn kernel_main() {
     init_advanced_memory_protection(memory_manager_ptr);
     uart.puts("✓ Advanced memory protection initialized\r\n");
 
+    // Initialize dynamic memory management
+    use tiny_os_lib::memory::init_dynamic_memory_manager;
+    match init_dynamic_memory_manager() {
+        Ok(()) => uart.puts("✓ Dynamic memory management initialized\r\n"),
+        Err(e) => uart.puts("⚠ Dynamic memory management initialization failed\r\n"),
+    }
+
     // Initialize interrupt controller
     let mut interrupt_controller = InterruptController::new();
     interrupt_controller.init();

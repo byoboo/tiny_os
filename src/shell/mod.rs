@@ -439,6 +439,135 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     }
                 }
 
+                // Phase 4.4.4 Dynamic Memory Management
+                b'*' => {
+                    // Dynamic memory management submenu
+                    context.uart.puts("\r\nDynamic Memory Management:\r\n");
+                    context.uart.puts("  1 - System Status\r\n");
+                    context.uart.puts("  2 - Stack Growth Management\r\n");
+                    context.uart.puts("  3 - Lazy Page Allocation\r\n");
+                    context.uart.puts("  4 - Memory Pressure Monitoring\r\n");
+                    context.uart.puts("  5 - Memory Optimization\r\n");
+                    context.uart.puts("  6 - Context Switching\r\n");
+                    context.uart.puts("  7 - Statistics\r\n");
+                    context.uart.puts("  h - Help\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::dynamic_memory::cmd_dynamic_memory_status(
+                                &[],
+                                &mut context,
+                            ),
+                            b'2' => {
+                                context.uart.puts("Stack growth commands:\r\n");
+                                context.uart.puts("  c - Create dynamic stack\r\n");
+                                context.uart.puts("  s - Show stack status\r\n");
+                                context.uart.puts("Select option: ");
+
+                                if let Some(stack_option) = context.uart.getc() {
+                                    match stack_option {
+                                        b'c' => {
+                                            let args = ["growth", "create"];
+                                            commands::dynamic_memory::cmd_dynamic_memory_growth(
+                                                &args,
+                                                &mut context,
+                                            );
+                                        }
+                                        b's' => {
+                                            let args = ["growth", "status"];
+                                            commands::dynamic_memory::cmd_dynamic_memory_growth(
+                                                &args,
+                                                &mut context,
+                                            );
+                                        }
+                                        _ => context.uart.puts("Invalid option\r\n"),
+                                    }
+                                }
+                            }
+                            b'3' => {
+                                context.uart.puts("Lazy allocation commands:\r\n");
+                                context.uart.puts("  a - Add lazy page\r\n");
+                                context.uart.puts("  s - Show lazy status\r\n");
+                                context.uart.puts("Select option: ");
+
+                                if let Some(lazy_option) = context.uart.getc() {
+                                    match lazy_option {
+                                        b'a' => {
+                                            let args = ["lazy", "add"];
+                                            commands::dynamic_memory::cmd_dynamic_memory_lazy(
+                                                &args,
+                                                &mut context,
+                                            );
+                                        }
+                                        b's' => {
+                                            let args = ["lazy", "status"];
+                                            commands::dynamic_memory::cmd_dynamic_memory_lazy(
+                                                &args,
+                                                &mut context,
+                                            );
+                                        }
+                                        _ => context.uart.puts("Invalid option\r\n"),
+                                    }
+                                }
+                            }
+                            b'4' => commands::dynamic_memory::cmd_dynamic_memory_pressure(
+                                &[],
+                                &mut context,
+                            ),
+                            b'5' => commands::dynamic_memory::cmd_dynamic_memory_optimize(
+                                &[],
+                                &mut context,
+                            ),
+                            b'6' => {
+                                context.uart.puts("Context switching commands:\r\n");
+                                context.uart.puts("  s - Perform demo context switch\r\n");
+                                context.uart.puts("  t - Show context switch status\r\n");
+                                context.uart.puts("Select option: ");
+
+                                if let Some(context_option) = context.uart.getc() {
+                                    match context_option {
+                                        b's' => {
+                                            let args = ["context", "switch"];
+                                            commands::dynamic_memory::cmd_dynamic_memory_context(
+                                                &args,
+                                                &mut context,
+                                            );
+                                        }
+                                        b't' => {
+                                            let args = ["context", "status"];
+                                            commands::dynamic_memory::cmd_dynamic_memory_context(
+                                                &args,
+                                                &mut context,
+                                            );
+                                        }
+                                        _ => context.uart.puts("Invalid option\r\n"),
+                                    }
+                                }
+                            }
+                            b'7' => commands::dynamic_memory::cmd_dynamic_memory_stats(
+                                &[],
+                                &mut context,
+                            ),
+                            b'h' => {
+                                context.uart.puts("Dynamic Memory Management Help:\r\n");
+                                context
+                                    .uart
+                                    .puts("  1 - Show system status and overview\r\n");
+                                context.uart.puts("  2 - Manage dynamic stack growth\r\n");
+                                context.uart.puts("  3 - Control lazy page allocation\r\n");
+                                context.uart.puts("  4 - Monitor memory pressure\r\n");
+                                context.uart.puts("  5 - Trigger memory optimization\r\n");
+                                context
+                                    .uart
+                                    .puts("  6 - Hardware-assisted context switching\r\n");
+                                context.uart.puts("  7 - Show detailed statistics\r\n");
+                            }
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
                 // Unknown command
                 _ => {
                     if (32..=126).contains(&ch) {

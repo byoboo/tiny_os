@@ -39,6 +39,7 @@
 // Public module exports
 pub mod allocator;
 pub mod cow;
+pub mod dynamic;
 pub mod hardware;
 pub mod layout;
 pub mod mmu;
@@ -53,7 +54,13 @@ pub mod user_space;
 pub use allocator::BlockAllocator;
 pub use cow::{
     create_cow_fault_from_exception, get_cow_manager, init_cow_manager, CowFault, CowFaultType,
-    CowManager, CowPage, CowStatistics,
+    CowManager, CowPage, CowStatistics, SimpleVec, SimpleVecIter,
+};
+pub use dynamic::{
+    add_lazy_page, check_dynamic_memory_pressure, create_dynamic_stack, fast_context_switch,
+    get_dynamic_memory_stats, handle_dynamic_memory_fault, init_dynamic_memory_manager,
+    is_dynamic_memory_enabled, DynamicMemoryManager, DynamicMemoryStats, DynamicStack, LazyPage,
+    PressureLevel,
 };
 pub use hardware::{HardwareMemoryInfo, MemoryHardware};
 pub use layout::{MemoryHardwareConfig, BLOCK_SIZE, HEAP_SIZE, HEAP_START, TOTAL_BLOCKS};
