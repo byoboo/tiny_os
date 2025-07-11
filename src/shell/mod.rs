@@ -353,9 +353,7 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                 // Phase 4.4.3 Advanced Memory Protection
                 b'@' => {
                     // Advanced memory protection submenu
-                    context
-                        .uart
-                        .puts("\r\nAdvanced Memory Protection:\r\n");
+                    context.uart.puts("\r\nAdvanced Memory Protection:\r\n");
                     context.uart.puts("  1 - Protection Status\r\n");
                     context.uart.puts("  2 - Page Permissions\r\n");
                     context.uart.puts("  3 - ASLR Information\r\n");
@@ -367,7 +365,10 @@ pub fn run_shell(mut context: ShellContext) -> ! {
 
                     if let Some(option) = context.uart.getc() {
                         match option {
-                            b'1' => commands::advanced_protection::cmd_advanced_protection_status(&[], &mut context),
+                            b'1' => commands::advanced_protection::cmd_advanced_protection_status(
+                                &[],
+                                &mut context,
+                            ),
                             b'2' => {
                                 context.uart.puts("Page permissions commands:\r\n");
                                 context.uart.puts("  s - Set permissions\r\n");
@@ -391,7 +392,10 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                                     }
                                 }
                             }
-                            b'3' => commands::advanced_protection::cmd_advanced_protection_aslr(&[], &mut context),
+                            b'3' => commands::advanced_protection::cmd_advanced_protection_aslr(
+                                &[],
+                                &mut context,
+                            ),
                             b'4' => {
                                 context.uart.puts("Stack protection commands:\r\n");
                                 context.uart.puts("  s - Setup protection\r\n");
@@ -401,7 +405,8 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                                     match stack_option {
                                         b's' => {
                                             // For simplicity, use test values
-                                            let args = ["stack", "setup", "1", "0x2000000", "0x10000"];
+                                            let args =
+                                                ["stack", "setup", "1", "0x2000000", "0x10000"];
                                             commands::advanced_protection::cmd_advanced_protection_stack(&args, &mut context);
                                         }
                                         b'i' => {
@@ -412,8 +417,14 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                                     }
                                 }
                             }
-                            b'5' => commands::advanced_protection::cmd_advanced_protection_test(&[], &mut context),
-                            b'6' => commands::advanced_protection::cmd_advanced_protection_stats(&[], &mut context),
+                            b'5' => commands::advanced_protection::cmd_advanced_protection_test(
+                                &[],
+                                &mut context,
+                            ),
+                            b'6' => commands::advanced_protection::cmd_advanced_protection_stats(
+                                &[],
+                                &mut context,
+                            ),
                             b'h' => {
                                 context.uart.puts("Advanced Memory Protection Help:\r\n");
                                 context.uart.puts("  1 - Show protection system status\r\n");
