@@ -160,7 +160,7 @@ tiny_os/
 │   ├── implementation/      # Phase implementation docs
 │   ├── archived/           # Archived documentation
 │   ├── CI_CD_SETUP.md      # CI/CD documentation
-│   └── TESTING_INFRASTRUCTURE.md
+│   └── docs/TESTING_INFRASTRUCTURE.md
 ├── scripts/                 # Organized scripts
 │   ├── tests/              # Test scripts
 │   ├── validation/         # Validation scripts

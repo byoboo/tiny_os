@@ -337,7 +337,7 @@ jobs:
           **Documentation:**
           - [README.md](https://github.com/${{ github.repository }}/blob/master/README.md)
           - [TECHNICAL_DOCS.md](https://github.com/${{ github.repository }}/blob/master/TECHNICAL_DOCS.md)
-          - [TESTING_INFRASTRUCTURE.md](https://github.com/${{ github.repository }}/blob/master/TESTING_INFRASTRUCTURE.md)
+          - [TESTING_INFRASTRUCTURE.md](https://github.com/${{ github.repository }}/blob/master/docs/TESTING_INFRASTRUCTURE.md)
         prerelease: false
         files: |
           kernel8.img
