@@ -6,9 +6,9 @@ pub mod privilege;
 pub mod scheduler;
 
 // Re-export key types and functions
-pub use context::{ProcessContext, ProcessState, ContextSwitchResult};
-pub use privilege::{PrivilegeLevel, PrivilegeManager, EL0ToEL1Transition};
-pub use scheduler::{Scheduler, Task, TaskId, SchedulerStats};
+pub use context::{ContextSwitchResult, ProcessContext, ProcessState};
+pub use privilege::{EL0ToEL1Transition, PrivilegeLevel, PrivilegeManager};
+pub use scheduler::{Scheduler, SchedulerStats, Task, TaskId};
 
 /// Process management initialization
 pub fn init_process_management() {

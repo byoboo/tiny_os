@@ -21,7 +21,7 @@ use tiny_os_lib::{
     exceptions::init_exceptions,
     fat32::Fat32FileSystem,
     interrupts::InterruptController,
-    memory::{init_mmu_exceptions, init_virtual_memory, init_stack_manager, MemoryManager},
+    memory::{init_mmu_exceptions, init_stack_manager, init_virtual_memory, MemoryManager},
     process,
     shell::{run_shell, ShellContext},
 };

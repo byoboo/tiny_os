@@ -36,7 +36,7 @@ impl WorkItem {
             is_valid: true,
         }
     }
-    
+
     pub const fn invalid() -> Self {
         Self {
             work_fn: None,
@@ -46,7 +46,7 @@ impl WorkItem {
             is_valid: false,
         }
     }
-    
+
     /// Execute the work item
     pub fn execute(&mut self) {
         if let Some(work_fn) = self.work_fn {
@@ -82,69 +82,69 @@ impl WorkQueue {
             stats: WorkQueueStats::new(),
         }
     }
-    
+
     /// Add work item to queue
     pub fn schedule_work(&mut self, work_fn: WorkFunction, data: u64, context: u64) -> bool {
         if self.count >= MAX_WORK_ITEMS {
             self.stats.queue_full_events += 1;
             return false;
         }
-        
+
         let work_item = WorkItem::new(work_fn, data, context, self.next_id);
         self.next_id = self.next_id.wrapping_add(1);
-        
+
         self.items[self.tail] = work_item;
         self.tail = (self.tail + 1) % MAX_WORK_ITEMS;
         self.count += 1;
-        
+
         self.stats.items_scheduled += 1;
         true
     }
-    
+
     /// Process one work item
     pub fn process_work(&mut self) -> bool {
         if self.count == 0 {
             return false;
         }
-        
+
         let mut work_item = self.items[self.head];
         self.head = (self.head + 1) % MAX_WORK_ITEMS;
         self.count -= 1;
-        
+
         if work_item.is_valid {
             work_item.execute();
             self.stats.items_processed += 1;
         }
-        
+
         true
     }
-    
+
     /// Process all pending work items
     pub fn process_all_work(&mut self) -> u32 {
         let mut processed = 0;
-        
+
         while self.process_work() {
             processed += 1;
         }
-        
+
         processed
     }
-    
+
     /// Get queue statistics
     pub fn get_stats(&self) -> WorkQueueStats {
         self.stats
     }
-    
+
     /// Get current queue length
     pub fn len(&self) -> usize {
         self.count
     }
-    
+
     /// Check if queue is empty
     pub fn is_empty(&self) -> bool {
         self.count == 0
     }
-    
+
     /// Check if queue is full
     pub fn is_full(&self) -> bool {
         self.count >= MAX_WORK_ITEMS
@@ -186,7 +186,7 @@ impl SoftIrqManager {
             stats: SoftIrqStats::new(),
         }
     }
-    
+
     /// Raise a soft IRQ
     pub fn raise_softirq(&mut self, soft_irq_type: SoftIrqType) {
         let bit = 1 << (soft_irq_type as u32);
@@ -195,9 +195,15 @@ impl SoftIrqManager {
             self.stats.softirqs_raised += 1;
         }
     }
-    
+
     /// Schedule work for a soft IRQ
-    pub fn schedule_softirq_work(&mut self, soft_irq_type: SoftIrqType, work_fn: WorkFunction, data: u64, context: u64) -> bool {
+    pub fn schedule_softirq_work(
+        &mut self,
+        soft_irq_type: SoftIrqType,
+        work_fn: WorkFunction,
+        data: u64,
+        context: u64,
+    ) -> bool {
         let queue_index = soft_irq_type as usize;
         if queue_index < self.work_queues.len() {
             let success = self.work_queues[queue_index].schedule_work(work_fn, data, context);
@@ -209,11 +215,11 @@ impl SoftIrqManager {
             false
         }
     }
-    
+
     /// Process pending soft IRQs
     pub fn process_softirqs(&mut self) -> u32 {
         let mut processed = 0;
-        
+
         for i in 0..5 {
             let bit = 1 << i;
             if (self.pending & bit) != 0 {
@@ -223,22 +229,22 @@ impl SoftIrqManager {
                     processed += items_processed;
                     self.stats.softirqs_processed += 1;
                 }
-                
+
                 // Clear the pending bit if queue is empty
                 if self.work_queues[i].is_empty() {
                     self.pending &= !bit;
                 }
             }
         }
-        
+
         processed
     }
-    
+
     /// Check if any soft IRQs are pending
     pub fn has_pending_softirqs(&self) -> bool {
         self.pending != 0
     }
-    
+
     /// Get soft IRQ statistics
     pub fn get_stats(&self) -> SoftIrqStats {
         self.stats
@@ -297,48 +303,55 @@ impl DeferredProcessingManager {
             stats: DeferredProcessingStats::new(),
         }
     }
-    
+
     /// Schedule deferred work
     pub fn schedule_work(&mut self, work_fn: WorkFunction, data: u64, context: u64) -> bool {
         self.main_work_queue.schedule_work(work_fn, data, context)
     }
-    
+
     /// Schedule soft IRQ work
-    pub fn schedule_softirq(&mut self, soft_irq_type: SoftIrqType, work_fn: WorkFunction, data: u64, context: u64) -> bool {
-        self.softirq_manager.schedule_softirq_work(soft_irq_type, work_fn, data, context)
+    pub fn schedule_softirq(
+        &mut self,
+        soft_irq_type: SoftIrqType,
+        work_fn: WorkFunction,
+        data: u64,
+        context: u64,
+    ) -> bool {
+        self.softirq_manager
+            .schedule_softirq_work(soft_irq_type, work_fn, data, context)
     }
-    
+
     /// Process all deferred work
     pub fn process_deferred_work(&mut self) {
         let start_time = self.get_timestamp();
-        
+
         // Process main work queue
         let main_processed = self.main_work_queue.process_all_work();
-        
+
         // Process soft IRQs
         let softirq_processed = self.softirq_manager.process_softirqs();
-        
+
         let end_time = self.get_timestamp();
         let processing_time = end_time.wrapping_sub(start_time);
-        
+
         self.stats.total_processing_cycles += 1;
         self.stats.total_items_processed += (main_processed + softirq_processed) as u64;
-        
+
         if processing_time > self.stats.max_processing_time {
             self.stats.max_processing_time = processing_time;
         }
     }
-    
+
     /// Check if there's work to be done
     pub fn has_pending_work(&self) -> bool {
         !self.main_work_queue.is_empty() || self.softirq_manager.has_pending_softirqs()
     }
-    
+
     /// Get processing statistics
     pub fn get_stats(&self) -> DeferredProcessingStats {
         self.stats
     }
-    
+
     /// Simple timestamp function (using a counter for now)
     fn get_timestamp(&self) -> u64 {
         // TODO: Use actual timer when available
@@ -380,16 +393,17 @@ pub fn init_deferred_processing() {
 
 /// Schedule work for deferred processing
 pub fn schedule_work(work_fn: WorkFunction, data: u64, context: u64) -> bool {
-    unsafe {
-        DEFERRED_PROCESSING.schedule_work(work_fn, data, context)
-    }
+    unsafe { DEFERRED_PROCESSING.schedule_work(work_fn, data, context) }
 }
 
 /// Schedule soft IRQ work
-pub fn schedule_softirq(soft_irq_type: SoftIrqType, work_fn: WorkFunction, data: u64, context: u64) -> bool {
-    unsafe {
-        DEFERRED_PROCESSING.schedule_softirq(soft_irq_type, work_fn, data, context)
-    }
+pub fn schedule_softirq(
+    soft_irq_type: SoftIrqType,
+    work_fn: WorkFunction,
+    data: u64,
+    context: u64,
+) -> bool {
+    unsafe { DEFERRED_PROCESSING.schedule_softirq(soft_irq_type, work_fn, data, context) }
 }
 
 /// Process all pending deferred work
@@ -401,16 +415,12 @@ pub fn process_pending_work() {
 
 /// Check if there's pending work
 pub fn has_pending_work() -> bool {
-    unsafe {
-        DEFERRED_PROCESSING.has_pending_work()
-    }
+    unsafe { DEFERRED_PROCESSING.has_pending_work() }
 }
 
 /// Get deferred processing statistics
 pub fn get_deferred_stats() -> DeferredProcessingStats {
-    unsafe {
-        DEFERRED_PROCESSING.get_stats()
-    }
+    unsafe { DEFERRED_PROCESSING.get_stats() }
 }
 
 // Example work functions for testing
@@ -438,23 +448,23 @@ pub fn test_deferred_processing() -> bool {
     let mut uart = Uart::new();
     uart.init();
     uart.puts("Testing deferred interrupt processing...\r\n");
-    
+
     // Test scheduling work
     if !schedule_work(timer_work, 0x1234, 0) {
         uart.puts("❌ Failed to schedule work\r\n");
         return false;
     }
-    
+
     // Test scheduling soft IRQ work
     if !schedule_softirq(SoftIrqType::Network, network_work, 0x5678, 0) {
         uart.puts("❌ Failed to schedule soft IRQ work\r\n");
         return false;
     }
-    
+
     // Test processing
     uart.puts("Processing deferred work...\r\n");
     process_pending_work();
-    
+
     // Check statistics
     let stats = get_deferred_stats();
     uart.puts("Processing cycles: ");
@@ -462,7 +472,7 @@ pub fn test_deferred_processing() -> bool {
     uart.puts(", Items processed: ");
     uart.put_hex(stats.total_items_processed);
     uart.puts("\r\n");
-    
+
     uart.puts("✅ Deferred processing tests passed\r\n");
     true
 }

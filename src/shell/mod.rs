@@ -186,7 +186,9 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                 // Phase 4.2 Virtual Memory Management
                 b'~' => {
                     // Virtual memory management submenu
-                    context.uart.puts("\r\nVirtual Memory Management Commands:\r\n");
+                    context
+                        .uart
+                        .puts("\r\nVirtual Memory Management Commands:\r\n");
                     context.uart.puts("  1 - Virtual Memory Status\r\n");
                     context.uart.puts("  2 - Enable MMU\r\n");
                     context.uart.puts("  3 - Disable MMU\r\n");
@@ -197,16 +199,34 @@ pub fn run_shell(mut context: ShellContext) -> ! {
 
                     if let Some(option) = context.uart.getc() {
                         match option {
-                            b'1' => commands::exceptions::cmd_virtual_memory_status(&["vm"], &mut context),
-                            b'2' => commands::exceptions::cmd_mmu_enable_disable(&["mmuctl", "on"], &mut context),
-                            b'3' => commands::exceptions::cmd_mmu_enable_disable(&["mmuctl", "off"], &mut context),
+                            b'1' => commands::exceptions::cmd_virtual_memory_status(
+                                &["vm"],
+                                &mut context,
+                            ),
+                            b'2' => commands::exceptions::cmd_mmu_enable_disable(
+                                &["mmuctl", "on"],
+                                &mut context,
+                            ),
+                            b'3' => commands::exceptions::cmd_mmu_enable_disable(
+                                &["mmuctl", "off"],
+                                &mut context,
+                            ),
                             b'4' => {
                                 context.uart.puts("Enter address (hex): 0x");
                                 // For now, test with a common address
-                                commands::exceptions::cmd_translate_address(&["translate", "0x80000"], &mut context);
-                            },
-                            b'5' => commands::exceptions::cmd_invalidate_tlb(&["tlbflush"], &mut context),
-                            b'6' => commands::exceptions::cmd_virtual_memory_test(&["vmtest"], &mut context),
+                                commands::exceptions::cmd_translate_address(
+                                    &["translate", "0x80000"],
+                                    &mut context,
+                                );
+                            }
+                            b'5' => commands::exceptions::cmd_invalidate_tlb(
+                                &["tlbflush"],
+                                &mut context,
+                            ),
+                            b'6' => commands::exceptions::cmd_virtual_memory_test(
+                                &["vmtest"],
+                                &mut context,
+                            ),
                             _ => context.uart.puts("Invalid option\r\n"),
                         }
                     }
@@ -226,19 +246,33 @@ pub fn run_shell(mut context: ShellContext) -> ! {
 
                     if let Some(option) = context.uart.getc() {
                         match option {
-                            b'1' => commands::system::cmd_stack_status(&["stack_status"], &mut context),
-                            b'2' => commands::system::cmd_stack_alloc(&["stack_alloc", "kernel"], &mut context),
-                            b'3' => commands::system::cmd_stack_alloc(&["stack_alloc", "user"], &mut context),
+                            b'1' => {
+                                commands::system::cmd_stack_status(&["stack_status"], &mut context)
+                            }
+                            b'2' => commands::system::cmd_stack_alloc(
+                                &["stack_alloc", "kernel"],
+                                &mut context,
+                            ),
+                            b'3' => commands::system::cmd_stack_alloc(
+                                &["stack_alloc", "user"],
+                                &mut context,
+                            ),
                             b'4' => {
                                 context.uart.puts("Enter stack ID: ");
                                 // For now, test with stack ID 1
-                                commands::system::cmd_stack_dealloc(&["stack_dealloc", "1"], &mut context);
-                            },
+                                commands::system::cmd_stack_dealloc(
+                                    &["stack_dealloc", "1"],
+                                    &mut context,
+                                );
+                            }
                             b'5' => {
                                 context.uart.puts("Enter stack ID: ");
                                 // For now, test with stack ID 0
-                                commands::system::cmd_stack_switch(&["stack_switch", "0"], &mut context);
-                            },
+                                commands::system::cmd_stack_switch(
+                                    &["stack_switch", "0"],
+                                    &mut context,
+                                );
+                            }
                             b'6' => commands::system::cmd_stack_test(&["stack_test"], &mut context),
                             _ => context.uart.puts("Invalid option\r\n"),
                         }

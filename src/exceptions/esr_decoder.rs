@@ -1,11 +1,11 @@
 //! ESR_EL1 (Exception Syndrome Register) Decoding
 //!
-//! This module provides comprehensive decoding of the ESR_EL1 register to identify
-//! specific exception causes and extract detailed fault information.
+//! This module provides comprehensive decoding of the ESR_EL1 register to
+//! identify specific exception causes and extract detailed fault information.
 //!
 //! ESR_EL1 format:
 //! - Bits [31:26]: Exception Class (EC)
-//! - Bits [25:25]: Instruction Length (IL) 
+//! - Bits [25:25]: Instruction Length (IL)
 //! - Bits [24:0]:  Instruction Specific Syndrome (ISS)
 
 /// Exception Class values from ESR_EL1[31:26]
@@ -194,7 +194,8 @@ impl ExceptionClass {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum DataFaultStatus {
-    /// Address size fault, level 0 of translation or translation table base register
+    /// Address size fault, level 0 of translation or translation table base
+    /// register
     AddressSizeFaultLevel0 = 0b000000,
     /// Address size fault, level 1
     AddressSizeFaultLevel1 = 0b000001,
@@ -313,14 +314,24 @@ impl DataFaultStatus {
             DataFaultStatus::SynchronousTagCheck => "Synchronous Tag Check fault",
             DataFaultStatus::AsynchronousExternalAbort => "Asynchronous External abort",
             DataFaultStatus::AsynchronousTagCheck => "Asynchronous Tag Check fault",
-            DataFaultStatus::SynchronousExternalAbortTtwLevel0 => "Synchronous External abort on TTW, level 0",
-            DataFaultStatus::SynchronousExternalAbortTtwLevel1 => "Synchronous External abort on TTW, level 1",
-            DataFaultStatus::SynchronousExternalAbortTtwLevel2 => "Synchronous External abort on TTW, level 2",
-            DataFaultStatus::SynchronousExternalAbortTtwLevel3 => "Synchronous External abort on TTW, level 3",
+            DataFaultStatus::SynchronousExternalAbortTtwLevel0 => {
+                "Synchronous External abort on TTW, level 0"
+            }
+            DataFaultStatus::SynchronousExternalAbortTtwLevel1 => {
+                "Synchronous External abort on TTW, level 1"
+            }
+            DataFaultStatus::SynchronousExternalAbortTtwLevel2 => {
+                "Synchronous External abort on TTW, level 2"
+            }
+            DataFaultStatus::SynchronousExternalAbortTtwLevel3 => {
+                "Synchronous External abort on TTW, level 3"
+            }
             DataFaultStatus::AlignmentFault => "Alignment fault",
             DataFaultStatus::DebugException => "Debug exception",
             DataFaultStatus::TlbConflictAbort => "TLB conflict abort",
-            DataFaultStatus::UnsupportedAtomicHardwareUpdate => "Unsupported atomic hardware update fault",
+            DataFaultStatus::UnsupportedAtomicHardwareUpdate => {
+                "Unsupported atomic hardware update fault"
+            }
             DataFaultStatus::ImplementationDefined => "Implementation defined fault",
             DataFaultStatus::Lockdown => "Lockdown",
             DataFaultStatus::ExclusiveAccessFault => "Exclusive access fault",
@@ -403,12 +414,12 @@ impl EsrDecoder {
     pub fn new() -> Self {
         EsrDecoder
     }
-    
+
     /// Decode ESR_EL1 register value
     pub fn decode_esr(&self, esr: u32) -> EsrInfo {
         Self::decode(esr)
     }
-    
+
     /// Decode ESR_EL1 register value
     pub fn decode(esr: u32) -> EsrInfo {
         let exception_class = ExceptionClass::from((esr >> 26) & 0x3F);
@@ -429,11 +440,9 @@ impl EsrDecoder {
     /// Decode exception-specific details
     fn decode_details(exception_class: &ExceptionClass, iss: u32) -> EsrDetails {
         match exception_class {
-            ExceptionClass::Svc64 | ExceptionClass::Svc32 => {
-                EsrDetails::SystemCall {
-                    immediate: (iss & 0xFFFF) as u16,
-                }
-            }
+            ExceptionClass::Svc64 | ExceptionClass::Svc32 => EsrDetails::SystemCall {
+                immediate: (iss & 0xFFFF) as u16,
+            },
             ExceptionClass::DataAbortLower | ExceptionClass::DataAbortSame => {
                 EsrDetails::DataAbort {
                     fault_address_valid: (iss >> 10) & 1 == 1,

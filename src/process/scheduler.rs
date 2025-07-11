@@ -25,37 +25,37 @@ impl TaskQueue {
             count: 0,
         }
     }
-    
+
     pub fn push_back(&mut self, task: Task) -> Result<(), &'static str> {
         if self.count >= 16 {
             return Err("Task queue full");
         }
-        
+
         self.tasks[self.tail] = Some(task);
         self.tail = (self.tail + 1) % 16;
         self.count += 1;
         Ok(())
     }
-    
+
     pub fn pop_front(&mut self) -> Option<Task> {
         if self.count == 0 {
             return None;
         }
-        
+
         let task = self.tasks[self.head].take();
         self.head = (self.head + 1) % 16;
         self.count -= 1;
         task
     }
-    
+
     pub fn len(&self) -> usize {
         self.count
     }
-    
+
     pub fn is_empty(&self) -> bool {
         self.count == 0
     }
-    
+
     pub fn iter(&self) -> TaskQueueIter {
         TaskQueueIter {
             queue: self,
@@ -63,21 +63,21 @@ impl TaskQueue {
             current: self.head,
         }
     }
-    
+
     pub fn remove(&mut self, task_id: TaskId) -> Option<Task> {
         for i in 0..self.count {
             let pos = (self.head + i) % 16;
             if let Some(ref task) = self.tasks[pos] {
                 if task.id == task_id {
                     let removed_task = self.tasks[pos].take();
-                    
+
                     // Shift remaining tasks
                     for j in i..self.count.saturating_sub(1) {
                         let current_pos = (self.head + j) % 16;
                         let next_pos = (self.head + j + 1) % 16;
                         self.tasks[current_pos] = self.tasks[next_pos].take();
                     }
-                    
+
                     self.count -= 1;
                     if self.count == 0 {
                         self.head = 0;
@@ -85,7 +85,7 @@ impl TaskQueue {
                     } else {
                         self.tail = if self.tail == 0 { 15 } else { self.tail - 1 };
                     }
-                    
+
                     return removed_task;
                 }
             }
@@ -102,12 +102,12 @@ pub struct TaskQueueIter<'a> {
 
 impl<'a> Iterator for TaskQueueIter<'a> {
     type Item = &'a Task;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.queue.count {
             return None;
         }
-        
+
         if let Some(ref task) = self.queue.tasks[self.current] {
             self.current = (self.current + 1) % 16;
             self.index += 1;
@@ -162,34 +162,34 @@ impl TaskPriority {
 pub struct Task {
     /// Task ID
     pub id: TaskId,
-    
+
     /// Task name
     pub name: [u8; 32],
-    
+
     /// Task priority
     pub priority: TaskPriority,
-    
+
     /// Process context
     pub context: ProcessContext,
-    
+
     /// Entry point
     pub entry_point: u64,
-    
+
     /// Task stack base address
     pub stack_base: u64,
-    
+
     /// Task stack size
     pub stack_size: u64,
-    
+
     /// Task creation time
     pub creation_time: u64,
-    
+
     /// Total run time
     pub run_time: u64,
-    
+
     /// Last run time
     pub last_run: u64,
-    
+
     /// Task flags
     pub flags: u32,
 }
@@ -208,14 +208,14 @@ impl Task {
         let name_bytes = name.as_bytes();
         let copy_len = core::cmp::min(name_bytes.len(), 31);
         task_name[..copy_len].copy_from_slice(&name_bytes[..copy_len]);
-        
+
         let kernel_stack = stack_base + stack_size;
         let user_stack = stack_base + (stack_size / 2);
-        
+
         let mut context = ProcessContext::new(id, user_stack, kernel_stack, entry_point);
         context.priority = priority as u8;
         context.set_time_slice(priority.default_time_slice());
-        
+
         Self {
             id,
             name: task_name,
@@ -230,54 +230,59 @@ impl Task {
             flags: 0,
         }
     }
-    
+
     /// Get task name as string
     pub fn get_name(&self) -> &str {
-        let end = self.name.iter().position(|&b| b == 0).unwrap_or(self.name.len());
+        let end = self
+            .name
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(self.name.len());
         core::str::from_utf8(&self.name[..end]).unwrap_or("<invalid>")
     }
-    
+
     /// Check if task is ready to run
     pub fn is_ready(&self) -> bool {
         self.context.is_ready()
     }
-    
+
     /// Check if task is running
     pub fn is_running(&self) -> bool {
         self.context.is_running()
     }
-    
+
     /// Check if task is blocked
     pub fn is_blocked(&self) -> bool {
         self.context.is_blocked()
     }
-    
+
     /// Check if task is terminated
     pub fn is_terminated(&self) -> bool {
         self.context.is_terminated()
     }
-    
+
     /// Set task state
     pub fn set_state(&mut self, state: ProcessState) {
         self.context.set_state(state);
     }
-    
+
     /// Get task state
     pub fn get_state(&self) -> ProcessState {
         self.context.get_state()
     }
-    
+
     /// Update run time
     pub fn update_run_time(&mut self, time: u64) {
         self.run_time += time;
         self.last_run = get_system_time();
     }
-    
+
     /// Reset time slice
     pub fn reset_time_slice(&mut self) {
-        self.context.set_time_slice(self.priority.default_time_slice());
+        self.context
+            .set_time_slice(self.priority.default_time_slice());
     }
-    
+
     /// Check if time slice expired
     pub fn time_slice_expired(&mut self) -> bool {
         self.context.decrement_time_slice()
@@ -289,22 +294,22 @@ impl Task {
 pub struct SchedulerStats {
     /// Total context switches
     pub context_switches: u64,
-    
+
     /// Total preemptions
     pub preemptions: u64,
-    
+
     /// Tasks created
     pub tasks_created: u64,
-    
+
     /// Tasks destroyed
     pub tasks_destroyed: u64,
-    
+
     /// Scheduler invocations
     pub scheduler_calls: u64,
-    
+
     /// Idle time
     pub idle_time: u64,
-    
+
     /// Total run time
     pub total_run_time: u64,
 }
@@ -338,12 +343,12 @@ impl TaskList {
             count: 0,
         }
     }
-    
+
     pub fn push(&mut self, task: Task) -> Result<(), &'static str> {
         if self.count >= 32 {
             return Err("Task list full");
         }
-        
+
         for slot in &mut self.tasks {
             if slot.is_none() {
                 *slot = Some(task);
@@ -351,10 +356,10 @@ impl TaskList {
                 return Ok(());
             }
         }
-        
+
         Err("No free slots")
     }
-    
+
     pub fn pop(&mut self) -> Option<Task> {
         for slot in &mut self.tasks {
             if let Some(task) = slot.take() {
@@ -364,7 +369,7 @@ impl TaskList {
         }
         None
     }
-    
+
     pub fn remove(&mut self, task_id: TaskId) -> Option<Task> {
         for slot in &mut self.tasks {
             if let Some(task) = slot {
@@ -377,7 +382,7 @@ impl TaskList {
         }
         None
     }
-    
+
     pub fn len(&self) -> usize {
         self.count
     }
@@ -387,19 +392,19 @@ impl TaskList {
 pub struct Scheduler {
     /// Ready queue for each priority level
     ready_queues: [TaskList; 5],
-    
+
     /// Currently running task
     current_task: Option<Task>,
-    
+
     /// Next task ID to assign
     next_task_id: TaskId,
-    
+
     /// Scheduler statistics
     stats: SchedulerStats,
-    
+
     /// Scheduler enabled flag
     enabled: bool,
-    
+
     /// Idle task
     idle_task: Option<Task>,
 }
@@ -422,13 +427,13 @@ impl Scheduler {
             idle_task: None,
         }
     }
-    
+
     /// Initialize scheduler
     pub fn init(&mut self) {
         self.enabled = true;
         self.create_idle_task();
     }
-    
+
     /// Create idle task
     fn create_idle_task(&mut self) {
         let idle_task = Task::new(
@@ -439,10 +444,10 @@ impl Scheduler {
             0x7F00_0000,           // Idle stack base
             0x1000,                // 4KB stack
         );
-        
+
         self.idle_task = Some(idle_task);
     }
-    
+
     /// Create a new task
     pub fn create_task(
         &mut self,
@@ -454,19 +459,19 @@ impl Scheduler {
     ) -> TaskId {
         let task_id = self.next_task_id;
         self.next_task_id += 1;
-        
+
         let task = Task::new(task_id, name, priority, entry_point, stack_base, stack_size);
-        
+
         // Add to appropriate ready queue
         let priority_index = priority as usize;
         if self.ready_queues[priority_index].push(task).is_ok() {
             self.stats.tasks_created += 1;
             crate::process::record_task_creation();
         }
-        
+
         task_id
     }
-    
+
     /// Destroy a task
     pub fn destroy_task(&mut self, task_id: TaskId) -> Result<(), &'static str> {
         // Remove from ready queues
@@ -477,7 +482,7 @@ impl Scheduler {
                 return Ok(());
             }
         }
-        
+
         // Check if it's the current task
         if let Some(ref current) = self.current_task {
             if current.id == task_id {
@@ -487,24 +492,24 @@ impl Scheduler {
                 return Ok(());
             }
         }
-        
+
         Err("Task not found")
     }
-    
+
     /// Get next task to run (round-robin within priority levels)
     pub fn schedule(&mut self) -> Option<&mut Task> {
         if !self.enabled {
             return None;
         }
-        
+
         self.stats.scheduler_calls += 1;
-        
+
         // Check each priority level from highest to lowest
         for priority in (0..5).rev() {
             if let Some(mut task) = self.ready_queues[priority].pop() {
                 task.set_state(ProcessState::Running);
                 task.reset_time_slice();
-                
+
                 // If there was a previous task, put it back in ready queue
                 if let Some(mut prev_task) = self.current_task.take() {
                     if !prev_task.is_terminated() {
@@ -514,12 +519,12 @@ impl Scheduler {
                     }
                     self.stats.context_switches += 1;
                 }
-                
+
                 self.current_task = Some(task);
                 return self.current_task.as_mut();
             }
         }
-        
+
         // No ready tasks, run idle task
         if let Some(ref mut idle) = self.idle_task {
             idle.set_state(ProcessState::Running);
@@ -529,54 +534,54 @@ impl Scheduler {
             None
         }
     }
-    
+
     /// Handle timer preemption
     pub fn handle_timer_preemption(&mut self) -> bool {
         if let Some(ref mut current) = self.current_task {
             if current.time_slice_expired() {
                 self.stats.preemptions += 1;
                 crate::process::record_scheduler_preemption();
-                
+
                 // Put current task back in ready queue
                 current.set_state(ProcessState::Ready);
                 let priority = current.priority as usize;
                 let task = self.current_task.take().unwrap();
                 let _ = self.ready_queues[priority].push(task);
-                
+
                 return true; // Need to reschedule
             }
         }
         false
     }
-    
+
     /// Block current task
     pub fn block_current_task(&mut self) {
         if let Some(ref mut current) = self.current_task {
             current.set_state(ProcessState::Blocked);
         }
     }
-    
+
     /// Unblock a task
     pub fn unblock_task(&mut self, _task_id: TaskId) -> Result<(), &'static str> {
         // Find blocked task (not implemented - would need blocked queue)
         Err("Task blocking not fully implemented")
     }
-    
+
     /// Get current task
     pub fn get_current_task(&self) -> Option<&Task> {
         self.current_task.as_ref()
     }
-    
+
     /// Get current task (mutable)
     pub fn get_current_task_mut(&mut self) -> Option<&mut Task> {
         self.current_task.as_mut()
     }
-    
+
     /// Get scheduler statistics
     pub fn get_stats(&self) -> SchedulerStats {
         self.stats
     }
-    
+
     /// Get task count
     pub fn get_task_count(&self) -> usize {
         let mut count = 0;
@@ -588,12 +593,12 @@ impl Scheduler {
         }
         count
     }
-    
+
     /// Enable/disable scheduler
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
-    
+
     /// Check if scheduler is enabled
     pub fn is_enabled(&self) -> bool {
         self.enabled
@@ -628,9 +633,7 @@ pub fn destroy_task(task_id: TaskId) -> Result<(), &'static str> {
 
 /// Schedule next task
 pub fn schedule() -> Option<TaskId> {
-    unsafe {
-        SCHEDULER.schedule().map(|task| task.id)
-    }
+    unsafe { SCHEDULER.schedule().map(|task| task.id) }
 }
 
 /// Handle timer preemption
@@ -672,7 +675,3 @@ pub fn set_scheduler_enabled(enabled: bool) {
 pub fn is_scheduler_enabled() -> bool {
     unsafe { SCHEDULER.is_enabled() }
 }
-
-
-
-

@@ -52,21 +52,20 @@ pub use allocator::BlockAllocator;
 pub use hardware::{HardwareMemoryInfo, MemoryHardware};
 pub use layout::{MemoryHardwareConfig, BLOCK_SIZE, HEAP_SIZE, HEAP_START, TOTAL_BLOCKS};
 pub use mmu::{
-    VirtualMemoryManager, VirtualMemoryStats, TranslationTable, PageTableEntry,
-    MemoryAttribute, RegionType, PageType, PAGE_SIZE, PAGE_SHIFT,
-    init_virtual_memory, enable_mmu_global, disable_mmu_global, 
-    get_virtual_memory_stats, is_mmu_enabled_global, translate_address_global, invalidate_tlb_global,
-    get_virtual_memory_manager,
+    disable_mmu_global, enable_mmu_global, get_virtual_memory_manager, get_virtual_memory_stats,
+    init_virtual_memory, invalidate_tlb_global, is_mmu_enabled_global, translate_address_global,
+    MemoryAttribute, PageTableEntry, PageType, RegionType, TranslationTable, VirtualMemoryManager,
+    VirtualMemoryStats, PAGE_SHIFT, PAGE_SIZE,
 };
 pub use mmu_exceptions::{
+    get_mmu_exception_stats, handle_mmu_exception_global, init_mmu_exceptions,
+    is_mmu_exception_handling_enabled, set_mmu_exception_handling_enabled, AccessType,
     MmuExceptionHandler, MmuExceptionStats, MmuExceptionType, MmuFaultInfo, MmuRecoveryAction,
-    AccessType, handle_mmu_exception_global, init_mmu_exceptions, get_mmu_exception_stats,
-    is_mmu_exception_handling_enabled, set_mmu_exception_handling_enabled,
 };
 pub use protection::{CorruptionDetection, CorruptionReport, MemoryProtection};
 pub use stack::{
-    StackManager, StackInfo, StackProtection, StackError, StackManagerStats, 
-    init_stack_manager, get_stack_manager
+    get_stack_manager, init_stack_manager, StackError, StackInfo, StackManager, StackManagerStats,
+    StackProtection,
 };
 pub use statistics::{FragmentationAnalysis, MemoryDefragmenter, MemoryStatistics, MemoryStats};
 pub use testing::MemoryTester;

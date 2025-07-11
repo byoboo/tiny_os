@@ -15,18 +15,18 @@
 
 use core::mem::transmute;
 
-use crate::uart::Uart;
-
 // Import our ESR decoding system
-use super::esr_decoder::{EsrDecoder, EsrInfo, EsrDetails, ExceptionClass};
-
+use super::esr_decoder::{EsrDecoder, EsrDetails, EsrInfo, ExceptionClass};
 // Import types from the main exceptions module
 use super::types::{ExceptionContext, ExceptionType, EXCEPTION_STATS};
-use super::syscall::handle_syscall;
-use super::memory_faults::{MemoryFaultAnalyzer, MEMORY_FAULT_STATS};
-use super::irq_integration::handle_irq_integration;
-use super::nested_irq::{InterruptPriority, enter_interrupt_with_priority, exit_current_interrupt};
-use super::deferred_processing::process_pending_work;
+use super::{
+    deferred_processing::process_pending_work,
+    irq_integration::handle_irq_integration,
+    memory_faults::{MemoryFaultAnalyzer, MEMORY_FAULT_STATS},
+    nested_irq::{enter_interrupt_with_priority, exit_current_interrupt, InterruptPriority},
+    syscall::handle_syscall,
+};
+use crate::uart::Uart;
 
 /// Handle synchronous exceptions with comprehensive ESR decoding
 #[no_mangle]
@@ -37,11 +37,11 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
 
     let uart = Uart::new();
     uart.puts("EXCEPTION: Synchronous exception occurred!\r\n");
-    
+
     // Use our enhanced ESR decoder for detailed analysis
     let decoder = EsrDecoder::new();
     let esr_info = decoder.decode_esr(ctx.esr as u32);
-    
+
     // Print basic exception information
     uart.puts("ELR_EL1: 0x");
     uart.put_hex(ctx.elr);
@@ -61,19 +61,19 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
         ExceptionClass::Svc64 => {
             uart.puts("System call detected - SVC instruction\r\n");
             handle_system_call(ctx, &esr_info);
-        },
+        }
         ExceptionClass::DataAbortLower | ExceptionClass::DataAbortSame => {
             uart.puts("Data abort detected\r\n");
             handle_data_abort(ctx, &esr_info);
-        },
+        }
         ExceptionClass::InstructionAbortLower | ExceptionClass::InstructionAbortSame => {
             uart.puts("Instruction abort detected\r\n");
             handle_instruction_abort(ctx, &esr_info);
-        },
+        }
         ExceptionClass::IllegalExecution => {
             uart.puts("Illegal execution state\r\n");
             handle_illegal_execution_state(ctx, &esr_info);
-        },
+        }
         _ => {
             uart.puts("Unhandled exception type\r\n");
             handle_unhandled_exception(ctx, &esr_info);
@@ -112,7 +112,7 @@ pub extern "C" fn handle_irq_exception(ctx: &mut ExceptionContext, exc_level: u3
 
     // Handle the IRQ through the integration layer
     let irq_info = handle_irq_integration(ctx);
-    
+
     if irq_info.is_valid {
         let uart = Uart::new();
         uart.puts("IRQ handled: ");
@@ -185,52 +185,67 @@ fn report_exception_details(uart: &Uart, esr_info: &EsrInfo) {
     uart.puts("\r\n  ISS: 0x");
     uart.put_hex(esr_info.iss as u64);
     uart.puts("\r\n  IL: ");
-    uart.puts(if esr_info.instruction_length { "32-bit" } else { "16-bit" });
+    uart.puts(if esr_info.instruction_length {
+        "32-bit"
+    } else {
+        "16-bit"
+    });
     uart.puts(" instruction\r\n");
-    
+
     // Print additional details based on exception class
     match &esr_info.details {
-        EsrDetails::DataAbort { fault_address_valid, write_not_read, sign_extend: _, access_size, fault_status, cache_maintenance } => {
+        EsrDetails::DataAbort {
+            fault_address_valid,
+            write_not_read,
+            sign_extend: _,
+            access_size,
+            fault_status,
+            cache_maintenance,
+        } => {
             uart.puts("  Data Fault Status: ");
             uart.puts(fault_status.description());
             uart.puts("\r\n  Write not Read: ");
             uart.puts(if *write_not_read { "true" } else { "false" });
             uart.puts("\r\n  Fault Address Valid: ");
-            uart.puts(if *fault_address_valid { "true" } else { "false" });
+            uart.puts(if *fault_address_valid {
+                "true"
+            } else {
+                "false"
+            });
             uart.puts("\r\n  Access Size: ");
             uart.put_hex(*access_size as u64);
             uart.puts("\r\n  Cache Maintenance: ");
             uart.puts(if *cache_maintenance { "true" } else { "false" });
             uart.puts("\r\n");
-        },
+        }
         EsrDetails::SystemCall { immediate } => {
             uart.puts("  System Call Number: ");
             uart.put_hex(*immediate as u64);
             uart.puts("\r\n");
-        },
+        }
         EsrDetails::InstructionAbort { fault_status } => {
             uart.puts("  Instruction Fault Status: ");
             uart.puts(fault_status.description());
             uart.puts("\r\n");
-        },
+        }
         EsrDetails::Unknown => {
             uart.puts("  Unknown exception details\r\n");
-        },
+        }
         _ => {
             uart.puts("  Additional details not implemented\r\n");
-        },
+        }
     }
 }
 
 /// Handle system calls (SVC instructions)
 fn handle_system_call(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
-    
+
     if let EsrDetails::SystemCall { immediate } = &esr_info.details {
         uart.puts("System call number: ");
         uart.put_hex(*immediate as u64);
         uart.puts("\r\n");
-        
+
         // Extract system call arguments from general registers
         // In ARM64, syscall arguments are passed in x0-x5
         let args = [
@@ -241,13 +256,13 @@ fn handle_system_call(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
             ctx.gpr[4], // x4
             ctx.gpr[5], // x5
         ];
-        
+
         // Call the system call handler
         let result = handle_syscall(*immediate as u64, &args);
-        
+
         // Store the result in x0 (return value register)
         ctx.gpr[0] = result as i64 as u64;
-        
+
         uart.puts("System call completed with result: ");
         uart.put_hex(result as u64);
         uart.puts("\r\n");
@@ -257,8 +272,16 @@ fn handle_system_call(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
 /// Handle data aborts (memory access faults) with MMU integration
 fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
-    
-    if let EsrDetails::DataAbort { fault_address_valid: _, write_not_read, sign_extend: _, access_size: _, fault_status, cache_maintenance: _ } = &esr_info.details {
+
+    if let EsrDetails::DataAbort {
+        fault_address_valid: _,
+        write_not_read,
+        sign_extend: _,
+        access_size: _,
+        fault_status,
+        cache_maintenance: _,
+    } = &esr_info.details
+    {
         uart.puts("Data abort analysis:\r\n");
         uart.puts("  Fault address: 0x");
         uart.put_hex(ctx.far);
@@ -267,24 +290,24 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         uart.puts("\r\n  Fault type: ");
         uart.puts(fault_status.description());
         uart.puts("\r\n");
-        
+
         // Use memory fault analyzer for detailed analysis
         let fault_info = MemoryFaultAnalyzer::analyze_fault(ctx.esr as u32);
         let _report = MemoryFaultAnalyzer::generate_fault_report(&fault_info);
-        
+
         // Update statistics
         unsafe {
             MEMORY_FAULT_STATS.record_fault(fault_info.fault_type);
         }
-        
+
         // Phase 4 MMU Integration: Check if we have a memory manager available
         // For now, we'll create a stub memory manager for demonstration
         // In a real system, this would be passed in or accessed globally
         let mut memory_manager = crate::memory::MemoryManager::new();
-        
+
         // Determine if we're in user mode (simplified check)
         let user_mode = (ctx.spsr & 0xF) == 0x0; // EL0 = user mode
-        
+
         // Call the integrated MMU memory fault handler
         use crate::exceptions::memory_faults::handle_memory_fault_with_mmu;
         let recovery_action = handle_memory_fault_with_mmu(
@@ -294,7 +317,7 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
             user_mode,
             &mut memory_manager,
         );
-        
+
         uart.puts("MMU Recovery Action: ");
         match recovery_action {
             crate::memory::MmuRecoveryAction::Continue => uart.puts("Continue"),
@@ -303,7 +326,7 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
             crate::memory::MmuRecoveryAction::SystemPanic => uart.puts("System Panic"),
         }
         uart.puts("\r\n");
-        
+
         uart.puts("Memory fault analysis completed\r\n");
     }
 }
@@ -311,19 +334,19 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
 /// Handle instruction aborts (code execution faults) with MMU integration
 fn handle_instruction_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
-    
+
     uart.puts("Instruction abort analysis:\r\n");
-    
+
     if let EsrDetails::InstructionAbort { fault_status } = &esr_info.details {
         uart.puts("  Fault type: ");
         uart.puts(fault_status.description());
         uart.puts("\r\n");
     }
-    
+
     // Phase 4 MMU Integration for instruction aborts
     let mut memory_manager = crate::memory::MemoryManager::new();
     let user_mode = (ctx.spsr & 0xF) == 0x0; // EL0 = user mode
-    
+
     // Call the integrated MMU memory fault handler for instruction faults
     use crate::exceptions::memory_faults::handle_memory_fault_with_mmu;
     let recovery_action = handle_memory_fault_with_mmu(
@@ -333,7 +356,7 @@ fn handle_instruction_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         user_mode,
         &mut memory_manager,
     );
-    
+
     uart.puts("MMU Recovery Action: ");
     match recovery_action {
         crate::memory::MmuRecoveryAction::Continue => uart.puts("Continue"),
@@ -342,27 +365,27 @@ fn handle_instruction_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         crate::memory::MmuRecoveryAction::SystemPanic => uart.puts("System Panic"),
     }
     uart.puts("\r\n");
-    
+
     uart.puts("Instruction fault analysis completed\r\n");
 }
 
 /// Handle illegal execution state
 fn handle_illegal_execution_state(_ctx: &mut ExceptionContext, _esr_info: &EsrInfo) {
     let uart = Uart::new();
-    
+
     uart.puts("Illegal execution state detected\r\n");
     uart.puts("This typically indicates a serious system error\r\n");
-    
+
     // TODO: Implement recovery mechanisms if possible
 }
 
 /// Handle unhandled exception types
 fn handle_unhandled_exception(_ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
-    
+
     uart.puts("Unhandled exception type: ");
     uart.puts(esr_info.exception_class.description());
     uart.puts("\r\n");
-    
+
     // TODO: Implement handlers for additional exception types
 }

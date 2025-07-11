@@ -4,14 +4,12 @@
 //! including stack allocation, guard pages, overflow protection, and
 //! privilege level stack switching.
 
-use crate::memory::{
-    mmu::{VirtualMemoryManager, RegionType, MemoryAttribute},
-};
+use crate::memory::mmu::{MemoryAttribute, RegionType, VirtualMemoryManager};
 
 /// Stack size constants
-pub const STACK_SIZE: usize = 0x4000;  // 16KB stack
-pub const GUARD_PAGE_SIZE: usize = 0x1000;  // 4KB guard page
-pub const MAX_STACKS: usize = 16;  // Maximum number of stacks
+pub const STACK_SIZE: usize = 0x4000; // 16KB stack
+pub const GUARD_PAGE_SIZE: usize = 0x1000; // 4KB guard page
+pub const MAX_STACKS: usize = 16; // Maximum number of stacks
 
 /// Stack allocation base address (start at 0x8000_0000)
 pub const STACK_BASE: u64 = 0x8000_0000;
@@ -114,7 +112,11 @@ impl StackManager {
     }
 
     /// Allocate a new stack with specified protection
-    pub fn allocate_stack(&mut self, protection: StackProtection, vmm: &mut VirtualMemoryManager) -> Result<usize, StackError> {
+    pub fn allocate_stack(
+        &mut self,
+        protection: StackProtection,
+        vmm: &mut VirtualMemoryManager,
+    ) -> Result<usize, StackError> {
         // Find free stack slot
         let stack_id = self.find_free_stack_slot()?;
 
@@ -136,7 +138,7 @@ impl StackManager {
             stack_id,
             base_address: stack_base,
             top_address: stack_top,
-            current_sp: stack_top,  // Stack grows downward
+            current_sp: stack_top, // Stack grows downward
             size: STACK_SIZE as u64,
             protection,
             guard_bottom,
@@ -157,7 +159,11 @@ impl StackManager {
     }
 
     /// Deallocate a stack
-    pub fn deallocate_stack(&mut self, stack_id: usize, vmm: &mut VirtualMemoryManager) -> Result<(), StackError> {
+    pub fn deallocate_stack(
+        &mut self,
+        stack_id: usize,
+        vmm: &mut VirtualMemoryManager,
+    ) -> Result<(), StackError> {
         if stack_id >= MAX_STACKS {
             return Err(StackError::InvalidStackId);
         }
@@ -215,17 +221,25 @@ impl StackManager {
     }
 
     /// Handle stack overflow detection
-    pub fn handle_stack_overflow(&mut self, stack_id: usize, fault_address: u64) -> Result<(), StackError> {
+    pub fn handle_stack_overflow(
+        &mut self,
+        stack_id: usize,
+        fault_address: u64,
+    ) -> Result<(), StackError> {
         if let Some(stack_info) = &mut self.stacks[stack_id] {
             // Check if fault is in guard page
-            if fault_address >= stack_info.guard_bottom && fault_address < stack_info.guard_bottom + GUARD_PAGE_SIZE as u64 {
+            if fault_address >= stack_info.guard_bottom
+                && fault_address < stack_info.guard_bottom + GUARD_PAGE_SIZE as u64
+            {
                 stack_info.overflow_count += 1;
                 self.overflow_count += 1;
                 return Err(StackError::StackOverflow);
             }
 
             // Check if fault is in top guard page
-            if fault_address >= stack_info.guard_top && fault_address < stack_info.guard_top + GUARD_PAGE_SIZE as u64 {
+            if fault_address >= stack_info.guard_top
+                && fault_address < stack_info.guard_top + GUARD_PAGE_SIZE as u64
+            {
                 stack_info.overflow_count += 1;
                 self.overflow_count += 1;
                 return Err(StackError::StackUnderflow);
@@ -239,7 +253,7 @@ impl StackManager {
     pub fn update_stack_usage(&mut self, stack_id: usize, current_sp: u64) {
         if let Some(stack_info) = &mut self.stacks[stack_id] {
             stack_info.current_sp = current_sp;
-            
+
             // Calculate usage (stack grows downward)
             let usage = stack_info.top_address - current_sp;
             if usage > stack_info.max_usage as u64 {
@@ -283,7 +297,11 @@ impl StackManager {
     }
 
     /// Setup stack protection in MMU
-    fn setup_stack_protection(&self, stack_info: &StackInfo, vmm: &mut VirtualMemoryManager) -> Result<(), StackError> {
+    fn setup_stack_protection(
+        &self,
+        stack_info: &StackInfo,
+        vmm: &mut VirtualMemoryManager,
+    ) -> Result<(), StackError> {
         // Map bottom guard page (no access)
         vmm.map_region(
             stack_info.guard_bottom,
@@ -292,7 +310,8 @@ impl StackManager {
             MemoryAttribute::Normal,
             RegionType::KernelData,
             true,
-        ).map_err(|_| StackError::AllocationFailed)?;
+        )
+        .map_err(|_| StackError::AllocationFailed)?;
 
         // Map top guard page (no access)
         vmm.map_region(
@@ -302,15 +321,16 @@ impl StackManager {
             MemoryAttribute::Normal,
             RegionType::KernelData,
             true,
-        ).map_err(|_| StackError::AllocationFailed)?;
+        )
+        .map_err(|_| StackError::AllocationFailed)?;
 
         // Map stack with appropriate protection
-        let region_type = if stack_info.protection.user_accessible { 
-            RegionType::UserData 
-        } else { 
-            RegionType::KernelData 
+        let region_type = if stack_info.protection.user_accessible {
+            RegionType::UserData
+        } else {
+            RegionType::KernelData
         };
-        
+
         vmm.map_region(
             stack_info.base_address,
             stack_info.base_address,
@@ -318,13 +338,18 @@ impl StackManager {
             MemoryAttribute::Normal,
             region_type,
             !stack_info.protection.user_accessible,
-        ).map_err(|_| StackError::AllocationFailed)?;
+        )
+        .map_err(|_| StackError::AllocationFailed)?;
 
         Ok(())
     }
 
     /// Remove stack protection from MMU
-    fn remove_stack_protection(&self, stack_info: &StackInfo, vmm: &mut VirtualMemoryManager) -> Result<(), StackError> {
+    fn remove_stack_protection(
+        &self,
+        stack_info: &StackInfo,
+        vmm: &mut VirtualMemoryManager,
+    ) -> Result<(), StackError> {
         // Unmap guard pages and stack
         let total_size = (GUARD_PAGE_SIZE + STACK_SIZE + GUARD_PAGE_SIZE) as u64;
         vmm.unmap_region(stack_info.guard_bottom, total_size)
@@ -352,9 +377,12 @@ static mut STACK_MANAGER: StackManager = StackManager::new();
 pub fn init_stack_manager() -> Result<(), StackError> {
     // Get the global VMM instance
     let vmm = crate::memory::mmu::get_virtual_memory_manager();
-    
+
     unsafe {
-        core::ptr::addr_of_mut!(STACK_MANAGER).as_mut().unwrap().init(vmm)
+        core::ptr::addr_of_mut!(STACK_MANAGER)
+            .as_mut()
+            .unwrap()
+            .init(vmm)
     }
 }
 

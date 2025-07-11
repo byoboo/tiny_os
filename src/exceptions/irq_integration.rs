@@ -3,9 +3,8 @@
 //! This module integrates the exception system with the existing interrupt
 //! controller, providing proper IRQ routing and acknowledgment.
 
-use crate::interrupts::InterruptController;
-use crate::uart::Uart;
-use super::types::{ExceptionContext, EXCEPTION_STATS, ExceptionType, ExceptionLevel};
+use super::types::{ExceptionContext, ExceptionLevel, ExceptionType, EXCEPTION_STATS};
+use crate::{interrupts::InterruptController, uart::Uart};
 
 /// IRQ source identification
 #[repr(u32)]
@@ -54,7 +53,7 @@ impl IrqInfo {
             is_valid: true,
         }
     }
-    
+
     pub fn invalid() -> Self {
         Self {
             source: IrqSource::Unknown,
@@ -80,36 +79,36 @@ impl IrqControllerIntegration {
             irq_stats: IrqStats::new(),
         }
     }
-    
+
     /// Initialize the IRQ controller integration
     pub fn init(&mut self, interrupt_controller: *mut InterruptController) {
         self.interrupt_controller = Some(interrupt_controller);
-        
+
         let mut uart = Uart::new();
         uart.init();
         uart.puts("IRQ controller integration initialized\r\n");
     }
-    
+
     /// Handle an IRQ exception
     pub fn handle_irq(&mut self, ctx: &mut ExceptionContext) -> IrqInfo {
         // Update exception statistics
         unsafe {
             EXCEPTION_STATS.record_exception(ExceptionType::Irq, ExceptionLevel::CurrentSpElx);
         }
-        
+
         // Read the interrupt acknowledge register to get the interrupt ID
         let interrupt_id = self.read_interrupt_acknowledge();
-        
+
         if interrupt_id == 0x3FF {
             // Spurious interrupt
             return IrqInfo::invalid();
         }
-        
+
         let irq_info = IrqInfo::new(interrupt_id, self.get_interrupt_priority(interrupt_id));
-        
+
         // Update IRQ statistics
         self.irq_stats.record_irq(irq_info.source);
-        
+
         // Route to appropriate handler
         match irq_info.source {
             IrqSource::Timer => self.handle_timer_irq(ctx, &irq_info),
@@ -117,47 +116,45 @@ impl IrqControllerIntegration {
             IrqSource::Gpio => self.handle_gpio_irq(ctx, &irq_info),
             IrqSource::Unknown => self.handle_unknown_irq(ctx, &irq_info),
         }
-        
+
         // Acknowledge the interrupt
         self.acknowledge_interrupt(interrupt_id);
-        
+
         irq_info
     }
-    
+
     /// Read the interrupt acknowledge register
     fn read_interrupt_acknowledge(&self) -> u32 {
         // GIC CPU Interface - Interrupt Acknowledge Register
         const GICC_IAR: u32 = 0xFF842000 + 0x00C;
-        
-        unsafe {
-            core::ptr::read_volatile(GICC_IAR as *const u32)
-        }
+
+        unsafe { core::ptr::read_volatile(GICC_IAR as *const u32) }
     }
-    
+
     /// Get interrupt priority
     fn get_interrupt_priority(&self, interrupt_id: u32) -> u8 {
         // GIC Distributor - Interrupt Priority Register
         const GICD_IPRIORITYR: u32 = 0xFF841000 + 0x400;
-        
+
         let reg_offset = (interrupt_id / 4) * 4;
         let byte_offset = interrupt_id % 4;
-        
+
         unsafe {
             let reg_value = core::ptr::read_volatile((GICD_IPRIORITYR + reg_offset) as *const u32);
             ((reg_value >> (byte_offset * 8)) & 0xFF) as u8
         }
     }
-    
+
     /// Acknowledge an interrupt
     fn acknowledge_interrupt(&self, interrupt_id: u32) {
         // GIC CPU Interface - End of Interrupt Register
         const GICC_EOIR: u32 = 0xFF842000 + 0x010;
-        
+
         unsafe {
             core::ptr::write_volatile(GICC_EOIR as *mut u32, interrupt_id);
         }
     }
-    
+
     /// Handle timer interrupt
     fn handle_timer_irq(&mut self, _ctx: &mut ExceptionContext, irq_info: &IrqInfo) {
         let mut uart = Uart::new();
@@ -165,10 +162,10 @@ impl IrqControllerIntegration {
         uart.puts("Timer IRQ handled (ID: ");
         uart.put_hex(irq_info.interrupt_id as u64);
         uart.puts(")\r\n");
-        
+
         // TODO: Call timer driver's IRQ handler
     }
-    
+
     /// Handle UART interrupt
     fn handle_uart_irq(&mut self, _ctx: &mut ExceptionContext, irq_info: &IrqInfo) {
         let mut uart = Uart::new();
@@ -176,10 +173,10 @@ impl IrqControllerIntegration {
         uart.puts("UART IRQ handled (ID: ");
         uart.put_hex(irq_info.interrupt_id as u64);
         uart.puts(")\r\n");
-        
+
         // TODO: Call UART driver's IRQ handler
     }
-    
+
     /// Handle GPIO interrupt
     fn handle_gpio_irq(&mut self, _ctx: &mut ExceptionContext, irq_info: &IrqInfo) {
         let mut uart = Uart::new();
@@ -187,10 +184,10 @@ impl IrqControllerIntegration {
         uart.puts("GPIO IRQ handled (ID: ");
         uart.put_hex(irq_info.interrupt_id as u64);
         uart.puts(")\r\n");
-        
+
         // TODO: Call GPIO driver's IRQ handler
     }
-    
+
     /// Handle unknown interrupt
     fn handle_unknown_irq(&mut self, _ctx: &mut ExceptionContext, irq_info: &IrqInfo) {
         let mut uart = Uart::new();
@@ -199,7 +196,7 @@ impl IrqControllerIntegration {
         uart.put_hex(irq_info.interrupt_id as u64);
         uart.puts(")\r\n");
     }
-    
+
     /// Get IRQ statistics
     pub fn get_stats(&self) -> IrqStats {
         self.irq_stats
@@ -228,10 +225,10 @@ impl IrqStats {
             spurious_irqs: 0,
         }
     }
-    
+
     pub fn record_irq(&mut self, source: IrqSource) {
         self.total_irqs += 1;
-        
+
         match source {
             IrqSource::Timer => self.timer_irqs += 1,
             IrqSource::Uart => self.uart_irqs += 1,
@@ -239,7 +236,7 @@ impl IrqStats {
             IrqSource::Unknown => self.unknown_irqs += 1,
         }
     }
-    
+
     pub fn record_spurious(&mut self) {
         self.spurious_irqs += 1;
     }
@@ -257,16 +254,12 @@ pub fn init_irq_integration(interrupt_controller: *mut InterruptController) {
 
 /// Handle IRQ from exception handler
 pub fn handle_irq_integration(ctx: &mut ExceptionContext) -> IrqInfo {
-    unsafe {
-        IRQ_CONTROLLER.handle_irq(ctx)
-    }
+    unsafe { IRQ_CONTROLLER.handle_irq(ctx) }
 }
 
 /// Get IRQ statistics
 pub fn get_irq_stats() -> IrqStats {
-    unsafe {
-        IRQ_CONTROLLER.get_stats()
-    }
+    unsafe { IRQ_CONTROLLER.get_stats() }
 }
 
 /// Test IRQ controller integration
@@ -274,20 +267,20 @@ pub fn test_irq_integration() -> bool {
     let mut uart = Uart::new();
     uart.init();
     uart.puts("Testing IRQ controller integration...\r\n");
-    
+
     // Test IRQ info creation
     let irq_info = IrqInfo::new(64, 128);
     if irq_info.source != IrqSource::Timer {
         uart.puts("❌ IRQ source identification failed\r\n");
         return false;
     }
-    
+
     // Test IRQ statistics
     let stats = get_irq_stats();
     uart.puts("IRQ stats initialized: ");
     uart.put_hex(stats.total_irqs);
     uart.puts("\r\n");
-    
+
     uart.puts("✅ IRQ controller integration tests passed\r\n");
     true
 }

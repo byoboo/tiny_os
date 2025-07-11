@@ -5,6 +5,7 @@
 //! system call dispatcher as outlined in Phase 1 of the enhancement plan.
 
 use core::arch::asm;
+
 use crate::uart::Uart;
 
 /// System call numbers - Phase 1 basic implementation
@@ -48,7 +49,7 @@ pub enum SyscallResult {
 /// System call dispatcher - handles SVC exceptions
 pub fn handle_syscall(syscall_number: u64, args: &[u64; 6]) -> SyscallResult {
     let syscall = SyscallNumber::from(syscall_number);
-    
+
     match syscall {
         SyscallNumber::DebugPrint => {
             // For now, just print a debug message
@@ -58,18 +59,18 @@ pub fn handle_syscall(syscall_number: u64, args: &[u64; 6]) -> SyscallResult {
             uart.puts("SYSCALL: Debug print called\r\n");
             SyscallResult::Success
         }
-        
+
         SyscallNumber::GetTime => {
             // Return a dummy timestamp for now
             // In a full implementation, this would return the actual system time
             SyscallResult::Success
         }
-        
+
         SyscallNumber::GetPid => {
             // Return process ID 0 for now (kernel process)
             SyscallResult::Success
         }
-        
+
         SyscallNumber::Exit => {
             // For now, just print exit message
             let mut uart = Uart::new();
@@ -77,10 +78,8 @@ pub fn handle_syscall(syscall_number: u64, args: &[u64; 6]) -> SyscallResult {
             uart.puts("SYSCALL: Process exit called\r\n");
             SyscallResult::Success
         }
-        
-        SyscallNumber::Invalid => {
-            SyscallResult::InvalidSyscall
-        }
+
+        SyscallNumber::Invalid => SyscallResult::InvalidSyscall,
     }
 }
 
@@ -98,7 +97,7 @@ pub fn test_syscall_interface() -> bool {
     let mut uart = Uart::new();
     uart.init();
     uart.puts("Testing system call interface...\r\n");
-    
+
     // Test valid syscalls
     let args = [0; 6];
     let result = handle_syscall(SyscallNumber::DebugPrint as u64, &args);
@@ -106,20 +105,20 @@ pub fn test_syscall_interface() -> bool {
         uart.puts("❌ DebugPrint syscall failed\r\n");
         return false;
     }
-    
+
     let result = handle_syscall(SyscallNumber::GetTime as u64, &args);
     if result as i64 != SyscallResult::Success as i64 {
         uart.puts("❌ GetTime syscall failed\r\n");
         return false;
     }
-    
+
     // Test invalid syscall
     let result = handle_syscall(999, &args);
     if result as i64 != SyscallResult::InvalidSyscall as i64 {
         uart.puts("❌ Invalid syscall handling failed\r\n");
         return false;
     }
-    
+
     uart.puts("✅ System call interface tests passed\r\n");
     true
 }

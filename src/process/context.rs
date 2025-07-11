@@ -21,40 +21,40 @@ pub enum ProcessState {
 pub struct ProcessContext {
     /// Basic exception context (general purpose registers)
     pub exception_context: ExceptionContext,
-    
+
     /// Process state
     pub state: ProcessState,
-    
+
     /// Process ID
     pub pid: u32,
-    
+
     /// Stack pointer for user mode
     pub user_stack_pointer: u64,
-    
+
     /// Stack pointer for kernel mode
     pub kernel_stack_pointer: u64,
-    
+
     /// Program counter (ELR_EL1)
     pub program_counter: u64,
-    
+
     /// Processor state (SPSR_EL1)
     pub processor_state: u64,
-    
+
     /// FPU context (placeholder for now)
     pub fpu_context: [u64; 32], // 32 NEON/FPU registers
-    
+
     /// Vector registers context (placeholder for now)
     pub vector_context: [u64; 32], // 32 vector registers
-    
+
     /// Process priority
     pub priority: u8,
-    
+
     /// Time slice remaining (in timer ticks)
     pub time_slice: u32,
-    
+
     /// Total CPU time used (in timer ticks)
     pub cpu_time: u64,
-    
+
     /// Context switch count
     pub context_switches: u64,
 }
@@ -72,50 +72,50 @@ impl ProcessContext {
             processor_state: 0x0000_0000_0000_0000, // EL0 mode, interrupts enabled
             fpu_context: [0; 32],
             vector_context: [0; 32],
-            priority: 5, // Default priority
+            priority: 5,      // Default priority
             time_slice: 1000, // Default time slice
             cpu_time: 0,
             context_switches: 0,
         }
     }
-    
+
     /// Save current context from hardware registers
     pub fn save_context(&mut self) -> ContextSwitchResult {
         // Save general purpose registers from exception context
         // This would normally be done by the exception handler
         // For now, we'll just mark the context as saved
-        
+
         // Save FPU context (ARM64 specific)
         self.save_fpu_context();
-        
+
         // Save vector registers
         self.save_vector_context();
-        
+
         // Update statistics
         self.context_switches += 1;
         crate::process::record_context_switch();
-        
+
         ContextSwitchResult::Success
     }
-    
+
     /// Restore context to hardware registers
     pub fn restore_context(&self) -> ContextSwitchResult {
         // Restore general purpose registers
         // This would normally be done by the exception handler
         // For now, we'll just return success
-        
+
         // Restore FPU context
         self.restore_fpu_context();
-        
+
         // Restore vector registers
         self.restore_vector_context();
-        
+
         // Set stack pointers based on privilege level
         self.set_stack_pointers();
-        
+
         ContextSwitchResult::Success
     }
-    
+
     /// Save FPU context
     fn save_fpu_context(&mut self) {
         // ARM64 FPU context saving
@@ -133,7 +133,7 @@ impl ProcessContext {
                 }
             }
         }
-        
+
         #[cfg(not(target_arch = "aarch64"))]
         {
             // Mock FPU context for unit tests
@@ -142,14 +142,15 @@ impl ProcessContext {
             }
         }
     }
-    
+
     /// Restore FPU context
     fn restore_fpu_context(&self) {
         // ARM64 FPU context restoration
         #[cfg(target_arch = "aarch64")]
         unsafe {
             // Restore NEON/FPU registers
-            for i in 0..4 { // Just first 4 as example
+            for i in 0..4 {
+                // Just first 4 as example
                 match i {
                     0 => core::arch::asm!("ldr q0, [{}]", in(reg) &self.fpu_context[i]),
                     1 => core::arch::asm!("ldr q1, [{}]", in(reg) &self.fpu_context[i]),
@@ -159,13 +160,13 @@ impl ProcessContext {
                 }
             }
         }
-        
+
         #[cfg(not(target_arch = "aarch64"))]
         {
             // Mock FPU context for unit tests - nothing to do
         }
     }
-    
+
     /// Save vector registers context
     fn save_vector_context(&mut self) {
         // Placeholder for vector register saving
@@ -174,45 +175,45 @@ impl ProcessContext {
             self.vector_context[i] = 0xCAFE_BABE_0000_0000 + i as u64;
         }
     }
-    
+
     /// Restore vector registers context
     fn restore_vector_context(&self) {
         // Placeholder for vector register restoration
         // In real implementation, would restore ARM64 vector registers
     }
-    
+
     /// Set stack pointers based on privilege level
     fn set_stack_pointers(&self) {
         #[cfg(target_arch = "aarch64")]
         unsafe {
             // Set user stack pointer (SP_EL0)
             core::arch::asm!("msr sp_el0, {}", in(reg) self.user_stack_pointer);
-            
+
             // Set kernel stack pointer (SP_EL1)
             core::arch::asm!("mov sp, {}", in(reg) self.kernel_stack_pointer);
         }
-        
+
         #[cfg(not(target_arch = "aarch64"))]
         {
             // Mock for unit tests - nothing to do
         }
     }
-    
+
     /// Update process state
     pub fn set_state(&mut self, new_state: ProcessState) {
         self.state = new_state;
     }
-    
+
     /// Get process state
     pub fn get_state(&self) -> ProcessState {
         self.state
     }
-    
+
     /// Update time slice
     pub fn set_time_slice(&mut self, time_slice: u32) {
         self.time_slice = time_slice;
     }
-    
+
     /// Decrement time slice
     pub fn decrement_time_slice(&mut self) -> bool {
         if self.time_slice > 0 {
@@ -222,27 +223,27 @@ impl ProcessContext {
             true
         }
     }
-    
+
     /// Add CPU time
     pub fn add_cpu_time(&mut self, time: u64) {
         self.cpu_time += time;
     }
-    
+
     /// Check if process is ready to run
     pub fn is_ready(&self) -> bool {
         self.state == ProcessState::Ready
     }
-    
+
     /// Check if process is running
     pub fn is_running(&self) -> bool {
         self.state == ProcessState::Running
     }
-    
+
     /// Check if process is blocked
     pub fn is_blocked(&self) -> bool {
         self.state == ProcessState::Blocked
     }
-    
+
     /// Check if process is terminated
     pub fn is_terminated(&self) -> bool {
         self.state == ProcessState::Terminated
@@ -266,10 +267,10 @@ pub enum ContextSwitchResult {
 pub struct ProcessContextManager {
     /// Current process context
     current_context: Option<ProcessContext>,
-    
+
     /// Context switch statistics
     context_switches: u64,
-    
+
     /// Context switch failures
     context_switch_failures: u64,
 }
@@ -283,22 +284,22 @@ impl ProcessContextManager {
             context_switch_failures: 0,
         }
     }
-    
+
     /// Set current process context
     pub fn set_current_context(&mut self, context: ProcessContext) {
         self.current_context = Some(context);
     }
-    
+
     /// Get current process context
     pub fn get_current_context(&self) -> Option<&ProcessContext> {
         self.current_context.as_ref()
     }
-    
+
     /// Get mutable current process context
     pub fn get_current_context_mut(&mut self) -> Option<&mut ProcessContext> {
         self.current_context.as_mut()
     }
-    
+
     /// Perform context switch
     pub fn context_switch(&mut self, new_context: ProcessContext) -> ContextSwitchResult {
         // Save current context if exists
@@ -311,7 +312,7 @@ impl ProcessContextManager {
                 return ContextSwitchResult::HardwareError;
             }
         }
-        
+
         // Restore new context
         match new_context.restore_context() {
             ContextSwitchResult::Success => {
@@ -328,7 +329,7 @@ impl ProcessContextManager {
             }
         }
     }
-    
+
     /// Get context switch statistics
     pub fn get_stats(&self) -> (u64, u64) {
         (self.context_switches, self.context_switch_failures)
@@ -347,7 +348,7 @@ pub fn init_process_context_management() {
 
 /// Get current process context
 pub fn get_current_context() -> Option<ProcessContext> {
-    unsafe { 
+    unsafe {
         let manager = core::ptr::addr_of!(CONTEXT_MANAGER);
         (*manager).get_current_context().cloned()
     }
@@ -363,7 +364,7 @@ pub fn set_current_context(context: ProcessContext) {
 
 /// Perform context switch
 pub fn context_switch(new_context: ProcessContext) -> ContextSwitchResult {
-    unsafe { 
+    unsafe {
         let manager = core::ptr::addr_of_mut!(CONTEXT_MANAGER);
         (*manager).context_switch(new_context)
     }
@@ -371,7 +372,7 @@ pub fn context_switch(new_context: ProcessContext) -> ContextSwitchResult {
 
 /// Get context management statistics
 pub fn get_context_stats() -> (u64, u64) {
-    unsafe { 
+    unsafe {
         let manager = core::ptr::addr_of!(CONTEXT_MANAGER);
         (*manager).get_stats()
     }

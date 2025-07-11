@@ -11,7 +11,8 @@
 //! - Copy-on-write preparation
 
 use core::ptr::{read_volatile, write_volatile};
-use crate::memory::layout::{HEAP_START, HEAP_END, KERNEL_START, KERNEL_END};
+
+use crate::memory::layout::{HEAP_END, HEAP_START, KERNEL_END, KERNEL_START};
 
 /// ARM64 page sizes and constants
 pub const PAGE_SIZE: u32 = 4096; // 4KB pages
@@ -118,7 +119,7 @@ impl PageTableEntry {
                 // Could be Table or Page - check context
                 // For now, assume TableOrPage at levels 0-2, Page at level 3
                 PageType::TableOrPage
-            },
+            }
             _ => PageType::Invalid,
         }
     }
@@ -133,28 +134,28 @@ impl PageTableEntry {
         match region_type {
             RegionType::KernelCode => {
                 // EL1 read-only, not accessible to EL0
-                0 << 6  // AP[2:1] = 00 (read-write EL1)
-            },
+                0 << 6 // AP[2:1] = 00 (read-write EL1)
+            }
             RegionType::KernelData => {
                 // EL1 read-write, not accessible to EL0
-                0 << 6  // AP[2:1] = 00 (read-write EL1)
-            },
+                0 << 6 // AP[2:1] = 00 (read-write EL1)
+            }
             RegionType::UserCode => {
                 // EL0/EL1 read-only
                 (0b10 << 6) | (1 << 54) // AP[2:1] = 10 (read-only), UXN=0
-            },
+            }
             RegionType::UserData => {
                 // EL0/EL1 read-write, not executable
                 (0b01 << 6) | (1 << 54) // AP[2:1] = 01 (read-write), UXN=1
-            },
+            }
             RegionType::Device => {
                 // EL1 read-write, not executable, not accessible to EL0
                 (1 << 53) | (1 << 54) // PXN=1, UXN=1
-            },
+            }
             RegionType::Shared => {
                 // EL0/EL1 read-write, not executable
                 (0b01 << 6) | (1 << 54) // AP[2:1] = 01 (read-write), UXN=1
-            },
+            }
         }
     }
 
@@ -162,9 +163,9 @@ impl PageTableEntry {
     fn get_memory_attributes(attr: MemoryAttribute) -> u64 {
         // MAIR index in bits [4:2]
         match attr {
-            MemoryAttribute::Normal => 0 << 2,    // MAIR index 0
-            MemoryAttribute::Device => 1 << 2,    // MAIR index 1
-            MemoryAttribute::NormalNC => 2 << 2,  // MAIR index 2
+            MemoryAttribute::Normal => 0 << 2,   // MAIR index 0
+            MemoryAttribute::Device => 1 << 2,   // MAIR index 1
+            MemoryAttribute::NormalNC => 2 << 2, // MAIR index 2
         }
     }
 }
@@ -282,21 +283,21 @@ impl VirtualMemoryManager {
         // Map kernel code (identity mapping)
         self.map_region(
             KERNEL_START as u64,
-            KERNEL_START as u64, 
+            KERNEL_START as u64,
             (KERNEL_END - KERNEL_START) as u64,
             MemoryAttribute::Normal,
             RegionType::KernelCode,
-            true // kernel space
+            true, // kernel space
         )?;
 
         // Map kernel heap
         self.map_region(
             HEAP_START as u64,
             HEAP_START as u64,
-            (HEAP_END - HEAP_START) as u64, 
+            (HEAP_END - HEAP_START) as u64,
             MemoryAttribute::Normal,
             RegionType::KernelData,
-            true // kernel space
+            true, // kernel space
         )?;
 
         // Map peripheral space (for UART, GPIO, etc.)
@@ -306,7 +307,7 @@ impl VirtualMemoryManager {
             0x01000000, // 16MB peripheral space
             MemoryAttribute::Device,
             RegionType::Device,
-            true // kernel space
+            true, // kernel space
         )?;
 
         Ok(())
@@ -338,10 +339,10 @@ impl VirtualMemoryManager {
         for i in 0..blocks_needed {
             let va = virt_addr + (i * block_size);
             let pa = phys_addr + (i * block_size);
-            
+
             // Calculate L1 index (bits [30:21] for 2MB blocks)
             let l1_index = ((va >> 21) & 0x1FF) as usize;
-            
+
             // Create block entry
             let entry = PageTableEntry::new_block(pa, attr, region_type);
             table.set_entry(l1_index, entry)?;
@@ -360,10 +361,10 @@ impl VirtualMemoryManager {
 
         for i in 0..blocks_needed {
             let va = virt_addr + (i * block_size);
-            
+
             // Calculate L1 index (bits [30:21] for 2MB blocks)
             let l1_index = ((va >> 21) & 0x1FF) as usize;
-            
+
             // Determine which table to use
             let is_kernel_addr = (va & (1u64 << 63)) != 0;
             let table = if is_kernel_addr {
@@ -371,7 +372,7 @@ impl VirtualMemoryManager {
             } else {
                 &mut self.l1_user_table
             };
-            
+
             // Invalidate entry
             let invalid_entry = PageTableEntry::new();
             table.set_entry(l1_index, invalid_entry)?;
@@ -395,25 +396,23 @@ impl VirtualMemoryManager {
 
         unsafe {
             // Set up MAIR_EL1 (Memory Attribute Indirection Register)
-            let mair_value = 
-                (MemoryAttribute::Normal as u64) |          // Index 0: Normal memory
+            let mair_value = (MemoryAttribute::Normal as u64) |          // Index 0: Normal memory
                 ((MemoryAttribute::Device as u64) << 8) |   // Index 1: Device memory
                 ((MemoryAttribute::NormalNC as u64) << 16); // Index 2: Normal non-cacheable
-            
+
             core::arch::asm!(
                 "msr mair_el1, {}",
                 in(reg) mair_value
             );
 
             // Set up TCR_EL1 (Translation Control Register)
-            let tcr_value = 
-                (16_u64 << 0) |  // T0SZ: 48-bit virtual address space (64-16=48)
+            let tcr_value = (16_u64 << 0) |  // T0SZ: 48-bit virtual address space (64-16=48)
                 (16_u64 << 16) | // T1SZ: 48-bit virtual address space  
                 (2_u64 << 30) |  // TG1: 4KB granule for TTBR1_EL1
                 (2_u64 << 14) |  // TG0: 4KB granule for TTBR0_EL1
                 (3_u64 << 32) |  // IPS: 48-bit physical address space
                 (1_u64 << 23) |  // EPD1: Enable TTBR1_EL1 walks
-                (0_u64 << 7);    // EPD0: Enable TTBR0_EL1 walks
+                (0_u64 << 7); // EPD0: Enable TTBR0_EL1 walks
 
             core::arch::asm!(
                 "msr tcr_el1, {}",
@@ -512,7 +511,7 @@ impl VirtualMemoryManager {
 
         // For 2MB blocks, extract L1 index
         let l1_index = ((virt_addr >> 21) & 0x1FF) as usize;
-        
+
         if let Some(entry) = table.get_entry(l1_index) {
             if entry.is_valid() && entry.get_type() == PageType::Block {
                 // Extract physical base address and add offset
@@ -558,13 +557,13 @@ pub fn init_virtual_memory() -> Result<(), &'static str> {
     unsafe {
         // Allocate page tables at end of heap
         let page_table_base = (HEAP_END - 0x10000) as u64; // Reserve 64KB for page tables
-        
+
         let mut vmm = VirtualMemoryManager::new(page_table_base);
         vmm.init()?;
-        
+
         VIRTUAL_MEMORY_MANAGER = Some(vmm);
     }
-    
+
     Ok(())
 }
 

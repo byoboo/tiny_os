@@ -197,11 +197,11 @@ impl MmuExceptionHandler {
         // 2. Allocate physical pages if needed
         // 3. Update page tables
         // 4. Handle copy-on-write, swap, etc.
-        
+
         // Check if the fault address is in our managed memory range
         let heap_start = crate::memory::HEAP_START as u64;
         let heap_end = heap_start + (crate::memory::HEAP_SIZE as u64);
-        
+
         if fault_info.fault_address >= heap_start && fault_info.fault_address < heap_end {
             // This is within our heap range - could be a lazy allocation
             MmuRecoveryAction::TerminateProcess
@@ -262,19 +262,24 @@ impl MmuExceptionHandler {
 }
 
 /// Parse MMU exception information from ESR_EL1
-pub fn parse_mmu_exception(esr_el1: u32, far_el1: u64, user_mode: bool, exception_lr: u64) -> MmuFaultInfo {
+pub fn parse_mmu_exception(
+    esr_el1: u32,
+    far_el1: u64,
+    user_mode: bool,
+    exception_lr: u64,
+) -> MmuFaultInfo {
     // Extract Exception Class (bits 31:26)
     let ec = (esr_el1 >> 26) & 0x3F;
-    
+
     // Extract Instruction Syndrome (bits 24:0)
     let iss = esr_el1 & 0x1FFFFFF;
-    
+
     // For data/instruction aborts, extract fault status (bits 5:0 of ISS)
     let fault_status = iss & 0x3F;
-    
+
     // Extract Write/not Read (bit 6) for data aborts
     let wnr = (iss >> 6) & 1;
-    
+
     // Determine access type based on exception class
     let access_type = match ec {
         0x20 | 0x21 => AccessType::InstructionFetch, // Instruction abort
@@ -288,19 +293,29 @@ pub fn parse_mmu_exception(esr_el1: u32, far_el1: u64, user_mode: bool, exceptio
         }
         _ => AccessType::Read, // Default
     };
-    
+
     // Parse fault status into exception type
     let exception_type = match fault_status & 0x3C {
-        0x00 => MmuExceptionType::AddressSizeFault { level: (fault_status & 3) as u8 },
-        0x04 => MmuExceptionType::TranslationFault { level: (fault_status & 3) as u8 },
-        0x08 => MmuExceptionType::AccessFlagFault { level: (fault_status & 3) as u8 },
-        0x0C => MmuExceptionType::PermissionFault { level: (fault_status & 3) as u8 },
+        0x00 => MmuExceptionType::AddressSizeFault {
+            level: (fault_status & 3) as u8,
+        },
+        0x04 => MmuExceptionType::TranslationFault {
+            level: (fault_status & 3) as u8,
+        },
+        0x08 => MmuExceptionType::AccessFlagFault {
+            level: (fault_status & 3) as u8,
+        },
+        0x0C => MmuExceptionType::PermissionFault {
+            level: (fault_status & 3) as u8,
+        },
         0x21 => MmuExceptionType::AlignmentFault,
         0x30 => MmuExceptionType::TlbConflictAbort,
         0x31 => MmuExceptionType::UnsupportedAtomicUpdate,
-        _ => MmuExceptionType::ImplementationDefined { fault_code: (fault_status & 0x3F) as u8 },
+        _ => MmuExceptionType::ImplementationDefined {
+            fault_code: (fault_status & 0x3F) as u8,
+        },
     };
-    
+
     MmuFaultInfo {
         fault_address: far_el1,
         access_type,
@@ -330,10 +345,8 @@ pub fn handle_mmu_exception_global(
     memory_manager: &mut MemoryManager,
 ) -> MmuRecoveryAction {
     let fault_info = parse_mmu_exception(esr_el1, far_el1, user_mode, exception_lr);
-    
-    unsafe {
-        MMU_EXCEPTION_HANDLER.handle_mmu_exception(fault_info, memory_manager)
-    }
+
+    unsafe { MMU_EXCEPTION_HANDLER.handle_mmu_exception(fault_info, memory_manager) }
 }
 
 /// Get MMU exception statistics

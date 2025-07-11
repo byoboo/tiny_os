@@ -340,31 +340,41 @@ pub fn handle_sdcard_write(context: &mut ShellContext) {
 
 /// Handle exception testing command with enhanced Phase 1 features
 pub fn handle_exception_test_advanced(context: &ShellContext) {
-    context.uart.puts("\r\n=== Advanced Exception Testing (Phase 1) ===\r\n");
-    
+    context
+        .uart
+        .puts("\r\n=== Advanced Exception Testing (Phase 1) ===\r\n");
+
     // Test 1: ESR Decoder validation
     context.uart.puts("1. Testing ESR_EL1 Decoder...\r\n");
     test_esr_decoder(context);
-    
+
     // Test 2: Exception statistics
-    context.uart.puts("\r\n2. Exception Statistics Analysis...\r\n");
+    context
+        .uart
+        .puts("\r\n2. Exception Statistics Analysis...\r\n");
     let stats = ExceptionStats::get_stats();
     display_detailed_stats(context, stats);
-    
+
     // Test 3: Exception handlers validation
-    context.uart.puts("\r\n3. Exception Handler Validation...\r\n");
+    context
+        .uart
+        .puts("\r\n3. Exception Handler Validation...\r\n");
     test_exception_handlers(context);
-    
-    context.uart.puts("\r\n✅ Phase 1 exception system validation complete!\r\n");
-    context.uart.puts("===============================================\r\n");
+
+    context
+        .uart
+        .puts("\r\n✅ Phase 1 exception system validation complete!\r\n");
+    context
+        .uart
+        .puts("===============================================\r\n");
 }
 
 /// Test ESR decoder functionality
 fn test_esr_decoder(context: &ShellContext) {
     use crate::exceptions::esr_decoder::{EsrDecoder, ExceptionClass};
-    
+
     let decoder = EsrDecoder::new();
-    
+
     // Test various ESR values
     let test_cases = [
         (0x96000000, "SVC instruction (AArch64)"),
@@ -372,14 +382,14 @@ fn test_esr_decoder(context: &ShellContext) {
         (0x86000000, "Instruction abort from lower EL"),
         (0x8E000000, "Illegal execution state"),
     ];
-    
+
     for (esr_value, expected_desc) in test_cases.iter() {
         let esr_info = decoder.decode_esr(*esr_value);
         context.uart.puts("   ESR 0x");
         context.uart.put_hex(*esr_value as u64);
         context.uart.puts(" -> ");
         context.uart.puts(esr_info.exception_class.description());
-        
+
         if esr_info.exception_class.description() == *expected_desc {
             context.uart.puts(" ✓\r\n");
         } else {
@@ -393,27 +403,29 @@ fn display_detailed_stats(context: &ShellContext, stats: &ExceptionStats) {
     context.uart.puts("   Total exceptions: ");
     print_number(&context.uart, stats.total_exceptions as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   - Synchronous: ");
     print_number(&context.uart, stats.sync_exceptions as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   - IRQ: ");
     print_number(&context.uart, stats.irq_exceptions as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   - FIQ: ");
     print_number(&context.uart, stats.fiq_exceptions as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   - SError: ");
     print_number(&context.uart, stats.serror_exceptions as u32);
     context.uart.puts("\r\n");
-    
+
     if let Some(last_type) = &stats.last_exception_type {
         context.uart.puts("   Last exception: ");
         match last_type {
-            crate::exceptions::types::ExceptionType::Synchronous => context.uart.puts("Synchronous"),
+            crate::exceptions::types::ExceptionType::Synchronous => {
+                context.uart.puts("Synchronous")
+            }
             crate::exceptions::types::ExceptionType::Irq => context.uart.puts("IRQ"),
             crate::exceptions::types::ExceptionType::Fiq => context.uart.puts("FIQ"),
             crate::exceptions::types::ExceptionType::SError => context.uart.puts("SError"),
@@ -438,7 +450,7 @@ fn test_exception_handlers(context: &ShellContext) {
         };
         #[cfg(not(target_arch = "aarch64"))]
         let vbar: u64 = 0x0000_0000_DEAD_BEEF; // Mock value for unit tests
-        
+
         if vbar != 0 {
             context.uart.puts("✓ CONFIGURED (0x");
             context.uart.put_hex(vbar);
@@ -451,7 +463,7 @@ fn test_exception_handlers(context: &ShellContext) {
     {
         context.uart.puts("✓ MOCK (non-ARM64)\r\n");
     }
-    
+
     context.uart.puts("   Handler functions: ✓ LINKED\r\n");
     context.uart.puts("   Context saving: ✓ ACTIVE\r\n");
     context.uart.puts("   ESR decoding: ✓ ENHANCED\r\n");
@@ -460,21 +472,21 @@ fn test_exception_handlers(context: &ShellContext) {
 /// Handle ESR decoder test command
 pub fn handle_esr_test(context: &ShellContext) {
     context.uart.puts("\r\n=== ESR_EL1 Decoder Test ===\r\n");
-    
+
     use crate::exceptions::esr_decoder::{EsrDecoder, ExceptionClass};
     let decoder = EsrDecoder::new();
-    
+
     context.uart.puts("Testing exception class decoding:\r\n");
-    
+
     let test_values = [
         (0x96000000, "SVC64"),
-        (0x92000000, "DataAbortLower"), 
+        (0x92000000, "DataAbortLower"),
         (0x96000001, "SVC64 with immediate"),
         (0x86000000, "InstructionAbortLower"),
         (0x8E000000, "IllegalExecution"),
         (0xBE000000, "SError"),
     ];
-    
+
     for (esr, description) in test_values.iter() {
         let info = decoder.decode_esr(*esr);
         context.uart.puts("  ESR: 0x");
@@ -484,93 +496,117 @@ pub fn handle_esr_test(context: &ShellContext) {
         context.uart.puts("\r\n    ISS: 0x");
         context.uart.put_hex(info.iss as u64);
         context.uart.puts("\r\n    IL: ");
-        context.uart.puts(if info.instruction_length { "32-bit" } else { "16-bit" });
+        context.uart.puts(if info.instruction_length {
+            "32-bit"
+        } else {
+            "16-bit"
+        });
         context.uart.puts("\r\n\r\n");
     }
-    
+
     context.uart.puts("ESR decoder test complete!\r\n");
     context.uart.puts("============================\r\n");
 }
 
 /// Handle system call testing command (8)
 pub fn handle_syscall_test(context: &ShellContext) {
-    context.uart.puts("\r\n=== System Call Testing (Phase 1) ===\r\n");
-    
+    context
+        .uart
+        .puts("\r\n=== System Call Testing (Phase 1) ===\r\n");
+
     // Test 1: System call interface validation
     context.uart.puts("1. Testing System Call Interface...\r\n");
     test_syscall_interface(context);
-    
+
     // Test 2: System call statistics
     context.uart.puts("\r\n2. System Call Statistics...\r\n");
     display_syscall_stats(context);
-    
+
     // Test 3: Direct system call tests
     context.uart.puts("\r\n3. Direct System Call Tests...\r\n");
     test_direct_syscalls(context);
-    
-    context.uart.puts("\r\n✅ System call testing complete!\r\n");
-    context.uart.puts("=====================================\r\n");
+
+    context
+        .uart
+        .puts("\r\n✅ System call testing complete!\r\n");
+    context
+        .uart
+        .puts("=====================================\r\n");
 }
 
 /// Handle memory fault testing command (9)
 pub fn handle_memory_fault_test(context: &ShellContext) {
-    context.uart.puts("\r\n=== Memory Fault Testing (Phase 1) ===\r\n");
-    
+    context
+        .uart
+        .puts("\r\n=== Memory Fault Testing (Phase 1) ===\r\n");
+
     // Test 1: Memory fault analyzer
     context.uart.puts("1. Testing Memory Fault Analyzer...\r\n");
     test_memory_fault_analyzer(context);
-    
+
     // Test 2: Memory fault statistics
     context.uart.puts("\r\n2. Memory Fault Statistics...\r\n");
     display_memory_fault_stats(context);
-    
+
     // Test 3: Fault classification tests
-    context.uart.puts("\r\n3. Fault Classification Tests...\r\n");
+    context
+        .uart
+        .puts("\r\n3. Fault Classification Tests...\r\n");
     test_fault_classification(context);
-    
-    context.uart.puts("\r\n✅ Memory fault testing complete!\r\n");
-    context.uart.puts("======================================\r\n");
+
+    context
+        .uart
+        .puts("\r\n✅ Memory fault testing complete!\r\n");
+    context
+        .uart
+        .puts("======================================\r\n");
 }
 
 /// Test system call interface
 fn test_syscall_interface(context: &ShellContext) {
     use crate::exceptions::syscall::test_syscall_interface;
-    
-    context.uart.puts("   Running syscall interface tests...\r\n");
+
+    context
+        .uart
+        .puts("   Running syscall interface tests...\r\n");
     let result = test_syscall_interface();
-    
+
     if result {
-        context.uart.puts("   ✅ All syscall interface tests passed\r\n");
+        context
+            .uart
+            .puts("   ✅ All syscall interface tests passed\r\n");
     } else {
-        context.uart.puts("   ❌ Some syscall interface tests failed\r\n");
+        context
+            .uart
+            .puts("   ❌ Some syscall interface tests failed\r\n");
     }
 }
 
 /// Display system call statistics
 fn display_syscall_stats(context: &ShellContext) {
     use crate::exceptions::syscall::get_syscall_stats;
-    
+
     let stats = get_syscall_stats();
     context.uart.puts("   Total syscalls: ");
     print_number(&context.uart, stats.total_syscalls as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Debug print calls: ");
     print_number(&context.uart, stats.debug_print_calls as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Get time calls: ");
     print_number(&context.uart, stats.get_time_calls as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Get PID calls: ");
     print_number(&context.uart, stats.get_pid_calls as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Exit calls: ");
     print_number(&context.uart, stats.exit_calls as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Invalid calls: ");
     print_number(&context.uart, stats.invalid_calls as u32);
     context.uart.puts("\r\n");
@@ -578,70 +614,76 @@ fn display_syscall_stats(context: &ShellContext) {
 
 /// Test direct system calls
 fn test_direct_syscalls(context: &ShellContext) {
-    use crate::exceptions::syscall::{SyscallNumber, make_syscall};
-    
+    use crate::exceptions::syscall::{make_syscall, SyscallNumber};
+
     context.uart.puts("   Testing direct system calls...\r\n");
-    
+
     // Test SYS_DEBUG_PRINT
     context.uart.puts("   Testing SYS_DEBUG_PRINT...\r\n");
     let result = make_syscall(SyscallNumber::DebugPrint, &[0x41414141, 0, 0, 0, 0, 0]);
     context.uart.puts("   Result: ");
     print_number(&context.uart, result as u32);
     context.uart.puts("\r\n");
-    
+
     // Test SYS_GET_TIME
     context.uart.puts("   Testing SYS_GET_TIME...\r\n");
     let result = make_syscall(SyscallNumber::GetTime, &[0, 0, 0, 0, 0, 0]);
     context.uart.puts("   Time: ");
     print_number(&context.uart, result as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   ✅ Direct syscall tests passed\r\n");
 }
 
 /// Test memory fault analyzer
 fn test_memory_fault_analyzer(context: &ShellContext) {
     use crate::exceptions::memory_faults::test_memory_fault_analysis;
-    
-    context.uart.puts("   Running memory fault analysis tests...\r\n");
+
+    context
+        .uart
+        .puts("   Running memory fault analysis tests...\r\n");
     let result = test_memory_fault_analysis();
-    
+
     if result {
-        context.uart.puts("   ✅ All memory fault analysis tests passed\r\n");
+        context
+            .uart
+            .puts("   ✅ All memory fault analysis tests passed\r\n");
     } else {
-        context.uart.puts("   ❌ Some memory fault analysis tests failed\r\n");
+        context
+            .uart
+            .puts("   ❌ Some memory fault analysis tests failed\r\n");
     }
 }
 
 /// Display memory fault statistics
 fn display_memory_fault_stats(context: &ShellContext) {
     use crate::exceptions::memory_faults::get_memory_fault_stats;
-    
+
     let stats = get_memory_fault_stats();
     context.uart.puts("   Total memory faults: ");
     print_number(&context.uart, stats.total_faults as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Data aborts: ");
     print_number(&context.uart, stats.data_aborts as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Instruction aborts: ");
     print_number(&context.uart, stats.instruction_aborts as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Translation faults: ");
     print_number(&context.uart, stats.translation_faults as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Permission faults: ");
     print_number(&context.uart, stats.permission_faults as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Alignment faults: ");
     print_number(&context.uart, stats.alignment_faults as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Unknown faults: ");
     print_number(&context.uart, stats.unknown_faults as u32);
     context.uart.puts("\r\n");
@@ -650,9 +692,9 @@ fn display_memory_fault_stats(context: &ShellContext) {
 /// Test fault classification
 fn test_fault_classification(context: &ShellContext) {
     use crate::exceptions::memory_faults::MemoryFaultAnalyzer;
-    
+
     context.uart.puts("   Testing fault classification...\r\n");
-    
+
     // Test different fault types
     let test_cases = [
         (0x04, "Translation fault"),
@@ -668,7 +710,7 @@ fn test_fault_classification(context: &ShellContext) {
         (0x0E, "Permission fault"),
         (0x0F, "Permission fault"),
     ];
-    
+
     for (status, _expected_name) in test_cases.iter() {
         let fault_desc = MemoryFaultAnalyzer::classify_fault_detail(*status);
         context.uart.puts("   Status 0x");
@@ -677,113 +719,149 @@ fn test_fault_classification(context: &ShellContext) {
         context.uart.puts(fault_desc);
         context.uart.puts("\r\n");
     }
-    
-    context.uart.puts("   ✅ Fault classification test passed\r\n");
+
+    context
+        .uart
+        .puts("   ✅ Fault classification test passed\r\n");
 }
 
 /// Handle Phase 2 IRQ integration testing command
 pub fn handle_irq_integration_test(context: &ShellContext) {
-    context.uart.puts("\r\n=== IRQ Integration Testing (Phase 2) ===\r\n");
-    
+    context
+        .uart
+        .puts("\r\n=== IRQ Integration Testing (Phase 2) ===\r\n");
+
     // Test 1: IRQ controller integration
-    context.uart.puts("1. Testing IRQ Controller Integration...\r\n");
+    context
+        .uart
+        .puts("1. Testing IRQ Controller Integration...\r\n");
     test_irq_controller_integration(context);
-    
+
     // Test 2: IRQ statistics
     context.uart.puts("\r\n2. IRQ Statistics...\r\n");
     display_irq_stats(context);
-    
+
     // Test 3: IRQ source identification
     context.uart.puts("\r\n3. IRQ Source Identification...\r\n");
     test_irq_source_identification(context);
-    
-    context.uart.puts("\r\n✅ IRQ integration testing complete!\r\n");
-    context.uart.puts("========================================\r\n");
+
+    context
+        .uart
+        .puts("\r\n✅ IRQ integration testing complete!\r\n");
+    context
+        .uart
+        .puts("========================================\r\n");
 }
 
 /// Handle Phase 2 nested interrupt testing command
 pub fn handle_nested_interrupt_test(context: &ShellContext) {
-    context.uart.puts("\r\n=== Nested Interrupt Testing (Phase 2) ===\r\n");
-    
+    context
+        .uart
+        .puts("\r\n=== Nested Interrupt Testing (Phase 2) ===\r\n");
+
     // Test 1: Nested interrupt manager
-    context.uart.puts("1. Testing Nested Interrupt Manager...\r\n");
+    context
+        .uart
+        .puts("1. Testing Nested Interrupt Manager...\r\n");
     test_nested_interrupt_manager(context);
-    
+
     // Test 2: Interrupt priority handling
-    context.uart.puts("\r\n2. Interrupt Priority Handling...\r\n");
+    context
+        .uart
+        .puts("\r\n2. Interrupt Priority Handling...\r\n");
     test_interrupt_priorities(context);
-    
+
     // Test 3: Critical sections
     context.uart.puts("\r\n3. Critical Section Testing...\r\n");
     test_critical_sections(context);
-    
+
     // Test 4: Nested interrupt statistics
-    context.uart.puts("\r\n4. Nested Interrupt Statistics...\r\n");
+    context
+        .uart
+        .puts("\r\n4. Nested Interrupt Statistics...\r\n");
     display_nested_interrupt_stats(context);
-    
-    context.uart.puts("\r\n✅ Nested interrupt testing complete!\r\n");
-    context.uart.puts("===========================================\r\n");
+
+    context
+        .uart
+        .puts("\r\n✅ Nested interrupt testing complete!\r\n");
+    context
+        .uart
+        .puts("===========================================\r\n");
 }
 
 /// Handle Phase 2 deferred processing testing command
 pub fn handle_deferred_processing_test(context: &ShellContext) {
-    context.uart.puts("\r\n=== Deferred Processing Testing (Phase 2) ===\r\n");
-    
+    context
+        .uart
+        .puts("\r\n=== Deferred Processing Testing (Phase 2) ===\r\n");
+
     // Test 1: Work queue functionality
     context.uart.puts("1. Testing Work Queue...\r\n");
     test_work_queue(context);
-    
+
     // Test 2: Soft IRQ system
     context.uart.puts("\r\n2. Testing Soft IRQ System...\r\n");
     test_softirq_system(context);
-    
+
     // Test 3: Deferred processing integration
-    context.uart.puts("\r\n3. Testing Deferred Processing Integration...\r\n");
+    context
+        .uart
+        .puts("\r\n3. Testing Deferred Processing Integration...\r\n");
     test_deferred_integration(context);
-    
+
     // Test 4: Performance metrics
     context.uart.puts("\r\n4. Performance Metrics...\r\n");
     display_deferred_processing_stats(context);
-    
-    context.uart.puts("\r\n✅ Deferred processing testing complete!\r\n");
-    context.uart.puts("==============================================\r\n");
+
+    context
+        .uart
+        .puts("\r\n✅ Deferred processing testing complete!\r\n");
+    context
+        .uart
+        .puts("==============================================\r\n");
 }
 
 /// Test IRQ controller integration
 fn test_irq_controller_integration(context: &ShellContext) {
     use crate::exceptions::irq_integration::test_irq_integration;
-    
-    context.uart.puts("   Running IRQ controller integration tests...\r\n");
+
+    context
+        .uart
+        .puts("   Running IRQ controller integration tests...\r\n");
     let result = test_irq_integration();
-    
+
     if result {
-        context.uart.puts("   ✅ IRQ controller integration tests passed\r\n");
+        context
+            .uart
+            .puts("   ✅ IRQ controller integration tests passed\r\n");
     } else {
-        context.uart.puts("   ❌ Some IRQ controller integration tests failed\r\n");
+        context
+            .uart
+            .puts("   ❌ Some IRQ controller integration tests failed\r\n");
     }
 }
 
 /// Display IRQ statistics
 fn display_irq_stats(context: &ShellContext) {
     use crate::exceptions::irq_integration::get_irq_stats;
-    
+
     let stats = get_irq_stats();
     context.uart.puts("   Total IRQs: ");
     print_number(&context.uart, stats.total_irqs as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Timer IRQs: ");
     print_number(&context.uart, stats.timer_irqs as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   UART IRQs: ");
     print_number(&context.uart, stats.uart_irqs as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   GPIO IRQs: ");
     print_number(&context.uart, stats.gpio_irqs as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Unknown IRQs: ");
     print_number(&context.uart, stats.unknown_irqs as u32);
     context.uart.puts("\r\n");
@@ -791,10 +869,12 @@ fn display_irq_stats(context: &ShellContext) {
 
 /// Test IRQ source identification
 fn test_irq_source_identification(context: &ShellContext) {
-    use crate::exceptions::irq_integration::{IrqSource, IrqInfo};
-    
-    context.uart.puts("   Testing IRQ source identification...\r\n");
-    
+    use crate::exceptions::irq_integration::{IrqInfo, IrqSource};
+
+    context
+        .uart
+        .puts("   Testing IRQ source identification...\r\n");
+
     // Test different IRQ sources
     let test_sources = [
         (64, "Timer"),
@@ -802,7 +882,7 @@ fn test_irq_source_identification(context: &ShellContext) {
         (129, "GPIO"),
         (999, "Unknown"),
     ];
-    
+
     for (irq_id, name) in test_sources.iter() {
         let source = IrqSource::from(*irq_id);
         context.uart.puts("   IRQ ");
@@ -811,30 +891,38 @@ fn test_irq_source_identification(context: &ShellContext) {
         context.uart.puts(name);
         context.uart.puts("\r\n");
     }
-    
-    context.uart.puts("   ✅ IRQ source identification test passed\r\n");
+
+    context
+        .uart
+        .puts("   ✅ IRQ source identification test passed\r\n");
 }
 
 /// Test nested interrupt manager
 fn test_nested_interrupt_manager(context: &ShellContext) {
     use crate::exceptions::nested_irq::test_nested_interrupts;
-    
-    context.uart.puts("   Running nested interrupt manager tests...\r\n");
+
+    context
+        .uart
+        .puts("   Running nested interrupt manager tests...\r\n");
     let result = test_nested_interrupts();
-    
+
     if result {
-        context.uart.puts("   ✅ Nested interrupt manager tests passed\r\n");
+        context
+            .uart
+            .puts("   ✅ Nested interrupt manager tests passed\r\n");
     } else {
-        context.uart.puts("   ❌ Some nested interrupt manager tests failed\r\n");
+        context
+            .uart
+            .puts("   ❌ Some nested interrupt manager tests failed\r\n");
     }
 }
 
 /// Test interrupt priorities
 fn test_interrupt_priorities(context: &ShellContext) {
     use crate::exceptions::nested_irq::InterruptPriority;
-    
+
     context.uart.puts("   Testing interrupt priorities...\r\n");
-    
+
     // Test priority levels
     let priorities = [
         (InterruptPriority::Critical, "Critical"),
@@ -842,7 +930,7 @@ fn test_interrupt_priorities(context: &ShellContext) {
         (InterruptPriority::Normal, "Normal"),
         (InterruptPriority::Low, "Low"),
     ];
-    
+
     for (priority, name) in priorities.iter() {
         context.uart.puts("   Priority ");
         context.uart.puts(name);
@@ -850,52 +938,58 @@ fn test_interrupt_priorities(context: &ShellContext) {
         print_number(&context.uart, *priority as u32);
         context.uart.puts("\r\n");
     }
-    
-    context.uart.puts("   ✅ Interrupt priority test passed\r\n");
+
+    context
+        .uart
+        .puts("   ✅ Interrupt priority test passed\r\n");
 }
 
 /// Test critical sections
 fn test_critical_sections(context: &ShellContext) {
-    use crate::exceptions::nested_irq::{enter_interrupt_with_priority, exit_current_interrupt, InterruptPriority};
-    
+    use crate::exceptions::nested_irq::{
+        enter_interrupt_with_priority, exit_current_interrupt, InterruptPriority,
+    };
+
     context.uart.puts("   Testing critical sections...\r\n");
-    
+
     // Test entering and exiting critical sections
     context.uart.puts("   Entering critical section...\r\n");
     let entered = enter_interrupt_with_priority(InterruptPriority::Critical);
-    
+
     if entered {
-        context.uart.puts("   Successfully entered critical section\r\n");
+        context
+            .uart
+            .puts("   Successfully entered critical section\r\n");
         exit_current_interrupt();
         context.uart.puts("   Exited critical section\r\n");
     } else {
         context.uart.puts("   Could not enter critical section\r\n");
     }
-    
+
     context.uart.puts("   ✅ Critical section test passed\r\n");
 }
 
 /// Display nested interrupt statistics
 fn display_nested_interrupt_stats(context: &ShellContext) {
     use crate::exceptions::nested_irq::get_nested_interrupt_stats;
-    
+
     let stats = get_nested_interrupt_stats();
     context.uart.puts("   Total nested interrupts: ");
     print_number(&context.uart, stats.total_nested_interrupts as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Nested interrupt events: ");
     print_number(&context.uart, stats.nested_interrupt_events as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Max nesting depth: ");
     print_number(&context.uart, stats.max_nesting_depth as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Stack overflows: ");
     print_number(&context.uart, stats.stack_overflows as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Stack underflows: ");
     print_number(&context.uart, stats.stack_underflows as u32);
     context.uart.puts("\r\n");
@@ -903,27 +997,29 @@ fn display_nested_interrupt_stats(context: &ShellContext) {
 
 /// Test work queue functionality
 fn test_work_queue(context: &ShellContext) {
-    use crate::exceptions::deferred_processing::{schedule_work, process_pending_work, has_pending_work};
-    
+    use crate::exceptions::deferred_processing::{
+        has_pending_work, process_pending_work, schedule_work,
+    };
+
     context.uart.puts("   Testing work queue...\r\n");
-    
+
     // Test work scheduling
     context.uart.puts("   Scheduling test work...\r\n");
-    
+
     // Create a simple work function
     fn test_work_fn(work_item: &mut crate::exceptions::deferred_processing::WorkItem) {
         // Simple test work - just increment the data
         work_item.data += 1;
     }
-    
+
     let work_scheduled = schedule_work(test_work_fn, 42, 0);
-    
+
     if work_scheduled {
         context.uart.puts("   Work scheduled successfully\r\n");
     } else {
         context.uart.puts("   Failed to schedule work\r\n");
     }
-    
+
     // Test work processing
     if has_pending_work() {
         context.uart.puts("   Processing pending work...\r\n");
@@ -931,67 +1027,75 @@ fn test_work_queue(context: &ShellContext) {
     } else {
         context.uart.puts("   No pending work\r\n");
     }
-    
+
     context.uart.puts("   ✅ Work queue test passed\r\n");
 }
 
 /// Test soft IRQ system
 fn test_softirq_system(context: &ShellContext) {
-    use crate::exceptions::deferred_processing::{schedule_softirq, process_pending_work, SoftIrqType};
-    
+    use crate::exceptions::deferred_processing::{
+        process_pending_work, schedule_softirq, SoftIrqType,
+    };
+
     context.uart.puts("   Testing soft IRQ system...\r\n");
-    
+
     // Test soft IRQ scheduling
     context.uart.puts("   Scheduling soft IRQ...\r\n");
-    
+
     // Create a simple soft IRQ work function
     fn test_softirq_fn(work_item: &mut crate::exceptions::deferred_processing::WorkItem) {
         // Simple soft IRQ work - just set some data
         work_item.data = 0xDEADBEEF;
     }
-    
+
     let softirq_scheduled = schedule_softirq(SoftIrqType::Timer, test_softirq_fn, 123, 0);
-    
+
     if softirq_scheduled {
         context.uart.puts("   Soft IRQ scheduled successfully\r\n");
     } else {
         context.uart.puts("   Failed to schedule soft IRQ\r\n");
     }
-    
+
     // Test soft IRQ processing
     context.uart.puts("   Processing soft IRQs...\r\n");
     process_pending_work();
-    
+
     context.uart.puts("   ✅ Soft IRQ system test passed\r\n");
 }
 
 /// Test deferred processing integration
 fn test_deferred_integration(context: &ShellContext) {
     use crate::exceptions::deferred_processing::test_deferred_processing;
-    
-    context.uart.puts("   Running deferred processing integration tests...\r\n");
+
+    context
+        .uart
+        .puts("   Running deferred processing integration tests...\r\n");
     let result = test_deferred_processing();
-    
+
     if result {
-        context.uart.puts("   ✅ Deferred processing integration tests passed\r\n");
+        context
+            .uart
+            .puts("   ✅ Deferred processing integration tests passed\r\n");
     } else {
-        context.uart.puts("   ❌ Some deferred processing integration tests failed\r\n");
+        context
+            .uart
+            .puts("   ❌ Some deferred processing integration tests failed\r\n");
     }
 }
 
 /// Display deferred processing statistics
 fn display_deferred_processing_stats(context: &ShellContext) {
     use crate::exceptions::deferred_processing::get_deferred_stats;
-    
+
     let stats = get_deferred_stats();
     context.uart.puts("   Total processing cycles: ");
     print_number(&context.uart, stats.total_processing_cycles as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Total items processed: ");
     print_number(&context.uart, stats.total_items_processed as u32);
     context.uart.puts("\r\n");
-    
+
     context.uart.puts("   Max processing time: ");
     print_number(&context.uart, stats.max_processing_time as u32);
     context.uart.puts(" us\r\n");

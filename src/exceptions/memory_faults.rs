@@ -2,12 +2,16 @@
 //!
 //! This module provides comprehensive memory fault analysis capabilities
 //! for data aborts, instruction aborts, and other memory-related exceptions.
-//! It implements Phase 1 memory fault handling as outlined in the enhancement plan.
-//! In Phase 4, this integrates with MMU exception handling for advanced memory management.
+//! It implements Phase 1 memory fault handling as outlined in the enhancement
+//! plan. In Phase 4, this integrates with MMU exception handling for advanced
+//! memory management.
 
 use core::arch::asm;
-use crate::uart::Uart;
-use crate::memory::{MemoryManager, handle_mmu_exception_global, MmuRecoveryAction};
+
+use crate::{
+    memory::{handle_mmu_exception_global, MemoryManager, MmuRecoveryAction},
+    uart::Uart,
+};
 
 /// Memory fault types based on ESR_EL1 exception class
 #[repr(u32)]
@@ -64,7 +68,11 @@ pub struct MemoryFaultInfo {
 
 impl MemoryFaultInfo {
     /// Create a new memory fault info structure
-    pub fn new(fault_type: MemoryFaultType, fault_address: u64, access_type: MemoryAccessType) -> Self {
+    pub fn new(
+        fault_type: MemoryFaultType,
+        fault_address: u64,
+        access_type: MemoryAccessType,
+    ) -> Self {
         Self {
             fault_type,
             fault_address,
@@ -74,7 +82,7 @@ impl MemoryFaultInfo {
             is_valid: true,
         }
     }
-    
+
     /// Create an invalid fault info
     pub fn invalid() -> Self {
         Self {
@@ -88,7 +96,8 @@ impl MemoryFaultInfo {
     }
 }
 
-/// Memory fault analyzer - decodes memory faults from ESR_EL1 and other registers
+/// Memory fault analyzer - decodes memory faults from ESR_EL1 and other
+/// registers
 pub struct MemoryFaultAnalyzer;
 
 impl MemoryFaultAnalyzer {
@@ -96,7 +105,7 @@ impl MemoryFaultAnalyzer {
     pub fn analyze_fault(esr_el1: u32) -> MemoryFaultInfo {
         let exception_class = (esr_el1 >> 26) & 0x3F;
         let fault_address = Self::read_far_el1();
-        
+
         let fault_type = match exception_class {
             0x24 => MemoryFaultType::DataAbortCurrentEL,
             0x25 => MemoryFaultType::DataAbortLowerEL,
@@ -104,7 +113,7 @@ impl MemoryFaultAnalyzer {
             0x21 => MemoryFaultType::InstructionAbortLowerEL,
             _ => MemoryFaultType::Unknown,
         };
-        
+
         // Extract access type from ISS (bits 0-24)
         let iss = esr_el1 & 0x1FFFFFF;
         let access_type = if (iss & (1 << 6)) != 0 {
@@ -112,13 +121,13 @@ impl MemoryFaultAnalyzer {
         } else {
             MemoryAccessType::Read
         };
-        
+
         let mut fault_info = MemoryFaultInfo::new(fault_type, fault_address, access_type);
         fault_info.fault_status = iss;
-        
+
         fault_info
     }
-    
+
     /// Read the Fault Address Register (FAR_EL1)
     fn read_far_el1() -> u64 {
         #[cfg(target_arch = "aarch64")]
@@ -135,7 +144,7 @@ impl MemoryFaultAnalyzer {
             0x0000_0000_DEAD_BEEF
         }
     }
-    
+
     /// Read the Exception Link Register (ELR_EL1) to get instruction address
     fn read_elr_el1() -> u64 {
         #[cfg(target_arch = "aarch64")]
@@ -152,14 +161,14 @@ impl MemoryFaultAnalyzer {
             0x0000_0000_CAFE_BABE
         }
     }
-    
+
     /// Classify fault based on fault status
     pub fn classify_fault_detail(fault_status: u32) -> &'static str {
         let dfsc = fault_status & 0x3F; // Data Fault Status Code
-        
+
         match dfsc {
             0b000100 => "Translation fault, level 0",
-            0b000101 => "Translation fault, level 1", 
+            0b000101 => "Translation fault, level 1",
             0b000110 => "Translation fault, level 2",
             0b000111 => "Translation fault, level 3",
             0b001001 => "Access flag fault, level 1",
@@ -172,19 +181,21 @@ impl MemoryFaultAnalyzer {
             _ => "Unknown fault",
         }
     }
-    
+
     /// Generate a detailed fault report
     pub fn generate_fault_report(fault_info: &MemoryFaultInfo) -> [u8; 512] {
         let mut report = [0u8; 512];
         let mut uart = Uart::new();
         uart.init();
-        
+
         uart.puts("=== Memory Fault Analysis Report ===\r\n");
         uart.puts("Fault Type: ");
         match fault_info.fault_type {
             MemoryFaultType::DataAbortCurrentEL => uart.puts("Data Abort (Current EL)"),
             MemoryFaultType::DataAbortLowerEL => uart.puts("Data Abort (Lower EL)"),
-            MemoryFaultType::InstructionAbortCurrentEL => uart.puts("Instruction Abort (Current EL)"),
+            MemoryFaultType::InstructionAbortCurrentEL => {
+                uart.puts("Instruction Abort (Current EL)")
+            }
             MemoryFaultType::InstructionAbortLowerEL => uart.puts("Instruction Abort (Lower EL)"),
             MemoryFaultType::TranslationFault => uart.puts("Translation Fault"),
             MemoryFaultType::PermissionFault => uart.puts("Permission Fault"),
@@ -192,11 +203,11 @@ impl MemoryFaultAnalyzer {
             MemoryFaultType::Unknown => uart.puts("Unknown Fault"),
         }
         uart.puts("\r\n");
-        
+
         uart.puts("Fault Address: 0x");
         Self::print_hex(&uart, fault_info.fault_address);
         uart.puts("\r\n");
-        
+
         uart.puts("Access Type: ");
         match fault_info.access_type {
             MemoryAccessType::Read => uart.puts("Read"),
@@ -205,14 +216,14 @@ impl MemoryFaultAnalyzer {
             MemoryAccessType::Unknown => uart.puts("Unknown"),
         }
         uart.puts("\r\n");
-        
+
         uart.puts("Fault Detail: ");
         uart.puts(Self::classify_fault_detail(fault_info.fault_status));
         uart.puts("\r\n");
-        
+
         report
     }
-    
+
     /// Helper function to print hex values
     fn print_hex(uart: &Uart, value: u64) {
         for i in (0..16).rev() {
@@ -251,16 +262,17 @@ impl MemoryFaultStats {
             unknown_faults: 0,
         }
     }
-    
+
     /// Record a memory fault
     pub fn record_fault(&mut self, fault_type: MemoryFaultType) {
         self.total_faults += 1;
-        
+
         match fault_type {
             MemoryFaultType::DataAbortCurrentEL | MemoryFaultType::DataAbortLowerEL => {
                 self.data_aborts += 1;
             }
-            MemoryFaultType::InstructionAbortCurrentEL | MemoryFaultType::InstructionAbortLowerEL => {
+            MemoryFaultType::InstructionAbortCurrentEL
+            | MemoryFaultType::InstructionAbortLowerEL => {
                 self.instruction_aborts += 1;
             }
             MemoryFaultType::TranslationFault => {
@@ -297,12 +309,12 @@ pub fn handle_memory_fault_with_mmu(
 ) -> MmuRecoveryAction {
     // First, analyze the fault using our existing system
     let fault_info = MemoryFaultAnalyzer::analyze_fault(esr_el1);
-    
+
     // Update statistics
     unsafe {
         MEMORY_FAULT_STATS.record_fault(fault_info.fault_type);
     }
-    
+
     // Print fault information for debugging
     let mut uart = Uart::new();
     uart.init();
@@ -312,7 +324,7 @@ pub fn handle_memory_fault_with_mmu(
     uart.puts("\r\nInstruction Address: 0x");
     MemoryFaultAnalyzer::print_hex(&uart, elr_el1);
     uart.puts("\r\n");
-    
+
     // Delegate to MMU exception handler for advanced processing
     handle_mmu_exception_global(esr_el1, far_el1, user_mode, elr_el1, memory_manager)
 }
@@ -322,7 +334,7 @@ pub fn test_memory_fault_analysis() -> bool {
     let mut uart = Uart::new();
     uart.init();
     uart.puts("Testing memory fault analysis...\r\n");
-    
+
     // Test fault analysis with different ESR values
     let test_cases = [
         (0x24000000, MemoryFaultType::DataAbortCurrentEL),
@@ -330,7 +342,7 @@ pub fn test_memory_fault_analysis() -> bool {
         (0x20000000, MemoryFaultType::InstructionAbortCurrentEL),
         (0x21000000, MemoryFaultType::InstructionAbortLowerEL),
     ];
-    
+
     for (esr_value, expected_type) in test_cases.iter() {
         let fault_info = MemoryFaultAnalyzer::analyze_fault(*esr_value);
         if fault_info.fault_type != *expected_type {
@@ -338,7 +350,7 @@ pub fn test_memory_fault_analysis() -> bool {
             return false;
         }
     }
-    
+
     uart.puts("✅ Memory fault analysis tests passed\r\n");
     true
 }

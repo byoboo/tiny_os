@@ -4,17 +4,18 @@
 //! interrupt masking, and critical section support.
 
 use core::arch::asm;
+
 use crate::uart::Uart;
 
 /// Interrupt priority levels (0 = highest, 255 = lowest)
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum InterruptPriority {
-    Critical = 0,      // System critical interrupts
-    High = 64,         // High priority (timer, etc.)
-    Normal = 128,      // Normal priority (UART, GPIO)
-    Low = 192,         // Low priority (background tasks)
-    Disabled = 255,    // Disabled
+    Critical = 0,   // System critical interrupts
+    High = 64,      // High priority (timer, etc.)
+    Normal = 128,   // Normal priority (UART, GPIO)
+    Low = 192,      // Low priority (background tasks)
+    Disabled = 255, // Disabled
 }
 
 impl From<u8> for InterruptPriority {
@@ -77,51 +78,51 @@ impl NestedInterruptManager {
             stats: NestedInterruptStats::new(),
         }
     }
-    
+
     /// Enter interrupt context
     pub fn enter_interrupt(&mut self, priority: InterruptPriority) -> bool {
         // Check if we can accept this interrupt based on priority
         if priority >= self.current_priority_mask {
             return false; // Interrupt is masked
         }
-        
+
         // Save current state on interrupt stack
         if self.stack_pointer >= self.interrupt_stack.len() {
             // Stack overflow - cannot nest further
             self.stats.stack_overflows += 1;
             return false;
         }
-        
+
         let current_state = self.are_interrupts_enabled();
         self.interrupt_stack[self.stack_pointer] = InterruptMask {
             previous_state: current_state,
             mask_level: self.current_priority_mask,
             nesting_level: self.nesting_level,
         };
-        
+
         self.stack_pointer += 1;
         self.nesting_level += 1;
-        
+
         // Update maximum nesting level
         if self.nesting_level > self.max_nesting_level {
             self.max_nesting_level = self.nesting_level;
         }
-        
+
         // Set new priority mask (allow only higher priority interrupts)
         self.current_priority_mask = priority;
         self.set_priority_mask(priority);
-        
+
         // Enable interrupts to allow nesting
         self.enable_interrupts();
-        
+
         self.stats.total_nested_interrupts += 1;
         if self.nesting_level > 1 {
             self.stats.nested_interrupt_events += 1;
         }
-        
+
         true
     }
-    
+
     /// Exit interrupt context
     pub fn exit_interrupt(&mut self) {
         if self.stack_pointer == 0 {
@@ -129,26 +130,26 @@ impl NestedInterruptManager {
             self.stats.stack_underflows += 1;
             return;
         }
-        
+
         // Disable interrupts while we restore state
         self.disable_interrupts();
-        
+
         // Restore previous state from stack
         self.stack_pointer -= 1;
         let previous_mask = self.interrupt_stack[self.stack_pointer];
-        
+
         self.nesting_level = previous_mask.nesting_level;
         self.current_priority_mask = previous_mask.mask_level;
-        
+
         // Restore priority mask
         self.set_priority_mask(self.current_priority_mask);
-        
+
         // Restore interrupt state
         if previous_mask.previous_state {
             self.enable_interrupts();
         }
     }
-    
+
     /// Mask interrupts below a certain priority
     pub fn mask_interrupts(&mut self, priority: InterruptPriority) -> InterruptMask {
         let previous_state = InterruptMask {
@@ -156,25 +157,25 @@ impl NestedInterruptManager {
             mask_level: self.current_priority_mask,
             nesting_level: self.nesting_level,
         };
-        
+
         self.current_priority_mask = priority;
         self.set_priority_mask(priority);
-        
+
         previous_state
     }
-    
+
     /// Restore interrupt mask
     pub fn restore_interrupts(&mut self, mask: InterruptMask) {
         self.current_priority_mask = mask.mask_level;
         self.set_priority_mask(mask.mask_level);
-        
+
         if mask.previous_state {
             self.enable_interrupts();
         } else {
             self.disable_interrupts();
         }
     }
-    
+
     /// Check if interrupts are enabled
     fn are_interrupts_enabled(&self) -> bool {
         #[cfg(target_arch = "aarch64")]
@@ -192,7 +193,7 @@ impl NestedInterruptManager {
             true
         }
     }
-    
+
     /// Enable interrupts
     fn enable_interrupts(&self) {
         #[cfg(target_arch = "aarch64")]
@@ -204,7 +205,7 @@ impl NestedInterruptManager {
             // For unit tests on host platform, do nothing
         }
     }
-    
+
     /// Disable interrupts
     fn disable_interrupts(&self) {
         #[cfg(target_arch = "aarch64")]
@@ -216,32 +217,32 @@ impl NestedInterruptManager {
             // For unit tests on host platform, do nothing
         }
     }
-    
+
     /// Set interrupt priority mask in GIC
     fn set_priority_mask(&self, priority: InterruptPriority) {
         // GIC CPU Interface - Priority Mask Register
         const GICC_PMR: u32 = 0xFF842000 + 0x004;
-        
+
         unsafe {
             core::ptr::write_volatile(GICC_PMR as *mut u32, (priority as u8) as u32);
         }
     }
-    
+
     /// Get current nesting level
     pub fn get_nesting_level(&self) -> u32 {
         self.nesting_level
     }
-    
+
     /// Get maximum nesting level seen
     pub fn get_max_nesting_level(&self) -> u32 {
         self.max_nesting_level
     }
-    
+
     /// Get statistics
     pub fn get_stats(&self) -> NestedInterruptStats {
         self.stats
     }
-    
+
     /// Reset statistics
     pub fn reset_stats(&mut self) {
         self.stats = NestedInterruptStats::new();
@@ -256,10 +257,9 @@ pub struct CriticalSection {
 impl CriticalSection {
     /// Enter critical section (disable all interrupts)
     pub fn enter() -> Self {
-        let previous_mask = unsafe {
-            NESTED_INTERRUPT_MANAGER.mask_interrupts(InterruptPriority::Critical)
-        };
-        
+        let previous_mask =
+            unsafe { NESTED_INTERRUPT_MANAGER.mask_interrupts(InterruptPriority::Critical) };
+
         Self { previous_mask }
     }
 }
@@ -306,9 +306,7 @@ pub fn init_nested_interrupts() {
 
 /// Enter interrupt with priority checking
 pub fn enter_interrupt_with_priority(priority: InterruptPriority) -> bool {
-    unsafe {
-        NESTED_INTERRUPT_MANAGER.enter_interrupt(priority)
-    }
+    unsafe { NESTED_INTERRUPT_MANAGER.enter_interrupt(priority) }
 }
 
 /// Exit current interrupt
@@ -320,9 +318,7 @@ pub fn exit_current_interrupt() {
 
 /// Get nested interrupt statistics
 pub fn get_nested_interrupt_stats() -> NestedInterruptStats {
-    unsafe {
-        NESTED_INTERRUPT_MANAGER.get_stats()
-    }
+    unsafe { NESTED_INTERRUPT_MANAGER.get_stats() }
 }
 
 /// Test nested interrupt functionality
@@ -330,14 +326,14 @@ pub fn test_nested_interrupts() -> bool {
     let mut uart = Uart::new();
     uart.init();
     uart.puts("Testing nested interrupt support...\r\n");
-    
+
     // Test priority conversion
     let priority = InterruptPriority::from(64);
     if priority != InterruptPriority::High {
         uart.puts("❌ Priority conversion failed\r\n");
         return false;
     }
-    
+
     // Test critical section
     {
         let _critical = CriticalSection::enter();
@@ -345,24 +341,24 @@ pub fn test_nested_interrupts() -> bool {
         // Interrupts should be disabled here
     }
     uart.puts("Critical section exited\r\n");
-    
+
     // Test interrupt nesting simulation
     if enter_interrupt_with_priority(InterruptPriority::Normal) {
         uart.puts("Entered normal priority interrupt\r\n");
-        
+
         if enter_interrupt_with_priority(InterruptPriority::High) {
             uart.puts("Nested high priority interrupt\r\n");
             exit_current_interrupt();
         }
-        
+
         exit_current_interrupt();
     }
-    
+
     let stats = get_nested_interrupt_stats();
     uart.puts("Nested interrupt tests completed, events: ");
     uart.put_hex(stats.total_nested_interrupts);
     uart.puts("\r\n");
-    
+
     uart.puts("✅ Nested interrupt tests passed\r\n");
     true
 }

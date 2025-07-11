@@ -6,9 +6,9 @@
 #[cfg(target_arch = "aarch64")]
 use core::arch::global_asm;
 
+use super::deferred_processing::init_deferred_processing;
 // Import Phase 2 initialization functions
 use super::nested_irq::init_nested_interrupts;
-use super::deferred_processing::init_deferred_processing;
 
 // Import the exception vector table assembly
 #[cfg(target_arch = "aarch64")]
@@ -27,7 +27,7 @@ pub fn init_exceptions() {
             options(nomem, nostack)
         );
     }
-    
+
     // Initialize Phase 2 components
     init_nested_interrupts();
     init_deferred_processing();
