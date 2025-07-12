@@ -263,15 +263,13 @@ impl DynamicStackManager {
     pub fn shrink_unused_stacks(&mut self) -> u32 {
         let mut shrunk_count = 0;
 
-        for stack_opt in self.stacks.iter_mut() {
-            if let Some(stack) = stack_opt {
-                // Simple shrinking logic - can be made more sophisticated
-                if stack.current_size > PAGE_SIZE as usize
-                    && stack.growth_count > stack.shrink_count
-                {
-                    if stack.shrink(PAGE_SIZE as usize).is_ok() {
-                        shrunk_count += 1;
-                    }
+        for stack in self.stacks.iter_mut().flatten() {
+            // Simple shrinking logic - can be made more sophisticated
+            if stack.current_size > PAGE_SIZE as usize
+                && stack.growth_count > stack.shrink_count
+            {
+                if stack.shrink(PAGE_SIZE as usize).is_ok() {
+                    shrunk_count += 1;
                 }
             }
         }
