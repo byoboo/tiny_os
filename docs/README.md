@@ -4,19 +4,24 @@
 
 ### **Getting Started**
 
-- [README.md](README.md) - Project overview, quick start, and features
-- [PROJECT_STATUS.md](PROJECT_STATUS.md) - Current project status and achievements
+- [README.md](../README.md) - Project overview, quick start, and features
+- [PROJECT_STATUS.md](../PROJECT_STATUS.md) - Current project status and achievements
 
 ### **Technical Documentation**
 
-- [TECHNICAL_DOCS.md](TECHNICAL_DOCS.md) - Comprehensive technical documentation
-- [DOCKER_IMPLEMENTATION_ROADMAP.md](DOCKER_IMPLEMENTATION_ROADMAP.md) - Development roadmap and achievements
+- [TECHNICAL_DOCS.md](../TECHNICAL_DOCS.md) - Comprehensive technical documentation
+- [COMPONENT_RELATIONSHIPS.md](COMPONENT_RELATIONSHIPS.md) - System architecture and component interactions
+- [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) - Architecture decision records and design rationale
 
 ### **Development & Testing**
 
-- [docs/TESTING_INFRASTRUCTURE.md](docs/TESTING_INFRASTRUCTURE.md) - Testing framework and procedures
-- [docs/CI_CD_INTEGRATION_SUMMARY.md](docs/CI_CD_INTEGRATION_SUMMARY.md) - CI/CD pipeline details
-- [docs/VSCODE_SETUP.md](docs/VSCODE_SETUP.md) - VS Code development setup
+- [TESTING_INFRASTRUCTURE.md](TESTING_INFRASTRUCTURE.md) - Testing framework and procedures
+- [CI_CD_INTEGRATION_SUMMARY.md](CI_CD_INTEGRATION_SUMMARY.md) - CI/CD pipeline details
+- [VSCODE_SETUP.md](VSCODE_SETUP.md) - VS Code development setup
+
+### **AI Assistant Context**
+
+- [AI_ASSISTANT_CONTEXT.md](AI_ASSISTANT_CONTEXT.md) - Context file for AI assistants working with TinyOS
 
 ## 🚀 Quick Navigation
 
@@ -41,7 +46,7 @@
 
 ## 🏗️ Project Structure
 
-```
+```text
 TinyOS/
 ├── README.md                              # Project overview and quick start
 ├── PROJECT_STATUS.md                      # Current project status
@@ -50,6 +55,9 @@ TinyOS/
 ├── docs/
 │   ├── TESTING_INFRASTRUCTURE.md          # Testing framework
 │   ├── CI_CD_INTEGRATION_SUMMARY.md       # CI/CD pipeline
+│   ├── COMPONENT_RELATIONSHIPS.md         # System architecture
+│   ├── ARCHITECTURE_DECISIONS.md          # Design decisions
+│   ├── AI_ASSISTANT_CONTEXT.md            # AI assistant context
 │   ├── VSCODE_SETUP.md                    # VS Code setup
 │   └── archived/                          # Historical documentation
 ├── src/                                   # Source code
