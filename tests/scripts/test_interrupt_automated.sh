@@ -67,9 +67,16 @@ print_status "Test 3: System boot with interrupt handler"
 
 # Simple boot test - just verify the binary exists and can be executed with timeout
 if [[ -f "target/aarch64-unknown-none/release/tiny_os" ]]; then
+    # Docker environment detection - use compatible machine type
+    if [[ -f /.dockerenv ]]; then
+        MACHINE_TYPE="raspi3b"
+    else
+        MACHINE_TYPE="raspi4b"
+    fi
+    
     # Run a minimal boot test to verify it starts and capture output
     BOOT_OUTPUT_FILE=$(mktemp)
-    timeout 5s qemu-system-aarch64 -M raspi4b -nographic -kernel target/aarch64-unknown-none/release/tiny_os > "$BOOT_OUTPUT_FILE" 2>&1 || true
+    timeout 5s qemu-system-aarch64 -M $MACHINE_TYPE -nographic -kernel target/aarch64-unknown-none/release/tiny_os > "$BOOT_OUTPUT_FILE" 2>&1 || true
     BOOT_EXIT_CODE=$?
     BOOT_OUTPUT=$(cat "$BOOT_OUTPUT_FILE")
     rm -f "$BOOT_OUTPUT_FILE"

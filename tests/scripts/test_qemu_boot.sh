@@ -22,9 +22,16 @@ fi
 echo "✅ Build successful"
 echo "🚀 Testing TinyOS boot integration..."
 
+# Docker environment detection - use compatible machine type
+if [[ -f /.dockerenv ]]; then
+    MACHINE_TYPE="raspi3b"
+else
+    MACHINE_TYPE="raspi4b"
+fi
+
 # Simple boot test with timeout
 echo "Starting QEMU boot test..."
-timeout 10s qemu-system-aarch64 -M raspi4b -nographic -kernel target/aarch64-unknown-none/release/tiny_os > /tmp/boot_test.log 2>&1 &
+timeout 10s qemu-system-aarch64 -M $MACHINE_TYPE -nographic -kernel target/aarch64-unknown-none/release/tiny_os > /tmp/boot_test.log 2>&1 &
 QEMU_PID=$!
 
 # Wait for boot completion

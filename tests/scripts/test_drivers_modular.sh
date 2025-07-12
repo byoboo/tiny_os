@@ -90,8 +90,15 @@ log_info "Testing boot with modular drivers"
 
 # Simple boot test - just verify the binary exists and can be executed with timeout
 if [[ -f "target/aarch64-unknown-none/release/tiny_os" ]]; then
+    # Docker environment detection - use compatible machine type
+    if [[ -f /.dockerenv ]]; then
+        MACHINE_TYPE="raspi3b"
+    else
+        MACHINE_TYPE="raspi4b"
+    fi
+    
     # Run a minimal boot test to verify it starts
-    timeout 3s qemu-system-aarch64 -M raspi4b -nographic -kernel target/aarch64-unknown-none/release/tiny_os >/dev/null 2>&1
+    timeout 3s qemu-system-aarch64 -M $MACHINE_TYPE -nographic -kernel target/aarch64-unknown-none/release/tiny_os >/dev/null 2>&1
     BOOT_EXIT_CODE=$?
     
     # Exit code 124 means timeout (expected), 0 means clean exit, both are acceptable

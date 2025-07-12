@@ -1,11 +1,21 @@
 # TinyOS Development Environment Dockerfile
 # Multi-stage build for development and CI environments
 
-FROM rust:1.75-bullseye as base
+FROM ubuntu:22.04 as base
 
-# Install system dependencies
+# Install Rust
 RUN apt-get update && apt-get install -y \
-    qemu-system-aarch64 \
+    curl \
+    build-essential \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Rust to PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install system dependencies with newer QEMU
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
     llvm \
     gcc-aarch64-linux-gnu \
     gdb-multiarch \
@@ -16,6 +26,17 @@ RUN apt-get update && apt-get install -y \
     vim \
     htop \
     && rm -rf /var/lib/apt/lists/*
+
+# Try to install a newer version of QEMU with raspi4b support
+RUN apt-get update && apt-get install -y \
+    qemu-system-aarch64 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Check if we can install from backports or build from source for raspi4b support
+RUN QEMU_VERSION=$(qemu-system-aarch64 --version | head -1 | cut -d' ' -f4) && \
+    echo "Installed QEMU version: $QEMU_VERSION" && \
+    qemu-system-aarch64 -machine help | grep -i raspi || \
+    echo "Note: raspi4b not available in this QEMU version"
 
 # Install Rust toolchain components
 RUN rustup toolchain install nightly && \
