@@ -18,10 +18,13 @@ services:
     environment:
       - RUST_BACKTRACE=1
       - CARGO_TARGET_DIR=/workspace/target
+      # Set user ID to match host user (for CI compatibility)
+      - USER_ID=${USER_ID:-1000}
+      - GROUP_ID=${GROUP_ID:-1000}
     # Enable privileged mode for QEMU
     privileged: true
     # Keep container running
-    command: tail -f /dev/null
+    command: bash -c "sudo chown -R dev:dev /workspace/target /home/dev/.cargo && tail -f /dev/null"
 
   # CI environment (matches GitHub Actions)
   ci:
@@ -30,11 +33,12 @@ services:
       target: ci
     volumes:
       - .:/workspace
+      - ci-target-cache:/workspace/target
     working_dir: /workspace
     environment:
       - RUST_BACKTRACE=1
       - CARGO_TARGET_DIR=/workspace/target
-    command: ./test_tinyos.sh --validate-only
+    command: bash -c "chmod -R 755 /workspace && ./test_tinyos.sh --validate-only"
 
   # Quick build test
   build:
@@ -45,9 +49,9 @@ services:
       - .:/workspace
       - cargo-cache:/root/.cargo/registry
       - cargo-git-cache:/root/.cargo/git
-      - target-cache:/workspace/target
+      - ci-target-cache:/workspace/target
     working_dir: /workspace
-    command: cargo build --release
+    command: bash -c "chmod -R 755 /workspace && cargo build --release"
 
   # Test runner
   test:
@@ -58,12 +62,13 @@ services:
       - .:/workspace
       - cargo-cache:/root/.cargo/registry
       - cargo-git-cache:/root/.cargo/git
-      - target-cache:/workspace/target
+      - ci-target-cache:/workspace/target
     working_dir: /workspace
     privileged: true
-    command: ./test_tinyos.sh
+    command: bash -c "chmod -R 755 /workspace && ./test_tinyos.sh"
 
 volumes:
   cargo-cache:
   cargo-git-cache:
   target-cache:
+  ci-target-cache:

@@ -271,7 +271,7 @@ impl UserPageTable {
         permissions: RegionType,
     ) -> Result<usize, &'static str> {
         // Validate address range is in user space
-        if start < USER_SPACE_START || start + size > USER_SPACE_END {
+        if start + size > USER_SPACE_END {
             return Err("Address outside user space");
         }
 

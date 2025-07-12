@@ -38,6 +38,10 @@ help:
 setup:
 	@echo "Building Docker development environment..."
 	docker-compose build dev
+	@echo "Setting up permissions..."
+	@mkdir -p target
+	@chmod 755 target
+	@echo "✅ Docker environment ready!"
 
 # Interactive development shell
 dev-shell:
@@ -139,15 +143,15 @@ validate-ci:
 # Code quality
 format:
 	@echo "Formatting Rust code..."
-	docker-compose run --rm dev cargo fmt
+	docker-compose run --rm ci cargo fmt
 
 lint:
 	@echo "Running Clippy linter..."
-	docker-compose run --rm dev cargo clippy --target aarch64-unknown-none --bin tiny_os
+	docker-compose run --rm ci cargo clippy --target aarch64-unknown-none --bin tiny_os
 
 lint-strict:
 	@echo "Running Clippy linter (strict mode)..."
-	docker-compose run --rm dev cargo clippy --target aarch64-unknown-none --bin tiny_os -- -D warnings
+	docker-compose run --rm ci cargo clippy --target aarch64-unknown-none --bin tiny_os -- -D warnings
 
 # Clean build artifacts
 clean:
