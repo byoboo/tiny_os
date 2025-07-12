@@ -407,8 +407,8 @@ pub fn cmd_advanced_protection_stats(_args: &[&str], context: &mut ShellContext)
 
 /// Parse hex address from string
 fn parse_hex_address(s: &str) -> u64 {
-    if s.starts_with("0x") {
-        u64::from_str_radix(&s[2..], 16).unwrap_or(0)
+    if let Some(stripped) = s.strip_prefix("0x") {
+        u64::from_str_radix(stripped, 16).unwrap_or(0)
     } else {
         u64::from_str_radix(s, 16).unwrap_or(0)
     }

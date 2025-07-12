@@ -900,7 +900,7 @@ fn parse_number(s: &str) -> Option<u32> {
     }
 
     for &byte in bytes {
-        if byte < b'0' || byte > b'9' {
+        if !byte.is_ascii_digit() {
             return None;
         }
         result = result.checked_mul(10)?.checked_add((byte - b'0') as u32)?;

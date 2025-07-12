@@ -273,11 +273,11 @@ pub fn handle_sdcard_read(context: &mut ShellContext) {
             }
 
             context.uart.puts("First 16 bytes: ");
-            for i in 0..16 {
-                if buffer[i] < 16 {
+            for (i, &byte) in buffer.iter().enumerate().take(16) {
+                if byte < 16 {
                     context.uart.putc(b'0');
                 }
-                context.uart.put_hex(buffer[i] as u64);
+                context.uart.put_hex(byte as u64);
                 if i < 15 {
                     context.uart.putc(b' ');
                 }
@@ -303,8 +303,8 @@ pub fn handle_sdcard_write(context: &mut ShellContext) {
 
     // Create a test pattern
     let mut test_buffer = [0u8; 512];
-    for i in 0..512 {
-        test_buffer[i] = (i % 256) as u8;
+    for (i, byte) in test_buffer.iter_mut().enumerate() {
+        *byte = (i % 256) as u8;
     }
 
     match context.sdcard.write_block(1000, &test_buffer) {

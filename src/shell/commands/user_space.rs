@@ -18,7 +18,7 @@ pub fn handle_user_space_status(context: &ShellContext) {
         .uart
         .puts("\r\n=== User Space Page Table Status ===\r\n");
 
-    if let Ok(stats) = with_user_space_manager(|manager| manager.get_statistics().clone()) {
+    if let Ok(stats) = with_user_space_manager(|manager| *manager.get_statistics()) {
         context.uart.puts("Global Statistics:\r\n");
         context.uart.puts("  Page Tables Created: ");
         context.uart.put_hex(stats.page_tables_created as u64);
@@ -64,14 +64,10 @@ pub fn handle_user_space_status(context: &ShellContext) {
         });
 
         // Show current active page table
-        if let Ok(current_slot) = with_user_space_manager(|manager| manager.get_current_active()) {
-            if let Some(current_slot) = current_slot {
-                context.uart.puts("\r\nCurrently Active: Slot ");
-                context.uart.put_hex(current_slot as u64);
-                context.uart.puts("\r\n");
-            } else {
-                context.uart.puts("\r\nNo active user page table\r\n");
-            }
+        if let Ok(Some(current_slot)) = with_user_space_manager(|manager| manager.get_current_active()) {
+            context.uart.puts("\r\nCurrently Active: Slot ");
+            context.uart.put_hex(current_slot as u64);
+            context.uart.puts("\r\n");
         } else {
             context.uart.puts("\r\nNo active user page table\r\n");
         }
