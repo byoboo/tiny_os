@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Development environment
+  dev:
+    build:
+      context: .
+      target: development
+    volumes:
+      # Mount source code
+      - .:/workspace
+      # Persistent cargo cache
+      - cargo-cache:/home/dev/.cargo/registry
+      - cargo-git-cache:/home/dev/.cargo/git
+      # Persistent target directory
+      - target-cache:/workspace/target
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    environment:
+      - RUST_BACKTRACE=1
+      - CARGO_TARGET_DIR=/workspace/target
+    # Enable privileged mode for QEMU
+    privileged: true
+    # Keep container running
+    command: tail -f /dev/null
+
+  # CI environment (matches GitHub Actions)
+  ci:
+    build:
+      context: .
+      target: ci
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    environment:
+      - RUST_BACKTRACE=1
+      - CARGO_TARGET_DIR=/workspace/target
+    command: ./test_tinyos.sh --validate-only
+
+  # Quick build test
+  build:
+    build:
+      context: .
+      target: ci
+    volumes:
+      - .:/workspace
+      - cargo-cache:/root/.cargo/registry
+      - cargo-git-cache:/root/.cargo/git
+      - target-cache:/workspace/target
+    working_dir: /workspace
+    command: cargo build --release
+
+  # Test runner
+  test:
+    build:
+      context: .
+      target: ci
+    volumes:
+      - .:/workspace
+      - cargo-cache:/root/.cargo/registry
+      - cargo-git-cache:/root/.cargo/git
+      - target-cache:/workspace/target
+    working_dir: /workspace
+    privileged: true
+    command: ./test_tinyos.sh
+
+volumes:
+  cargo-cache:
+  cargo-git-cache:
+  target-cache:

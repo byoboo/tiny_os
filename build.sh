@@ -1,6 +1,16 @@
 #!/bin/bash
 
 # Build script for TinyOS Raspberry Pi kernel
+# Supports both host and Docker environments
+
+# Docker environment detection
+if [ -f /.dockerenv ]; then
+    echo "🐳 Building TinyOS kernel in Docker environment..."
+    DOCKER_ENV=true
+else
+    echo "🏠 Building TinyOS kernel on host..."
+    DOCKER_ENV=false
+fi
 
 echo "Building TinyOS kernel for Raspberry Pi 4/5..."
 
@@ -22,13 +32,23 @@ if [ $? -eq 0 ]; then
     RUST_TOOLCHAIN=$(rustc --print sysroot)
     echo "Rust toolchain: $RUST_TOOLCHAIN"
     
-    # First, try to find objcopy in rustup toolchain directory (most reliable)
-    POSSIBLE_PATHS=(
-        "$RUST_TOOLCHAIN/lib/rustlib/x86_64-apple-darwin/bin/llvm-objcopy"
-        "$RUST_TOOLCHAIN/lib/rustlib/aarch64-apple-darwin/bin/llvm-objcopy"
-        "$RUST_TOOLCHAIN/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-objcopy"
-        "$RUST_TOOLCHAIN/lib/rustlib/aarch64-unknown-linux-gnu/bin/llvm-objcopy"
-    )
+    # Docker-optimized objcopy search paths
+    if [ "$DOCKER_ENV" = true ]; then
+        POSSIBLE_PATHS=(
+            "$RUST_TOOLCHAIN/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-objcopy"
+            "$RUST_TOOLCHAIN/lib/rustlib/aarch64-unknown-linux-gnu/bin/llvm-objcopy"
+            "/usr/bin/llvm-objcopy"
+            "/usr/local/bin/llvm-objcopy"
+        )
+    else
+        # Host-optimized objcopy search paths
+        POSSIBLE_PATHS=(
+            "$RUST_TOOLCHAIN/lib/rustlib/x86_64-apple-darwin/bin/llvm-objcopy"
+            "$RUST_TOOLCHAIN/lib/rustlib/aarch64-apple-darwin/bin/llvm-objcopy"
+            "$RUST_TOOLCHAIN/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-objcopy"
+            "$RUST_TOOLCHAIN/lib/rustlib/aarch64-unknown-linux-gnu/bin/llvm-objcopy"
+        )
+    fi
     
     echo "Searching for LLVM objcopy in toolchain..."
     for path in "${POSSIBLE_PATHS[@]}"; do
@@ -74,8 +94,12 @@ if [ $? -eq 0 ]; then
         echo "   rustup component add llvm-tools-preview"
         echo ""
         echo "If the problem persists, try installing LLVM tools directly:"
-        echo "   Ubuntu/Debian: sudo apt-get install llvm"
-        echo "   macOS: brew install llvm"
+        if [ "$DOCKER_ENV" = true ]; then
+            echo "   Docker: apt-get install llvm"
+        else
+            echo "   Ubuntu/Debian: sudo apt-get install llvm"
+            echo "   macOS: brew install llvm"
+        fi
         echo ""
         echo "✅ Kernel ELF file is ready at: target/aarch64-unknown-none/release/tiny_os"
         echo "   (You can use this directly with QEMU)"
@@ -101,7 +125,11 @@ if [ $? -eq 0 ]; then
     echo "1. Copy kernel8.img to SD card root"
     echo "2. Ensure config.txt, firmware files, and device tree are present"
     echo ""
-    echo "Or use: cargo run"
+    if [ "$DOCKER_ENV" = true ]; then
+        echo "Docker Environment: Use 'make build' or 'docker-compose run build' for containerized builds"
+    else
+        echo "Host Environment: Use 'cargo run' for quick testing"
+    fi
 else
     echo "Build failed!"
     exit 1
