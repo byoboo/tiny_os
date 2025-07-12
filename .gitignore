@@ -1,7 +1,7 @@
 /target
 /test_results
-./tmp
-./temp
+/tmp
+/temp
 kernel8.img
 validation_report.md
 job-logs.txt

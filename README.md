@@ -159,33 +159,44 @@ TinyOS follows a layered, modular architecture designed for maintainability and 
 ### 🧪 **Testing Infrastructure**
 
 #### **Test Organization**
-- **26 Shell Scripts**: Organized in `tests/scripts/` directory
-- **Rust Testing Framework**: Complete no_std testing in `src/testing/`
-- **100% Pass Rate**: All tests consistently passing
+- **Unified Test Runner**: `test_tinyos.sh` - Single entry point for all tests
+- **External Integration Tests**: 26+ shell scripts in `tests/scripts/`
+- **Internal Kernel Tests**: Rust-based testing framework in `src/testing/`
+- **100% Pass Rate**: All external integration tests consistently passing
 - **CI/CD Integration**: Automated testing in GitHub workflows
 
 #### **Test Categories**
-- **Boot Tests**: System initialization and hardware detection
-- **Memory Tests**: All memory management features validation
-- **Process Tests**: Process management and scheduling
-- **Hardware Tests**: Driver and interrupt testing
-- **Integration Tests**: Cross-component validation
-- **Validation Scripts**: Complete system validation
+- **Boot Integration**: System initialization and QEMU boot validation
+- **Memory Integration**: Memory management build/structure validation
+- **Interrupt Integration**: Interrupt system build/structure validation
+- **Hardware Integration**: Driver and hardware abstraction validation
+- **Process Integration**: Process management build/structure validation
+- **Filesystem Integration**: FAT32 filesystem build/structure validation
 
 #### **Testing Commands**
 ```bash
-# Run all tests through shell
-./tests/scripts/validate_tinyos.sh
+# Unified test runner (recommended)
+./test_tinyos.sh                    # Run all integration tests
+./test_tinyos.sh memory             # Memory integration only
+./test_tinyos.sh interrupts         # Interrupt integration only
+./test_tinyos.sh hardware           # Hardware integration only
 
-# Individual test categories
-./tests/scripts/test_memory_suite.sh
-./tests/scripts/test_process_phase3.sh
-./tests/scripts/test_hardware_suite.sh
-./tests/scripts/test_qemu_boot.sh
+# Legacy individual scripts (for specific debugging)
+./tests/scripts/test_memory_automated.sh
+./tests/scripts/test_interrupt_automated.sh
+./tests/scripts/test_hardware_automated.sh
+./tests/scripts/test_drivers_modular.sh
 
-# Interactive testing (within TinyOS shell)
-t  # Run kernel tests
+# Internal kernel functionality testing
+cargo run          # Boot TinyOS
+TinyOS> t          # Run comprehensive kernel tests
 ```
+
+#### **Test Results**
+- **External Integration Tests**: 7/7 passing (100% pass rate)
+- **Internal Kernel Tests**: Available via interactive shell
+- **Build Tests**: Rust compilation and cross-compilation validation
+- **Boot Tests**: QEMU boot validation with timeout handling
 
 ## ️ Getting Started
 

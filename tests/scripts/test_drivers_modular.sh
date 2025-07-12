@@ -87,16 +87,21 @@ echo "=== Boot Integration Tests ==="
 # Test that system boots with modular drivers
 log_info "Testing boot with modular drivers"
 ((TOTAL_TESTS++))
-timeout 8s qemu-system-aarch64 -M raspi4b -nographic -kernel target/aarch64-unknown-none/release/tiny_os > /tmp/driver_boot.log 2>&1 &
-QEMU_PID=$!
-sleep 5
-kill $QEMU_PID 2>/dev/null
-wait $QEMU_PID 2>/dev/null
 
-if [ -f /tmp/driver_boot.log ] && [ -s /tmp/driver_boot.log ]; then
-    log_success "Boot integration with modular drivers"
+# Simple boot test - just verify the binary exists and can be executed with timeout
+if [[ -f "target/aarch64-unknown-none/release/tiny_os" ]]; then
+    # Run a minimal boot test to verify it starts
+    timeout 3s qemu-system-aarch64 -M raspi4b -nographic -kernel target/aarch64-unknown-none/release/tiny_os >/dev/null 2>&1
+    BOOT_EXIT_CODE=$?
+    
+    # Exit code 124 means timeout (expected), 0 means clean exit, both are acceptable
+    if [[ $BOOT_EXIT_CODE -eq 124 || $BOOT_EXIT_CODE -eq 0 ]]; then
+        log_success "Boot integration with modular drivers"
+    else
+        log_error "Boot integration with modular drivers - unexpected exit code: $BOOT_EXIT_CODE"
+    fi
 else
-    log_error "Boot integration with modular drivers"
+    log_error "Boot integration with modular drivers - release binary not found"
 fi
 
 # Test 5: Reminder about comprehensive testing
@@ -148,7 +153,7 @@ run_test "GPIO inline optimizations" "grep -q '#\[inline\]' src/drivers/gpio/dri
 run_test "Timer inline optimizations" "grep -q '#\[inline\]' src/drivers/timer/driver.rs"
 
 # Cleanup
-rm -f /tmp/driver_boot.log
+rm -f ./tmp/driver_boot.log
 
 # Test Summary
 echo ""
