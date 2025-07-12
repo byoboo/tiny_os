@@ -1,8 +1,9 @@
 // TinyOS Basic Task Scheduler
 // Phase 3.3: Basic Task Scheduler
 
-use crate::process::context::{ProcessContext, ProcessState};
 use spin::Mutex;
+
+use crate::process::context::{ProcessContext, ProcessState};
 
 /// Task ID type
 pub type TaskId = u32;
@@ -634,13 +635,13 @@ impl Scheduler {
     fn switch_user_page_table(&mut self, task: &Task) {
         if let Some(page_table_id) = task.get_user_page_table_id() {
             // Get user space manager and activate the page table
-            if let Some(manager) = crate::memory::get_user_space_manager() {
+            let _ = crate::memory::with_user_space_manager(|manager| {
                 if let Err(e) = manager.activate_page_table(page_table_id) {
                     // Handle error - for now just continue without switching
                     // In a real implementation, might want to log this
                     let _ = e; // Suppress unused variable warning
                 }
-            }
+            });
         }
     }
 }
@@ -661,7 +662,9 @@ pub fn create_task(
     stack_base: u64,
     stack_size: u64,
 ) -> TaskId {
-    SCHEDULER.lock().create_task(name, priority, entry_point, stack_base, stack_size)
+    SCHEDULER
+        .lock()
+        .create_task(name, priority, entry_point, stack_base, stack_size)
 }
 
 /// Destroy a task

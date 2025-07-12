@@ -3,9 +3,10 @@
 //! This module integrates the exception system with the existing interrupt
 //! controller, providing proper IRQ routing and acknowledgment.
 
-use super::types::{ExceptionContext, ExceptionLevel, ExceptionType, ExceptionStats};
-use crate::{interrupts::InterruptController, uart::Uart};
 use spin::Mutex;
+
+use super::types::{ExceptionContext, ExceptionLevel, ExceptionStats, ExceptionType};
+use crate::{interrupts::InterruptController, uart::Uart};
 
 /// IRQ source identification
 #[repr(u32)]
@@ -98,7 +99,10 @@ impl IrqControllerIntegration {
     /// Handle an IRQ exception
     pub fn handle_irq(&mut self, ctx: &mut ExceptionContext) -> IrqInfo {
         // Update exception statistics
-        ExceptionStats::record_exception_occurrence(ExceptionType::Irq, ExceptionLevel::CurrentSpElx);
+        ExceptionStats::record_exception_occurrence(
+            ExceptionType::Irq,
+            ExceptionLevel::CurrentSpElx,
+        );
 
         // Read the interrupt acknowledge register to get the interrupt ID
         let interrupt_id = self.read_interrupt_acknowledge();
@@ -247,7 +251,8 @@ impl IrqStats {
 }
 
 /// Global IRQ controller integration instance
-static IRQ_CONTROLLER: Mutex<IrqControllerIntegration> = Mutex::new(IrqControllerIntegration::new());
+static IRQ_CONTROLLER: Mutex<IrqControllerIntegration> =
+    Mutex::new(IrqControllerIntegration::new());
 
 /// Initialize IRQ controller integration
 pub fn init_irq_integration(interrupt_controller: *mut InterruptController) {

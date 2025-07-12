@@ -3,8 +3,9 @@
 //! This module implements interrupt bottom-half processing, work queues,
 //! and soft IRQ mechanism for performance optimization.
 
-use crate::uart::Uart;
 use spin::Mutex;
+
+use crate::uart::Uart;
 
 /// Maximum number of work items in the queue
 const MAX_WORK_ITEMS: usize = 32;
@@ -381,7 +382,8 @@ impl DeferredProcessingStats {
 }
 
 /// Global deferred processing manager
-static DEFERRED_PROCESSING: Mutex<DeferredProcessingManager> = Mutex::new(DeferredProcessingManager::new());
+static DEFERRED_PROCESSING: Mutex<DeferredProcessingManager> =
+    Mutex::new(DeferredProcessingManager::new());
 
 /// Initialize deferred processing
 pub fn init_deferred_processing() {
@@ -392,7 +394,9 @@ pub fn init_deferred_processing() {
 
 /// Schedule work for deferred processing
 pub fn schedule_work(work_fn: WorkFunction, data: u64, context: u64) -> bool {
-    DEFERRED_PROCESSING.lock().schedule_work(work_fn, data, context)
+    DEFERRED_PROCESSING
+        .lock()
+        .schedule_work(work_fn, data, context)
 }
 
 /// Schedule soft IRQ work
@@ -402,7 +406,9 @@ pub fn schedule_softirq(
     data: u64,
     context: u64,
 ) -> bool {
-    DEFERRED_PROCESSING.lock().schedule_softirq(soft_irq_type, work_fn, data, context)
+    DEFERRED_PROCESSING
+        .lock()
+        .schedule_softirq(soft_irq_type, work_fn, data, context)
 }
 
 /// Process all pending deferred work

@@ -5,7 +5,7 @@
 
 use crate::{
     memory::{
-        get_user_space_manager, init_user_space_manager, user_space::create_standard_user_layout,
+        init_user_space_manager, user_space::create_standard_user_layout, with_user_space_manager,
         RegionType, VmaType,
     },
     process::scheduler::get_current_task_id,
@@ -18,9 +18,7 @@ pub fn handle_user_space_status(context: &ShellContext) {
         .uart
         .puts("\r\n=== User Space Page Table Status ===\r\n");
 
-    if let Some(manager) = get_user_space_manager() {
-        let stats = manager.get_statistics();
-
+    if let Ok(stats) = with_user_space_manager(|manager| manager.get_statistics().clone()) {
         context.uart.puts("Global Statistics:\r\n");
         context.uart.puts("  Page Tables Created: ");
         context.uart.put_hex(stats.page_tables_created as u64);
@@ -43,31 +41,37 @@ pub fn handle_user_space_status(context: &ShellContext) {
 
         // Show active page tables
         context.uart.puts("\r\nActive Page Tables:\r\n");
-        for i in 0..32 {
-            // MAX_USER_PROCESSES
-            if let Some(page_table) = manager.get_page_table(i) {
-                let pt_stats = page_table.get_stats();
-                context.uart.puts("  Slot ");
-                context.uart.put_hex(i as u64);
-                context.uart.puts(": Process ");
-                context.uart.put_hex(pt_stats.process_id as u64);
-                context.uart.puts(", ASID ");
-                context.uart.put_hex(pt_stats.asid as u64);
-                context.uart.puts(", VMAs ");
-                context.uart.put_hex(pt_stats.vma_count as u64);
-                context.uart.puts(", Active: ");
-                context
-                    .uart
-                    .puts(if pt_stats.is_active { "Yes" } else { "No" });
-                context.uart.puts("\r\n");
+        let _ = with_user_space_manager(|manager| {
+            for i in 0..32 {
+                // MAX_USER_PROCESSES
+                if let Some(page_table) = manager.get_page_table(i) {
+                    let pt_stats = page_table.get_stats();
+                    context.uart.puts("  Slot ");
+                    context.uart.put_hex(i as u64);
+                    context.uart.puts(": Process ");
+                    context.uart.put_hex(pt_stats.process_id as u64);
+                    context.uart.puts(", ASID ");
+                    context.uart.put_hex(pt_stats.asid as u64);
+                    context.uart.puts(", VMAs ");
+                    context.uart.put_hex(pt_stats.vma_count as u64);
+                    context.uart.puts(", Active: ");
+                    context
+                        .uart
+                        .puts(if pt_stats.is_active { "Yes" } else { "No" });
+                    context.uart.puts("\r\n");
+                }
             }
-        }
+        });
 
         // Show current active page table
-        if let Some(current_slot) = manager.get_current_active() {
-            context.uart.puts("\r\nCurrently Active: Slot ");
-            context.uart.put_hex(current_slot as u64);
-            context.uart.puts("\r\n");
+        if let Ok(current_slot) = with_user_space_manager(|manager| manager.get_current_active()) {
+            if let Some(current_slot) = current_slot {
+                context.uart.puts("\r\nCurrently Active: Slot ");
+                context.uart.put_hex(current_slot as u64);
+                context.uart.puts("\r\n");
+            } else {
+                context.uart.puts("\r\nNo active user page table\r\n");
+            }
         } else {
             context.uart.puts("\r\nNo active user page table\r\n");
         }
@@ -82,15 +86,15 @@ pub fn handle_user_space_status(context: &ShellContext) {
 pub fn handle_create_user_page_table(context: &ShellContext) {
     context.uart.puts("\r\n=== Create User Page Table ===\r\n");
 
-    if let Some(manager) = get_user_space_manager() {
-        // Use current task ID if available, otherwise use a test process ID
-        let process_id = get_current_task_id().unwrap_or(1000) as usize;
+    // Use current task ID if available, otherwise use a test process ID
+    let process_id = get_current_task_id().unwrap_or(1000) as usize;
 
-        context.uart.puts("Creating page table for process ");
-        context.uart.put_hex(process_id as u64);
-        context.uart.puts("...\r\n");
+    context.uart.puts("Creating page table for process ");
+    context.uart.put_hex(process_id as u64);
+    context.uart.puts("...\r\n");
 
-        match manager.create_page_table(process_id) {
+    if let Ok(slot) = with_user_space_manager(|manager| manager.create_page_table(process_id)) {
+        match slot {
             Ok(slot) => {
                 context.uart.puts("✓ Page table created successfully\r\n");
                 context.uart.puts("  Slot: ");
@@ -135,8 +139,8 @@ pub fn handle_destroy_user_page_table(context: &ShellContext) {
     context.uart.put_hex(test_slot as u64);
     context.uart.puts("\r\n");
 
-    if let Some(manager) = get_user_space_manager() {
-        match manager.destroy_page_table(test_slot) {
+    if let Ok(result) = with_user_space_manager(|manager| manager.destroy_page_table(test_slot)) {
+        match result {
             Ok(()) => {
                 context.uart.puts("✓ Page table destroyed successfully\r\n");
             }
@@ -163,8 +167,8 @@ pub fn handle_switch_user_page_table(context: &ShellContext) {
     context.uart.put_hex(test_slot as u64);
     context.uart.puts("\r\n");
 
-    if let Some(manager) = get_user_space_manager() {
-        match manager.switch_page_table(test_slot) {
+    if let Ok(result) = with_user_space_manager(|manager| manager.switch_page_table(test_slot)) {
+        match result {
             Ok(()) => {
                 context.uart.puts("✓ Page table switched successfully\r\n");
                 context.uart.puts("  New active slot: ");
@@ -188,7 +192,7 @@ pub fn handle_switch_user_page_table(context: &ShellContext) {
 pub fn handle_vma_management(context: &ShellContext) {
     context.uart.puts("\r\n=== VMA Management ===\r\n");
 
-    if let Some(manager) = get_user_space_manager() {
+    let _ = with_user_space_manager(|manager| {
         // Show VMAs for current active page table
         if let Some(current_slot) = manager.get_current_active() {
             context.uart.puts("VMAs for active page table (slot ");
@@ -230,9 +234,7 @@ pub fn handle_vma_management(context: &ShellContext) {
         } else {
             context.uart.puts("No active page table\r\n");
         }
-    } else {
-        context.uart.puts("User space manager not initialized\r\n");
-    }
+    });
 
     context.uart.puts("====================\r\n");
 }
@@ -242,7 +244,7 @@ pub fn handle_user_space_test(context: &mut ShellContext) {
     context.uart.puts("\r\n=== User Space Test ===\r\n");
 
     // Initialize user space manager if not already done
-    if get_user_space_manager().is_none() {
+    if with_user_space_manager(|_| {}).is_err() {
         context.uart.puts("Initializing user space manager...\r\n");
         init_user_space_manager(&mut context.memory_manager as *mut _ as *mut _);
     }
@@ -253,7 +255,7 @@ pub fn handle_user_space_test(context: &mut ShellContext) {
 
     // Test 1: Create page table
     context.uart.puts("1. Creating test page table...\r\n");
-    if let Some(manager) = get_user_space_manager() {
+    let _ = with_user_space_manager(|manager| {
         match manager.create_page_table(1001) {
             Ok(slot) => {
                 context.uart.puts("   ✓ Page table created at slot ");
@@ -323,7 +325,7 @@ pub fn handle_user_space_test(context: &mut ShellContext) {
                 context.uart.puts("\r\n");
             }
         }
-    }
+    });
 
     context.uart.puts("User space test completed\r\n");
     context.uart.puts("======================\r\n");

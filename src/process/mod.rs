@@ -52,17 +52,23 @@ pub fn get_process_stats() -> &'static ProcessManagementStats {
 
 /// Record a context switch
 pub fn record_context_switch() {
-    PROCESS_STATS.context_switches.fetch_add(1, Ordering::SeqCst);
+    PROCESS_STATS
+        .context_switches
+        .fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record a privilege escalation
 pub fn record_privilege_escalation() {
-    PROCESS_STATS.privilege_escalations.fetch_add(1, Ordering::SeqCst);
+    PROCESS_STATS
+        .privilege_escalations
+        .fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record a privilege violation
 pub fn record_privilege_violation() {
-    PROCESS_STATS.privilege_violations.fetch_add(1, Ordering::SeqCst);
+    PROCESS_STATS
+        .privilege_violations
+        .fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record task creation
@@ -77,5 +83,7 @@ pub fn record_task_destruction() {
 
 /// Record scheduler preemption
 pub fn record_scheduler_preemption() {
-    PROCESS_STATS.scheduler_preemptions.fetch_add(1, Ordering::SeqCst);
+    PROCESS_STATS
+        .scheduler_preemptions
+        .fetch_add(1, Ordering::SeqCst);
 }

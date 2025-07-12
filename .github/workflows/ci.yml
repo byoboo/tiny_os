@@ -24,111 +24,60 @@ jobs:
       with:
         fetch-depth: 0  # Needed for version calculation
     
-    - name: Setup Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: nightly
-        targets: aarch64-unknown-none
-        components: rustfmt, clippy, llvm-tools-preview
-    
-    - name: Install QEMU and LLVM tools
+    - name: Setup Docker Environment
       run: |
-        sudo apt-get update
-        # Install QEMU from Ubuntu repos first
-        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
-        # Install LLVM tools as a fallback
-        sudo apt-get install -y llvm
+        # Build Docker development environment
+        make setup
         
-        # Check QEMU version and available machine types
-        echo "QEMU version:"
-        qemu-system-aarch64 --version
-        echo "Available Raspberry Pi machine types:"
-        qemu-system-aarch64 -machine help | grep -i raspi || echo "No Raspberry Pi machine types found"
+        # Verify Docker environment is ready
+        docker --version
+        docker-compose --version
         
-        # Check LLVM tools
-        echo "LLVM version:"
-        llvm-objcopy --version || echo "llvm-objcopy not available"
+        # Show available make targets
+        make help
     
-    - name: Verify LLVM tools
-      run: |
-        echo "Checking for LLVM objcopy tools..."
-        RUST_TOOLCHAIN=$(rustc --print sysroot)
-        echo "Rust toolchain: $RUST_TOOLCHAIN"
-        
-        # List available LLVM tools
-        find "$RUST_TOOLCHAIN/lib/rustlib" -name "llvm-objcopy" -type f 2>/dev/null || echo "No llvm-objcopy found in toolchain"
-        
-        # Try to run llvm-objcopy to verify it works
-        if command -v llvm-objcopy >/dev/null 2>&1; then
-            echo "System llvm-objcopy found: $(which llvm-objcopy)"
-        else
-            echo "No system llvm-objcopy found"
-        fi
-        
-        # Ensure llvm-tools-preview is installed
-        rustup component add llvm-tools-preview
-        echo "llvm-tools-preview component added"
-        
-        # Run comprehensive verification
-        chmod +x ./scripts/verify_objcopy.sh
-        ./scripts/verify_objcopy.sh
-    
-    - name: Cache cargo registry
+    - name: Cache Docker layers
       uses: actions/cache@v4
       with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
     
-    - name: Cache cargo index
+    - name: Cache Docker volumes
       uses: actions/cache@v4
       with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        path: |
+          ~/.docker/volumes/tiny_os_cargo-cache
+          ~/.docker/volumes/tiny_os_target-cache
+        key: ${{ runner.os }}-docker-volumes-${{ hashFiles('**/Cargo.lock') }}
     
-    - name: Cache cargo build
-      uses: actions/cache@v4
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-    
-    - name: Check code formatting
-      run: cargo fmt -- --check
-    
-    - name: Run clippy
-      run: cargo clippy --target aarch64-unknown-none -- -W clippy::all
-    
-    - name: Build debug
-      run: cargo build --target aarch64-unknown-none
-    
-    - name: Build release
-      run: cargo build --release --target aarch64-unknown-none
-    
-    - name: Run comprehensive tests
+    - name: Code Quality Checks
       run: |
-        chmod +x ./test_tinyos.sh
-        ./test_tinyos.sh --validate-only
+        # Format check using Docker environment
+        make format
+        
+        # Lint check using Docker environment (strict mode)
+        make lint-strict
     
-    - name: Run modular tests
+    - name: Build TinyOS
       run: |
-        chmod +x ./tests/scripts/test_*.sh
-        echo "Running comprehensive integration test..."
-        ./tests/scripts/test_comprehensive_integration.sh
-        echo "Running memory modular test..."
-        ./tests/scripts/test_memory_modular.sh
-        echo "Running drivers modular test..."
-        ./tests/scripts/test_drivers_modular.sh
-        echo "Running filesystem modular test..."
-        ./tests/scripts/test_filesystem_modular.sh
+        # Build using Docker environment
+        make build
+        
+        # Also build Raspberry Pi kernel
+        make build-pi
+        
+        # Verify binaries were created
+        make check-binary
     
-    - name: Test QEMU boot
+    - name: Run Comprehensive Tests
       run: |
-        chmod +x ./tests/scripts/test_qemu_boot.sh
-        ./tests/scripts/test_qemu_boot.sh
-    
-    - name: Generate kernel binary
-      run: |
-        chmod +x ./build.sh
-        ./build.sh
+        # Run complete test suite using Docker environment
+        make test
+        
+        # Run CI validation
+        make validate-ci
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -164,31 +113,15 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Setup Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: nightly
-        targets: aarch64-unknown-none
-    
-    - name: Install QEMU
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+    - name: Setup Docker Environment
+      run: make setup
     
     - name: Run tests for scheduled builds
       if: github.event_name == 'schedule'
       run: |
-        # Build and test for scheduled releases
-        cargo build --target aarch64-unknown-none
-        cargo build --release --target aarch64-unknown-none
-        
-        # Run comprehensive tests
-        chmod +x ./test_tinyos.sh
-        ./test_tinyos.sh --validate-only
-        
-        # Run modular tests
-        chmod +x ./tests/scripts/test_*.sh
-        ./tests/scripts/test_comprehensive_integration.sh
+        # Build and test using make system
+        make build
+        make test
     
     - name: Calculate build number
       id: build_number
@@ -215,11 +148,14 @@ jobs:
         sed -i "s/^version = \".*\"/version = \"0.2.0-dev.${{ steps.build_number.outputs.BUILD_NUMBER }}\"/" Cargo.toml
         echo "Updated version to: $(grep '^version = ' Cargo.toml)"
     
-    - name: Build with updated version
+    - name: Build release with updated version
       run: |
-        cargo build --release --target aarch64-unknown-none
-        chmod +x ./build.sh
-        ./build.sh
+        # Build using make system
+        make build
+        make build-pi
+        
+        # Verify binaries
+        make check-binary
     
     - name: Create dev release
       uses: softprops/action-gh-release@v1
@@ -274,16 +210,8 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Setup Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: nightly
-        targets: aarch64-unknown-none
-    
-    - name: Install QEMU
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+    - name: Setup Docker Environment
+      run: make setup
     
     - name: Get version from Cargo.toml
       id: get_version
@@ -294,9 +222,12 @@ jobs:
     
     - name: Build production release
       run: |
-        cargo build --release --target aarch64-unknown-none
-        chmod +x ./build.sh
-        ./build.sh
+        # Build using make system
+        make build
+        make build-pi
+        
+        # Verify binaries
+        make check-binary
     
     - name: Create production release
       uses: softprops/action-gh-release@v1
@@ -355,18 +286,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: nightly
-    
-    - name: Install cargo-audit
-      run: cargo install cargo-audit
+    - name: Setup Docker Environment
+      run: make setup
     
     - name: Run security audit
-      run: cargo audit
+      run: |
+        # Run security audit in Docker environment
+        docker-compose run --rm dev cargo audit
     
     - name: Check for outdated dependencies
       run: |
-        cargo install cargo-outdated
-        cargo outdated --exit-code 1 || echo "Some dependencies are outdated"
+        # Check for outdated dependencies in Docker environment
+        docker-compose run --rm dev bash -c "
+          cargo install cargo-outdated
+          cargo outdated --exit-code 1 || echo 'Some dependencies are outdated'
+        "

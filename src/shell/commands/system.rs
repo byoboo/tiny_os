@@ -151,13 +151,23 @@ pub fn handle_help(context: &ShellContext) {
     context.uart.puts("    4 - Deallocate stack\r\n");
     context.uart.puts("    5 - Switch stack\r\n");
     context.uart.puts("    6 - Stack test\r\n");
-    context.uart.puts("User Space Management (Phase 4.4.2):\r\n");
-    context.uart.puts("  |   - User space page table submenu\r\n");
-    context.uart.puts("Advanced Memory Protection (Phase 4.4.3):\r\n");
+    context
+        .uart
+        .puts("User Space Management (Phase 4.4.2):\r\n");
+    context
+        .uart
+        .puts("  |   - User space page table submenu\r\n");
+    context
+        .uart
+        .puts("Advanced Memory Protection (Phase 4.4.3):\r\n");
     context.uart.puts("  @   - Advanced protection submenu\r\n");
-    context.uart.puts("Dynamic Memory Management (Phase 4.4.4):\r\n");
+    context
+        .uart
+        .puts("Dynamic Memory Management (Phase 4.4.4):\r\n");
     context.uart.puts("  *   - Dynamic memory submenu\r\n");
-    context.uart.puts("Copy-on-Write Management (Phase 4.4):\r\n");
+    context
+        .uart
+        .puts("Copy-on-Write Management (Phase 4.4):\r\n");
     context.uart.puts("  (   - COW management submenu\r\n");
     context.uart.puts("    1 - COW status\r\n");
     context.uart.puts("    2 - COW statistics\r\n");
@@ -175,7 +185,9 @@ pub fn handle_help(context: &ShellContext) {
     context.uart.puts("    6 - All tests\r\n");
     context.uart.puts("Command Line Interface:\r\n");
     context.uart.puts("  +   - Advanced command routing\r\n");
-    context.uart.puts("    1 - Advanced protection commands\r\n");
+    context
+        .uart
+        .puts("    1 - Advanced protection commands\r\n");
     context.uart.puts("    2 - Dynamic memory commands\r\n");
     context.uart.puts("================================\r\n");
 }
@@ -585,9 +597,9 @@ pub fn cmd_stack_test(_args: &[&str], context: &mut ShellContext) {
 pub fn cmd_cow_status(_args: &[&str], context: &mut ShellContext) {
     context.uart.puts("\r\n=== COW Status ===\r\n");
 
-    if let Some(cow_manager) = crate::memory::get_cow_manager() {
-        let stats = cow_manager.get_statistics();
-
+    if let Some(stats) =
+        crate::memory::with_cow_manager(|cow_manager| cow_manager.get_statistics().clone())
+    {
         context.uart.puts("COW Pages: ");
         print_number(&context.uart, stats.cow_pages_count as u32);
         context.uart.puts("\r\n");
@@ -608,20 +620,22 @@ pub fn cmd_cow_status(_args: &[&str], context: &mut ShellContext) {
         print_number(&context.uart, stats.peak_cow_pages as u32);
         context.uart.puts("\r\n");
 
-        // List all COW pages
+        // List all COW pages - need to do this in a separate call
         context.uart.puts("\r\nCOW Pages:\r\n");
-        let cow_pages = cow_manager.get_all_cow_pages();
-        for (phys_addr, page_opt) in cow_pages.iter() {
-            if let Some(page) = page_opt {
-                context.uart.puts("  0x");
-                print_hex(&context.uart, *phys_addr);
-                context.uart.puts(" refs=");
-                print_number(&context.uart, page.ref_count as u32);
-                context.uart.puts(" cow=");
-                context.uart.puts(if page.is_cow { "yes" } else { "no" });
-                context.uart.puts("\r\n");
+        let _pages_printed = crate::memory::with_cow_manager(|cow_manager| {
+            let cow_pages = cow_manager.get_all_cow_pages();
+            for (phys_addr, page_opt) in cow_pages.iter() {
+                if let Some(page) = page_opt {
+                    context.uart.puts("  0x");
+                    print_hex(&context.uart, *phys_addr);
+                    context.uart.puts(" refs=");
+                    print_number(&context.uart, page.ref_count as u32);
+                    context.uart.puts(" cow=");
+                    context.uart.puts(if page.is_cow { "yes" } else { "no" });
+                    context.uart.puts("\r\n");
+                }
             }
-        }
+        });
     } else {
         context.uart.puts("COW manager not initialized\r\n");
     }
@@ -631,9 +645,9 @@ pub fn cmd_cow_status(_args: &[&str], context: &mut ShellContext) {
 pub fn cmd_cow_stats(_args: &[&str], context: &mut ShellContext) {
     context.uart.puts("\r\n=== COW Statistics ===\r\n");
 
-    if let Some(cow_manager) = crate::memory::get_cow_manager() {
-        let stats = cow_manager.get_statistics();
-
+    if let Some(stats) =
+        crate::memory::with_cow_manager(|cow_manager| cow_manager.get_statistics().clone())
+    {
         context.uart.puts("Total COW Pages: ");
         print_number(&context.uart, stats.cow_pages_count as u32);
         context.uart.puts("\r\n");
@@ -679,15 +693,17 @@ pub fn cmd_cow_create(_args: &[&str], context: &mut ShellContext) {
     let test_virt_addr = 0x10000000u64;
     let test_phys_addr = 0x20000000u64;
 
-    if let Some(cow_manager) = crate::memory::get_cow_manager() {
-        match cow_manager.create_cow_mapping(
+    if let Some(result) = crate::memory::with_cow_manager(|cow_manager| {
+        cow_manager.create_cow_mapping(
             test_virt_addr,
             test_virt_addr + 0x1000,
             1, // source process
             2, // dest process
             test_phys_addr,
             crate::memory::RegionType::UserData,
-        ) {
+        )
+    }) {
+        match result {
             Ok(()) => {
                 context.uart.puts("COW mapping created successfully\r\n");
                 context.uart.puts("Source VA: 0x");
@@ -715,8 +731,10 @@ pub fn cmd_cow_protect(_args: &[&str], context: &mut ShellContext) {
 
     let test_phys_addr = 0x20000000u64;
 
-    if let Some(cow_manager) = crate::memory::get_cow_manager() {
-        match cow_manager.force_cow_protection(test_phys_addr) {
+    if let Some(result) = crate::memory::with_cow_manager(|cow_manager| {
+        cow_manager.force_cow_protection(test_phys_addr)
+    }) {
+        match result {
             Ok(()) => {
                 context.uart.puts("COW protection enabled for page 0x");
                 print_hex(&context.uart, test_phys_addr);
@@ -739,8 +757,10 @@ pub fn cmd_cow_unprotect(_args: &[&str], context: &mut ShellContext) {
 
     let test_phys_addr = 0x20000000u64;
 
-    if let Some(cow_manager) = crate::memory::get_cow_manager() {
-        match cow_manager.remove_cow_protection(test_phys_addr) {
+    if let Some(result) = crate::memory::with_cow_manager(|cow_manager| {
+        cow_manager.remove_cow_protection(test_phys_addr)
+    }) {
+        match result {
             Ok(()) => {
                 context.uart.puts("COW protection removed from page 0x");
                 print_hex(&context.uart, test_phys_addr);
@@ -761,9 +781,9 @@ pub fn cmd_cow_unprotect(_args: &[&str], context: &mut ShellContext) {
 pub fn cmd_cow_test(_args: &[&str], context: &mut ShellContext) {
     context.uart.puts("\r\n=== COW Test Suite ===\r\n");
 
-    if let Some(cow_manager) = crate::memory::get_cow_manager() {
-        let mut tests_passed = 0;
-        let mut tests_failed = 0;
+    if let Some((__tests_passed, __tests_failed)) = crate::memory::with_cow_manager(|cow_manager| {
+        let mut _tests_passed = 0;
+        let mut _tests_failed = 0;
 
         // Test 1: Register a page
         context.uart.puts("Test 1: Register COW page... ");
@@ -777,13 +797,13 @@ pub fn cmd_cow_test(_args: &[&str], context: &mut ShellContext) {
         ) {
             Ok(()) => {
                 context.uart.puts("PASS\r\n");
-                tests_passed += 1;
+                _tests_passed += 1;
             }
             Err(e) => {
                 context.uart.puts("FAIL (");
                 context.uart.puts(e);
                 context.uart.puts(")\r\n");
-                tests_failed += 1;
+                _tests_failed += 1;
             }
         }
 
@@ -791,10 +811,10 @@ pub fn cmd_cow_test(_args: &[&str], context: &mut ShellContext) {
         context.uart.puts("Test 2: Check COW protection... ");
         if cow_manager.is_cow_protected(test_phys) {
             context.uart.puts("PASS\r\n");
-            tests_passed += 1;
+            _tests_passed += 1;
         } else {
             context.uart.puts("FAIL (not protected)\r\n");
-            tests_failed += 1;
+            _tests_failed += 1;
         }
 
         // Test 3: Add another reference to trigger COW
@@ -807,13 +827,13 @@ pub fn cmd_cow_test(_args: &[&str], context: &mut ShellContext) {
         ) {
             Ok(()) => {
                 context.uart.puts("PASS\r\n");
-                tests_passed += 1;
+                _tests_passed += 1;
             }
             Err(e) => {
                 context.uart.puts("FAIL (");
                 context.uart.puts(e);
                 context.uart.puts(")\r\n");
-                tests_failed += 1;
+                _tests_failed += 1;
             }
         }
 
@@ -821,12 +841,12 @@ pub fn cmd_cow_test(_args: &[&str], context: &mut ShellContext) {
         context.uart.puts("Test 4: Verify COW protection... ");
         if cow_manager.is_cow_protected(test_phys) {
             context.uart.puts("PASS\r\n");
-            tests_passed += 1;
+            _tests_passed += 1;
         } else {
             context
                 .uart
                 .puts("FAIL (not protected after multiple refs)\r\n");
-            tests_failed += 1;
+            _tests_failed += 1;
         }
 
         // Test 5: Simulate COW fault
@@ -839,31 +859,33 @@ pub fn cmd_cow_test(_args: &[&str], context: &mut ShellContext) {
                 context.uart.puts("PASS (new page: 0x");
                 print_hex(&context.uart, new_page);
                 context.uart.puts(")\r\n");
-                tests_passed += 1;
+                _tests_passed += 1;
             }
             Err(e) => {
                 context.uart.puts("FAIL (");
                 context.uart.puts(e);
                 context.uart.puts(")\r\n");
-                tests_failed += 1;
+                _tests_failed += 1;
             }
         }
 
         // Summary
         context.uart.puts("\r\nTest Summary:\r\n");
         context.uart.puts("  Passed: ");
-        print_number(&context.uart, tests_passed);
+        print_number(&context.uart, _tests_passed);
         context.uart.puts("\r\n");
         context.uart.puts("  Failed: ");
-        print_number(&context.uart, tests_failed);
+        print_number(&context.uart, _tests_failed);
         context.uart.puts("\r\n");
 
-        if tests_failed == 0 {
+        if _tests_failed == 0 {
             context.uart.puts("All COW tests passed!\r\n");
         } else {
             context.uart.puts("Some COW tests failed.\r\n");
         }
-    } else {
+
+        (_tests_passed, _tests_failed)
+    }) {
         context.uart.puts("COW manager not initialized\r\n");
     }
 }

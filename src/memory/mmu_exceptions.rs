@@ -14,8 +14,9 @@
 //! 3. Determining appropriate recovery actions
 //! 4. Integrating with the broader memory management system
 
-use crate::memory::MemoryManager;
 use spin::Mutex;
+
+use crate::memory::MemoryManager;
 
 /// MMU exception types as defined by ARM64 architecture
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -221,7 +222,7 @@ impl MmuExceptionHandler {
         // Check if this is a COW fault first
         if fault_info.access_type == AccessType::Write {
             // This could be a COW fault - check with COW manager
-            if let Some(cow_manager) = crate::memory::get_cow_manager() {
+            let cow_result = crate::memory::with_cow_manager(|cow_manager| {
                 // Try to resolve the virtual address to physical address
                 // For now, we'll use a simple approach
                 let physical_addr = self.resolve_virtual_to_physical(fault_info.fault_address);
@@ -242,7 +243,7 @@ impl MmuExceptionHandler {
                                 // COW fault handled successfully
                                 // Update page table mapping to point to new page
                                 // This would require MMU integration
-                                return MmuRecoveryAction::Retry;
+                                return Some(MmuRecoveryAction::Retry);
                             }
                             Err(_) => {
                                 // COW fault handling failed
@@ -252,6 +253,11 @@ impl MmuExceptionHandler {
                         }
                     }
                 }
+                None
+            });
+
+            if let Some(Some(action)) = cow_result {
+                return action;
             }
         }
 
@@ -391,7 +397,9 @@ pub fn handle_mmu_exception_global(
 ) -> MmuRecoveryAction {
     let fault_info = parse_mmu_exception(esr_el1, far_el1, user_mode, exception_lr);
 
-    MMU_EXCEPTION_HANDLER.lock().handle_mmu_exception(fault_info, memory_manager)
+    MMU_EXCEPTION_HANDLER
+        .lock()
+        .handle_mmu_exception(fault_info, memory_manager)
 }
 
 /// Get MMU exception statistics

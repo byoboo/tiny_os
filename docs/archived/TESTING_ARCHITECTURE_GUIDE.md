@@ -7,6 +7,7 @@
 ### ❌ **What External Shell Scripts CANNOT Test:**
 
 #### 🧠 **Memory System:**
+
 - Memory allocation/deallocation
 - MMU operations and page tables
 - Virtual memory management
@@ -14,6 +15,7 @@
 - Memory protection and faults
 
 #### 🔌 **Interrupt System:**
+
 - Interrupt handling and routing
 - Interrupt priority management
 - Nested interrupt handling
@@ -21,6 +23,7 @@
 - Timer interrupt functionality
 
 #### 🔧 **Hardware System:**
+
 - GPIO pin operations
 - UART read/write operations
 - Timer functionality
@@ -28,6 +31,7 @@
 - Device driver functionality
 
 #### 📊 **Process System:**
+
 - Process creation and scheduling
 - Context switching
 - Process memory management
@@ -37,16 +41,19 @@
 ### ✅ **What External Shell Scripts CAN Test:**
 
 #### 🏗️ **Build System:**
+
 - Can the kernel compile?
 - Are all modules present?
 - Do dependencies resolve?
 
 #### 🔄 **Integration:**
+
 - Does the system boot?
 - Are initialization messages present?
 - Is the shell available?
 
 #### 📁 **Structure:**
+
 - Are source files organized correctly?
 - Are module interfaces defined?
 - Are constants and types present?
@@ -54,6 +61,7 @@
 ## 🎯 **The Solution: Dual Testing Architecture**
 
 ### **Layer 1: External Integration Tests** (Shell Scripts)
+
 **Purpose:** Test build system, structure, and boot integration
 **Location:** `tests/scripts/`
 **Scope:** Limited but valuable for CI/CD
@@ -73,6 +81,7 @@
 ```
 
 ### **Layer 2: Internal Functionality Tests** (Rust Framework)
+
 **Purpose:** Test actual kernel functionality
 **Location:** `src/testing/`
 **Scope:** Comprehensive functional testing
@@ -99,11 +108,13 @@ TinyOS> hardware   # Test hardware functionality
 ## 🔧 **How to Fix Failing Tests**
 
 ### **If External Tests Fail:**
+
 1. **Build issues** → Fix compilation errors
 2. **Structure issues** → Ensure modules are properly organized
 3. **Boot issues** → Check initialization sequence
 
 ### **If Internal Tests Fail:**
+
 1. **Functional issues** → Debug actual kernel functionality
 2. **Logic errors** → Fix algorithm implementations
 3. **Hardware issues** → Check hardware abstraction layer
@@ -111,6 +122,7 @@ TinyOS> hardware   # Test hardware functionality
 ## 🚀 **Recommended Testing Workflow**
 
 ### **For Daily Development:**
+
 ```bash
 # 1. Quick build check
 cargo build --release
@@ -126,6 +138,7 @@ TinyOS> interrupt
 ```
 
 ### **For CI/CD Pipeline:**
+
 ```bash
 # 1. Integration tests (external)
 ./test_tinyos.sh
@@ -138,6 +151,7 @@ timeout 10s qemu-system-aarch64 -M raspi4b -nographic -kernel target/aarch64-unk
 ```
 
 ### **For Debugging:**
+
 ```bash
 # 1. Check specific subsystem
 cargo run

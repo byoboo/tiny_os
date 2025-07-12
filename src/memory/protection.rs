@@ -214,7 +214,11 @@ impl CorruptionDetection for BlockAllocator {
 // - Stack protection (canaries, guard pages, NX stack)
 // - Control Flow Integrity (CFI)
 
-use core::{mem::MaybeUninit, ptr::addr_of_mut, sync::atomic::{AtomicBool, Ordering}};
+use core::{
+    mem::MaybeUninit,
+    ptr::addr_of_mut,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use crate::{
     memory::{MemoryManager, PAGE_SIZE},

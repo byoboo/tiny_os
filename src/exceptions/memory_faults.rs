@@ -7,6 +7,7 @@
 //! memory management.
 
 use core::arch::asm;
+
 use spin::Mutex;
 
 use crate::{
@@ -312,7 +313,9 @@ pub fn handle_memory_fault_with_mmu(
     let fault_info = MemoryFaultAnalyzer::analyze_fault(esr_el1);
 
     // Update statistics
-    MEMORY_FAULT_STATS.lock().record_fault(fault_info.fault_type);
+    MEMORY_FAULT_STATS
+        .lock()
+        .record_fault(fault_info.fault_type);
 
     // Print fault information for debugging
     let mut uart = Uart::new();

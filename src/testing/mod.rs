@@ -3,11 +3,11 @@
 
 use crate::uart::Uart;
 
+pub mod integration_tests;
 pub mod kernel_tests;
 pub mod mmu_tests;
 pub mod process_tests;
 pub mod syscall_tests;
-pub mod integration_tests;
 
 // Test result tracking
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -42,7 +42,7 @@ impl TestRunner {
         self.test_passed = 0;
         self.test_failed = 0;
         self.test_skipped = 0;
-        
+
         self.uart.puts("\r\n=== ");
         self.uart.puts(suite_name);
         self.uart.puts(" Test Suite ===\r\n");
@@ -55,9 +55,9 @@ impl TestRunner {
         self.uart.puts("Running: ");
         self.uart.puts(test_name);
         self.uart.puts("... ");
-        
+
         let result = test_func();
-        
+
         match result {
             TestResult::Pass => {
                 self.uart.puts("PASS\r\n");
@@ -72,7 +72,7 @@ impl TestRunner {
                 self.test_skipped += 1;
             }
         }
-        
+
         result
     }
 
@@ -127,7 +127,7 @@ impl TestRunner {
         self.uart.puts("\r\n=== ");
         self.uart.puts(self.current_suite);
         self.uart.puts(" Results ===\r\n");
-        
+
         self.uart.puts("Passed: ");
         self.print_number(self.test_passed as u32);
         self.uart.puts(", Failed: ");
@@ -135,7 +135,7 @@ impl TestRunner {
         self.uart.puts(", Skipped: ");
         self.print_number(self.test_skipped as u32);
         self.uart.puts("\r\n");
-        
+
         let total = self.test_passed + self.test_failed + self.test_skipped;
         if total > 0 {
             let pass_rate = (self.test_passed * 100) / total;
@@ -143,7 +143,7 @@ impl TestRunner {
             self.print_number(pass_rate as u32);
             self.uart.puts("%\r\n");
         }
-        
+
         self.uart.puts("\r\n");
         self.test_failed == 0
     }
@@ -153,16 +153,16 @@ impl TestRunner {
             self.uart.puts("0");
             return;
         }
-        
+
         let mut buffer = [0u8; 10];
         let mut index = 0;
-        
+
         while num > 0 {
             buffer[index] = (num % 10) as u8 + b'0';
             num /= 10;
             index += 1;
         }
-        
+
         for i in (0..index).rev() {
             self.uart.putc(buffer[i]);
         }
@@ -173,14 +173,14 @@ impl TestRunner {
 pub fn run_all_tests() {
     let uart = Uart::new();
     let mut runner = TestRunner::new(uart);
-    
+
     // Run all test suites
     kernel_tests::run_kernel_tests(&mut runner);
     mmu_tests::run_mmu_tests(&mut runner);
     process_tests::run_process_tests(&mut runner);
     syscall_tests::run_syscall_tests(&mut runner);
     integration_tests::run_integration_tests(&mut runner);
-    
+
     runner.uart.puts("=== ALL TESTS COMPLETE ===\r\n");
 }
 

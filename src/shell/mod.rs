@@ -642,12 +642,42 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                                 context.uart.puts("Select: ");
                                 if let Some(sub_cmd) = context.uart.getc() {
                                     match sub_cmd {
-                                        b's' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "status"], &mut context),
-                                        b'p' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "permissions"], &mut context),
-                                        b'a' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "aslr"], &mut context),
-                                        b'k' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "stack"], &mut context),
-                                        b't' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "test"], &mut context),
-                                        b'g' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "stats"], &mut context),
+                                        b's' => {
+                                            commands::advanced_protection::cmd_advanced_protection(
+                                                &["advanced_protection", "status"],
+                                                &mut context,
+                                            )
+                                        }
+                                        b'p' => {
+                                            commands::advanced_protection::cmd_advanced_protection(
+                                                &["advanced_protection", "permissions"],
+                                                &mut context,
+                                            )
+                                        }
+                                        b'a' => {
+                                            commands::advanced_protection::cmd_advanced_protection(
+                                                &["advanced_protection", "aslr"],
+                                                &mut context,
+                                            )
+                                        }
+                                        b'k' => {
+                                            commands::advanced_protection::cmd_advanced_protection(
+                                                &["advanced_protection", "stack"],
+                                                &mut context,
+                                            )
+                                        }
+                                        b't' => {
+                                            commands::advanced_protection::cmd_advanced_protection(
+                                                &["advanced_protection", "test"],
+                                                &mut context,
+                                            )
+                                        }
+                                        b'g' => {
+                                            commands::advanced_protection::cmd_advanced_protection(
+                                                &["advanced_protection", "stats"],
+                                                &mut context,
+                                            )
+                                        }
                                         _ => context.uart.puts("Invalid subcommand\r\n"),
                                     }
                                 }
@@ -664,22 +694,49 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                                 context.uart.puts("Select: ");
                                 if let Some(sub_cmd) = context.uart.getc() {
                                     match sub_cmd {
-                                        b's' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "status"], &mut context),
-                                        b'g' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "growth"], &mut context),
-                                        b'l' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "lazy"], &mut context),
-                                        b'p' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "pressure"], &mut context),
-                                        b'o' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "optimize"], &mut context),
-                                        b'c' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "context"], &mut context),
-                                        b't' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "stats"], &mut context),
+                                        b's' => commands::dynamic_memory::cmd_dynamic_memory(
+                                            &["dynamic_memory", "status"],
+                                            &mut context,
+                                        ),
+                                        b'g' => commands::dynamic_memory::cmd_dynamic_memory(
+                                            &["dynamic_memory", "growth"],
+                                            &mut context,
+                                        ),
+                                        b'l' => commands::dynamic_memory::cmd_dynamic_memory(
+                                            &["dynamic_memory", "lazy"],
+                                            &mut context,
+                                        ),
+                                        b'p' => commands::dynamic_memory::cmd_dynamic_memory(
+                                            &["dynamic_memory", "pressure"],
+                                            &mut context,
+                                        ),
+                                        b'o' => commands::dynamic_memory::cmd_dynamic_memory(
+                                            &["dynamic_memory", "optimize"],
+                                            &mut context,
+                                        ),
+                                        b'c' => commands::dynamic_memory::cmd_dynamic_memory(
+                                            &["dynamic_memory", "context"],
+                                            &mut context,
+                                        ),
+                                        b't' => commands::dynamic_memory::cmd_dynamic_memory(
+                                            &["dynamic_memory", "stats"],
+                                            &mut context,
+                                        ),
                                         _ => context.uart.puts("Invalid subcommand\r\n"),
                                     }
                                 }
                             }
                             b'h' => {
                                 context.uart.puts("Command Line Interface Help:\r\n");
-                                context.uart.puts("  1 - Use main advanced protection router\r\n");
-                                context.uart.puts("  2 - Use main dynamic memory router\r\n");
-                                context.uart.puts("These commands route through main handlers.\r\n");
+                                context
+                                    .uart
+                                    .puts("  1 - Use main advanced protection router\r\n");
+                                context
+                                    .uart
+                                    .puts("  2 - Use main dynamic memory router\r\n");
+                                context
+                                    .uart
+                                    .puts("These commands route through main handlers.\r\n");
                             }
                             _ => context.uart.puts("Invalid option\r\n"),
                         }

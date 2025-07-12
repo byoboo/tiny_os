@@ -18,7 +18,7 @@ use core::mem::transmute;
 // Import our ESR decoding system
 use super::esr_decoder::{EsrDecoder, EsrDetails, EsrInfo, ExceptionClass};
 // Import types from the main exceptions module
-use super::types::{ExceptionContext, ExceptionType, ExceptionStats};
+use super::types::{ExceptionContext, ExceptionStats, ExceptionType};
 use super::{
     deferred_processing::process_pending_work,
     irq_integration::handle_irq_integration,
@@ -31,7 +31,9 @@ use crate::uart::Uart;
 /// Handle synchronous exceptions with comprehensive ESR decoding
 #[no_mangle]
 pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u32) {
-    ExceptionStats::record_exception_occurrence(ExceptionType::Synchronous, unsafe { transmute(exc_level) });
+    ExceptionStats::record_exception_occurrence(ExceptionType::Synchronous, unsafe {
+        transmute(exc_level)
+    });
 
     let uart = Uart::new();
     uart.puts("EXCEPTION: Synchronous exception occurred!\r\n");
@@ -96,7 +98,9 @@ pub extern "C" fn handle_sync_exception(ctx: &mut ExceptionContext, exc_level: u
 /// Handle IRQ exceptions with Phase 2 enhancements
 #[no_mangle]
 pub extern "C" fn handle_irq_exception(ctx: &mut ExceptionContext, exc_level: u32) {
-    ExceptionStats::record_exception_occurrence(ExceptionType::Irq, unsafe { transmute(exc_level) });
+    ExceptionStats::record_exception_occurrence(ExceptionType::Irq, unsafe {
+        transmute(exc_level)
+    });
 
     // Enter interrupt with normal priority
     if !enter_interrupt_with_priority(InterruptPriority::Normal) {
@@ -133,7 +137,9 @@ pub extern "C" fn handle_irq_exception(ctx: &mut ExceptionContext, exc_level: u3
 /// Handle FIQ exceptions
 #[no_mangle]
 pub extern "C" fn handle_fiq_exception(_ctx: &mut ExceptionContext, exc_level: u32) {
-    ExceptionStats::record_exception_occurrence(ExceptionType::Fiq, unsafe { transmute(exc_level) });
+    ExceptionStats::record_exception_occurrence(ExceptionType::Fiq, unsafe {
+        transmute(exc_level)
+    });
 
     let uart = Uart::new();
     uart.puts("FIQ received\r\n");
@@ -142,7 +148,9 @@ pub extern "C" fn handle_fiq_exception(_ctx: &mut ExceptionContext, exc_level: u
 /// Handle SError exceptions
 #[no_mangle]
 pub extern "C" fn handle_serror_exception(ctx: &mut ExceptionContext, exc_level: u32) {
-    ExceptionStats::record_exception_occurrence(ExceptionType::SError, unsafe { core::mem::transmute(exc_level) });
+    ExceptionStats::record_exception_occurrence(ExceptionType::SError, unsafe {
+        core::mem::transmute(exc_level)
+    });
 
     let uart = Uart::new();
     uart.puts("CRITICAL: SError exception occurred!\r\n");
@@ -288,7 +296,9 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         let _report = MemoryFaultAnalyzer::generate_fault_report(&fault_info);
 
         // Update statistics
-        MEMORY_FAULT_STATS.lock().record_fault(fault_info.fault_type);
+        MEMORY_FAULT_STATS
+            .lock()
+            .record_fault(fault_info.fault_type);
 
         // Phase 4 MMU Integration: Check if we have a memory manager available
         // For now, we'll create a stub memory manager for demonstration

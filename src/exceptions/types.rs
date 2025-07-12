@@ -7,6 +7,7 @@ use core::{
     option::Option::{self, None, Some},
     prelude::rust_2021::*,
 };
+
 use spin::Mutex;
 
 /// Exception types in ARM64
@@ -102,10 +103,18 @@ impl ExceptionStats {
         self.last_exception_level = Some(exc_level);
 
         match exc_type {
-            ExceptionType::Synchronous => { self.sync_exceptions += 1; },
-            ExceptionType::Irq => { self.irq_exceptions += 1; },
-            ExceptionType::Fiq => { self.fiq_exceptions += 1; },
-            ExceptionType::SError => { self.serror_exceptions += 1; },
+            ExceptionType::Synchronous => {
+                self.sync_exceptions += 1;
+            }
+            ExceptionType::Irq => {
+                self.irq_exceptions += 1;
+            }
+            ExceptionType::Fiq => {
+                self.fiq_exceptions += 1;
+            }
+            ExceptionType::SError => {
+                self.serror_exceptions += 1;
+            }
         }
     }
 

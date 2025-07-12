@@ -1,6 +1,8 @@
 // TinyOS Privilege Level Management
 // Phase 3.2: User/Kernel Mode Separation
 
+use spin::Mutex;
+
 use crate::exceptions::types::ExceptionContext;
 
 /// Privilege levels in ARM64
@@ -367,56 +369,56 @@ impl PrivilegeManager {
 }
 
 /// Global privilege manager
-static mut PRIVILEGE_MANAGER: PrivilegeManager = PrivilegeManager::new();
+static PRIVILEGE_MANAGER: Mutex<PrivilegeManager> = Mutex::new(PrivilegeManager::new());
 
 /// Initialize privilege management
 pub fn init_privilege_management() {
-    unsafe {
-        PRIVILEGE_MANAGER.init();
-    }
+    PRIVILEGE_MANAGER.lock().init();
 }
 
 /// Get current privilege level
 pub fn get_current_privilege_level() -> PrivilegeLevel {
-    unsafe { PRIVILEGE_MANAGER.get_current_level() }
+    PRIVILEGE_MANAGER.lock().get_current_level()
 }
 
 /// Check if in user mode
 pub fn is_user_mode() -> bool {
-    unsafe { PRIVILEGE_MANAGER.is_user_mode() }
+    PRIVILEGE_MANAGER.lock().is_user_mode()
 }
 
 /// Check if in kernel mode
 pub fn is_kernel_mode() -> bool {
-    unsafe { PRIVILEGE_MANAGER.is_kernel_mode() }
+    PRIVILEGE_MANAGER.lock().is_kernel_mode()
 }
 
 /// Transition to EL1 (kernel mode)
 pub fn transition_to_kernel(context: &ExceptionContext) -> EL0ToEL1Transition {
-    unsafe { PRIVILEGE_MANAGER.transition_to_el1(context) }
+    PRIVILEGE_MANAGER.lock().transition_to_el1(context)
 }
 
 /// Transition to EL0 (user mode)
 pub fn transition_to_user(return_address: u64, return_value: u64) -> Result<(), &'static str> {
-    unsafe { PRIVILEGE_MANAGER.transition_to_el0(return_address, return_value) }
+    PRIVILEGE_MANAGER
+        .lock()
+        .transition_to_el0(return_address, return_value)
 }
 
 /// Validate privilege for operation
 pub fn validate_privilege(required_level: PrivilegeLevel) -> Result<(), &'static str> {
-    unsafe { PRIVILEGE_MANAGER.validate_privilege(required_level) }
+    PRIVILEGE_MANAGER.lock().validate_privilege(required_level)
 }
 
 /// Set user stack pointer
 pub fn set_user_stack(stack_pointer: u64) {
-    unsafe { PRIVILEGE_MANAGER.set_user_stack(stack_pointer) }
+    PRIVILEGE_MANAGER.lock().set_user_stack(stack_pointer)
 }
 
 /// Set kernel stack pointer
 pub fn set_kernel_stack(stack_pointer: u64) {
-    unsafe { PRIVILEGE_MANAGER.set_kernel_stack(stack_pointer) }
+    PRIVILEGE_MANAGER.lock().set_kernel_stack(stack_pointer)
 }
 
 /// Get privilege management statistics
 pub fn get_privilege_stats() -> (u64, u64, u64, u64) {
-    unsafe { PRIVILEGE_MANAGER.get_stats() }
+    PRIVILEGE_MANAGER.lock().get_stats()
 }

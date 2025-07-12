@@ -53,7 +53,7 @@ pub mod user_space;
 // Re-export key types for convenience
 pub use allocator::BlockAllocator;
 pub use cow::{
-    create_cow_fault_from_exception, get_cow_manager, init_cow_manager, CowFault, CowFaultType,
+    create_cow_fault_from_exception, init_cow_manager, with_cow_manager, CowFault, CowFaultType,
     CowManager, CowPage, CowStatistics, SimpleVec, SimpleVecIter,
 };
 pub use dynamic::{
@@ -83,7 +83,7 @@ pub use stack::{
 pub use statistics::{FragmentationAnalysis, MemoryDefragmenter, MemoryStatistics, MemoryStats};
 pub use testing::MemoryTester;
 pub use user_space::{
-    get_user_space_manager, init_user_space_manager, UserPageTable, UserSpaceManager,
+    init_user_space_manager, with_user_space_manager, UserPageTable, UserSpaceManager,
     UserSpaceStats, VirtualMemoryArea, VmaList, VmaType, USER_SPACE_END, USER_SPACE_START,
 };
 

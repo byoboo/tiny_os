@@ -4,6 +4,7 @@
 //! interrupt masking, and critical section support.
 
 use core::arch::asm;
+
 use spin::Mutex;
 
 use crate::uart::Uart;
@@ -258,7 +259,9 @@ pub struct CriticalSection {
 impl CriticalSection {
     /// Enter critical section (disable all interrupts)
     pub fn enter() -> Self {
-        let previous_mask = NESTED_INTERRUPT_MANAGER.lock().mask_interrupts(InterruptPriority::Critical);
+        let previous_mask = NESTED_INTERRUPT_MANAGER
+            .lock()
+            .mask_interrupts(InterruptPriority::Critical);
 
         Self { previous_mask }
     }
@@ -266,7 +269,9 @@ impl CriticalSection {
 
 impl Drop for CriticalSection {
     fn drop(&mut self) {
-        NESTED_INTERRUPT_MANAGER.lock().restore_interrupts(self.previous_mask);
+        NESTED_INTERRUPT_MANAGER
+            .lock()
+            .restore_interrupts(self.previous_mask);
     }
 }
 
@@ -293,7 +298,8 @@ impl NestedInterruptStats {
 }
 
 /// Global nested interrupt manager
-pub static NESTED_INTERRUPT_MANAGER: Mutex<NestedInterruptManager> = Mutex::new(NestedInterruptManager::new());
+pub static NESTED_INTERRUPT_MANAGER: Mutex<NestedInterruptManager> =
+    Mutex::new(NestedInterruptManager::new());
 
 /// Initialize nested interrupt support
 pub fn init_nested_interrupts() {

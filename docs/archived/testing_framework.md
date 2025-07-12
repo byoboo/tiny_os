@@ -3,6 +3,7 @@
 ## Current Project State Analysis
 
 ### ✅ **Completed Foundation**
+
 - **Bare-metal ARM64 kernel** with custom boot process (`boot.s`)
 - **Interactive shell** with comprehensive command set
 - **Memory management** with bitmap-based allocation (4MB heap)
@@ -12,6 +13,7 @@
 - **QEMU development environment** with real hardware deployment capability
 
 ### ✅ **Existing Testing Infrastructure**
+
 - **Consolidated test suite** with single entry point (`test_tinyos.sh`)
 - **Feature-based organization**: boot, memory, interrupts, hardware, unit tests
 - **Multiple test modes**: interactive, automated, quick validation
@@ -19,6 +21,7 @@
 - **QEMU automation** for development cycles
 
 ### 🎯 **Ready for Next Phase**
+
 Your project is positioned perfectly for implementing advanced OS features like virtual memory management and process isolation. The existing testing infrastructure provides a solid foundation.
 
 ---
@@ -28,13 +31,16 @@ Your project is positioned perfectly for implementing advanced OS features like 
 ### Phase 1: Kernel-Space Testing Enhancement (Week 1-2)
 
 #### 1.1 In-Kernel Unit Testing Framework
+
 **Goal**: Extend existing shell testing with kernel-internal unit tests
 
-**Current Foundation**: 
+**Current Foundation**:
+
 - ✅ Shell commands: `c` (health check), `x` (memory test), `j` (interrupt test)
 - ✅ External test suites via `test_tinyos.sh`
 
 **Enhancement Tasks**:
+
 - [ ] **Kernel test runner** - Add `test_kernel` shell command for internal tests
 - [ ] **No-std testing macros** - Custom assertion framework within kernel
 - [ ] **Test isolation** - Ensure tests don't interfere with each other
@@ -42,6 +48,7 @@ Your project is positioned perfectly for implementing advanced OS features like 
 - [ ] **Interrupt simulation** - Enhanced interrupt testing for complex scenarios
 
 **Implementation** (no_std compatible):
+
 ```rust
 // src/testing/mod.rs
 #![no_std]
@@ -152,11 +159,13 @@ pub mod kernel_tests {
 ---
 
 #### 1.2 Pre-MMU Testing Infrastructure
+
 **Goal**: Prepare testing infrastructure for MMU implementation
 
 **Why Critical**: MMU bugs are extremely difficult to debug once virtual memory is enabled. Testing infrastructure must be bulletproof first.
 
 **Tasks**:
+
 - [ ] **Physical memory layout verification** - Test current memory mapping
 - [ ] **Memory protection simulation** - Mock MMU permission testing
 - [ ] **Address translation testing** - Prepare for virtual-to-physical mapping
@@ -164,6 +173,7 @@ pub mod kernel_tests {
 - [ ] **Memory alignment verification** - Ensure 4KB page alignment
 
 **Implementation** (no_std compatible):
+
 ```rust
 // src/testing/pre_mmu_tests.rs
 #![no_std]
@@ -294,9 +304,11 @@ impl PreMMUTestSuite {
 ### Phase 2: MMU & Virtual Memory Testing (Week 3-4)
 
 #### 2.1 MMU Configuration Testing
+
 **Goal**: Test Memory Management Unit setup and configuration
 
 **Tasks**:
+
 - [ ] **Page table creation testing** - Validate page table structures
 - [ ] **Translation register testing** - Test TTBR0/TTBR1 configuration
 - [ ] **Memory attribute testing** - Validate MAIR_EL1 setup
@@ -304,6 +316,7 @@ impl PreMMUTestSuite {
 - [ ] **MMU enable/disable testing** - Test SCTLR_EL1 MMU bit
 
 **Implementation** (no_std compatible):
+
 ```rust
 // src/testing/mmu_tests.rs
 #![no_std]
@@ -489,9 +502,11 @@ impl MMUTestSuite {
 ---
 
 #### 2.2 Virtual Memory Allocator Testing
+
 **Goal**: Test virtual memory allocation and management
 
 **Tasks**:
+
 - [ ] **Virtual address space testing** - Test kernel vs user space layout
 - [ ] **Page frame allocation testing** - Test physical page management
 - [ ] **Virtual-physical mapping testing** - Test page mapping operations
@@ -506,9 +521,11 @@ impl MMUTestSuite {
 ### Phase 3: Process Management Testing (Week 5-6)
 
 #### 3.1 Process Control Block Testing
+
 **Goal**: Test process metadata and lifecycle management
 
 **Tasks**:
+
 - [ ] **PCB structure testing** - Test Process Control Block data
 - [ ] **Process state management** - Test Ready/Running/Blocked states
 - [ ] **Process creation testing** - Test process spawning
@@ -516,6 +533,7 @@ impl MMUTestSuite {
 - [ ] **Process listing testing** - Test process enumeration
 
 **Implementation**:
+
 ```rust
 // src/testing/process_tests.rs
 pub struct ProcessTestSuite {
@@ -543,9 +561,11 @@ impl ProcessTestSuite {
 ---
 
 #### 3.2 System Call Testing Framework
+
 **Goal**: Test system call interface and user/kernel transitions
 
 **Tasks**:
+
 - [ ] **System call entry testing** - Test user to kernel mode transition
 - [ ] **Parameter validation testing** - Test invalid parameter handling
 - [ ] **Privilege enforcement testing** - Test user/kernel separation
@@ -559,13 +579,16 @@ impl ProcessTestSuite {
 ### Phase 4: Integration & Automation Enhancement (Week 7-8)
 
 #### 4.1 Enhanced Test Integration
+
 **Goal**: Integrate new test suites with existing testing infrastructure
 
-**Current Foundation**: 
+**Current Foundation**:
+
 - ✅ `test_tinyos.sh` with feature-based organization
 - ✅ Multiple test modes (interactive, automated, quick)
 
 **Enhancement Tasks**:
+
 - [ ] **Extended test categories** - Add mmu, process, syscall categories
 - [ ] **Advanced test reporting** - Enhanced pass/fail reporting with details
 - [ ] **Performance benchmarking** - Add performance baseline tracking
@@ -573,6 +596,7 @@ impl ProcessTestSuite {
 - [ ] **CI/CD enhancement** - Improve automated testing capabilities
 
 **Enhanced Implementation**:
+
 ```bash
 # Enhanced test_tinyos.sh
 ./test_tinyos.sh kernel          # Run kernel unit tests (NEW)
@@ -590,13 +614,16 @@ impl ProcessTestSuite {
 ---
 
 #### 4.2 Advanced Debugging & Validation Tools
+
 **Goal**: Rich debugging tools for complex kernel development
 
 **Current Foundation**:
+
 - ✅ Basic shell commands for system inspection
 - ✅ Memory statistics and health checks
 
 **Enhancement Tasks**:
+
 - [ ] **Memory map visualization** - Show detailed virtual memory layout
 - [ ] **Process state dumping** - Debug process management issues
 - [ ] **Page table walking** - Debug virtual memory translation
@@ -604,6 +631,7 @@ impl ProcessTestSuite {
 - [ ] **Performance profiling** - Identify bottlenecks and optimization opportunities
 
 **Implementation**:
+
 ```rust
 // Enhanced shell commands for debugging
 // `debug_memory` - Show detailed memory layout
@@ -620,6 +648,7 @@ impl ProcessTestSuite {
 ## Integration with Existing Infrastructure
 
 ### ✅ **Keep What Works**
+
 - **Excellent shell-based testing** - Extend with new commands
 - **QEMU automation scripts** - Enhance with new test categories
 - **Unified test runner** (`test_tinyos.sh`) - Add new test categories
@@ -627,6 +656,7 @@ impl ProcessTestSuite {
 - **Multiple test modes** - Keep interactive, automated, quick modes
 
 ### 🆕 **Strategic Enhancements**
+
 - **Kernel unit testing framework** - In-kernel testing capabilities
 - **MMU and virtual memory testing** - Critical for process isolation
 - **Process management testing** - Multi-tasking validation
@@ -639,23 +669,28 @@ impl ProcessTestSuite {
 ## Development Benefits for Production Readiness
 
 ### 1. **Risk Mitigation for Complex Features**
+
 - **Early bug detection** - Catch MMU/process bugs before they compound
 - **Regression prevention** - Ensure new features don't break existing functionality
 - **Debugging capability** - Rich debugging tools for complex kernel development
 
 ### 2. **Development Velocity**
+
 - **Faster iteration** - Quick feedback on kernel changes
 - **Confident refactoring** - Tests ensure changes don't break existing code
 - **Easier collaboration** - Clear test results for any team changes
 
 ### 3. **Production Quality Assurance**
+
 - **Comprehensive coverage** - Test all kernel components thoroughly
 - **Edge case testing** - Test error conditions and corner cases
 - **Performance tracking** - Monitor performance impact of optimizations
 - **Hardware validation** - Ensure compatibility across Pi 3/4/5
 
 ### 4. **Efficiency Optimization Foundation**
+
 Your theory about Pi-specific optimizations is spot-on. This testing framework will enable:
+
 - **Memory efficiency validation** - Test custom memory management optimizations
 - **Hardware-specific optimizations** - Validate Pi-specific performance improvements
 - **Power efficiency testing** - Measure and optimize power consumption
@@ -667,12 +702,14 @@ Your theory about Pi-specific optimizations is spot-on. This testing framework w
 
 **Enhanced Testing Investment**: 4-6 weeks upfront
 **CLI + Process Management**: 12-16 weeks with solid testing foundation
-**Net Benefit**: 
+**Net Benefit**:
+
 - 4-6 weeks testing investment
 - Saves 6-10 weeks of debugging complex kernel issues
 - Results in production-ready, maintainable codebase
 
 **ROI for Production**: The testing investment will pay massive dividends when:
+
 - Implementing complex multi-tasking features
 - Optimizing for Pi-specific hardware efficiency
 - Scaling to production workloads
@@ -682,22 +719,26 @@ Your theory about Pi-specific optimizations is spot-on. This testing framework w
 
 ## Success Criteria
 
-### Week 1-2 Success:
+### Week 1-2 Success
+
 - [ ] Kernel unit tests run within TinyOS shell
 - [ ] Pre-MMU validation prevents virtual memory bugs
 - [ ] Enhanced memory and interrupt testing
 
-### Week 3-4 Success:
+### Week 3-4 Success
+
 - [ ] MMU operations thoroughly tested
 - [ ] Virtual memory allocation and protection validated
 - [ ] Memory isolation mechanisms verified
 
-### Week 5-6 Success:
+### Week 5-6 Success
+
 - [ ] Process management components tested
 - [ ] System call interface validated
 - [ ] User/kernel separation verified
 
-### Week 7-8 Success:
+### Week 7-8 Success
+
 - [ ] All tests automated and integrated
 - [ ] Rich debugging tools available
 - [ ] Performance baseline established for optimization work
