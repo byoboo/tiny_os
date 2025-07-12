@@ -25,7 +25,7 @@ echo "│   ├── archived/               # Archived documentation"
 echo "│   ├── CI_CD_SETUP.md          # CI/CD documentation"
 echo "│   └── docs/TESTING_INFRASTRUCTURE.md"
 echo "├── scripts/                     # Organized scripts"
-echo "│   ├── tests/                  # Test scripts"
+echo "│   ├── testing/               # Testing framework"
 echo "│   ├── validation/             # Validation scripts"
 echo "│   └── version.sh              # Version utilities"
 echo "├── src/                        # Source code"
@@ -37,7 +37,7 @@ echo "│   ├── drivers/                # Hardware drivers"
 echo "│   ├── exceptions/             # Exception handling"
 echo "│   ├── filesystem/             # FAT32 filesystem"
 echo "│   └── shell/                  # Interactive shell"
-echo "└── tests/                      # Test suites"
+echo "└── tests/                      # Test scripts and framework"
 echo ""
 
 echo "🎯 Completed Features:"
@@ -83,7 +83,7 @@ if [ -f "test_tinyos.sh" ]; then
         echo "   Run './test_tinyos.sh' manually for details"
     fi
 else
-    echo "✅ Test suite available at tests/"
+    echo "✅ Test suite available at tests/scripts/"
     echo "   Run './test_tinyos.sh' to validate system"
 fi
 echo ""

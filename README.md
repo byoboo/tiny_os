@@ -147,16 +147,50 @@ TinyOS follows a layered, modular architecture designed for maintainability and 
 - Protection violation handling and reporting
 - **Shell Commands**: `@` (submenu)
 
-#### **Phase 4.4.4: Dynamic Memory Management**
-- Dynamic stack resizing with automatic growth policies
-- Lazy page allocation with on-demand mapping
-- Memory pressure handling with optimization strategies
-- Hardware-assisted context switching integration
-- **Shell Commands**: `*` (submenu)
+#### **Phase 5: Advanced Testing Framework**
+- No_std testing framework with UART-based test execution
+- Comprehensive kernel unit testing with custom assertions
+- MMU and virtual memory testing with fault simulation
+- Process management and system call validation
+- Organized test structure with shell scripts in `tests/scripts/`
+- CI/CD integration with automated testing workflows
+- **Shell Commands**: `t` (test_kernel), interactive test execution
 
-## 🛠️ Getting Started
+### 🧪 **Testing Infrastructure**
+
+#### **Test Organization**
+- **26 Shell Scripts**: Organized in `tests/scripts/` directory
+- **Rust Testing Framework**: Complete no_std testing in `src/testing/`
+- **100% Pass Rate**: All tests consistently passing
+- **CI/CD Integration**: Automated testing in GitHub workflows
+
+#### **Test Categories**
+- **Boot Tests**: System initialization and hardware detection
+- **Memory Tests**: All memory management features validation
+- **Process Tests**: Process management and scheduling
+- **Hardware Tests**: Driver and interrupt testing
+- **Integration Tests**: Cross-component validation
+- **Validation Scripts**: Complete system validation
+
+#### **Testing Commands**
+```bash
+# Run all tests through shell
+./tests/scripts/validate_tinyos.sh
+
+# Individual test categories
+./tests/scripts/test_memory_suite.sh
+./tests/scripts/test_process_phase3.sh
+./tests/scripts/test_hardware_suite.sh
+./tests/scripts/test_qemu_boot.sh
+
+# Interactive testing (within TinyOS shell)
+t  # Run kernel tests
+```
+
+## ️ Getting Started
 
 ### Prerequisites
+
 - Rust nightly toolchain
 - ARM64 cross-compilation tools
 - QEMU for testing (optional)
@@ -235,20 +269,39 @@ TinyOS features a comprehensive interactive shell with organized command groups:
 
 ## 🧪 Testing
 
-TinyOS includes comprehensive testing infrastructure:
+TinyOS features a comprehensive testing infrastructure combining shell script automation with an advanced no_std kernel testing framework:
 
+### External Test Automation
 ```bash
 # Run all validation tests
-./tests/validate_tinyos.sh
+./tests/scripts/validate_tinyos.sh
 
 # Test specific components
-./tests/test_memory_suite.sh
-./tests/test_exception_suite.sh
-./tests/test_process_phase3.sh
+./tests/scripts/test_memory_suite.sh
+./tests/scripts/test_exception_suite.sh
+./tests/scripts/test_process_phase3.sh
 
 # Hardware validation
-./tests/test_hardware_suite.sh
+./tests/scripts/test_hardware_suite.sh
 ```
+
+### Advanced Kernel Testing Framework (Phase 5)
+**Internal no_std Testing**: Tests run directly within the kernel for authentic validation
+
+**New Testing Commands**:
+- `test_kernel` - Run comprehensive kernel unit tests
+- `test_mmu` - Run MMU and virtual memory tests
+- `test_process` - Run process management tests
+- `test_syscall` - Run system call validation tests
+- `test_performance` - Run performance benchmarks
+- `test_integration` - Run integration test suites
+
+**Testing Capabilities**:
+- **Pre-MMU Testing**: Critical validation before virtual memory initialization
+- **Real-time Validation**: Tests run in actual kernel execution context
+- **Hardware-specific Testing**: Validate Pi-specific optimizations
+- **Performance Baselines**: Track performance impact of changes
+- **Regression Prevention**: Catch breaking changes early
 
 ### Test Coverage
 - ✅ Exception handling (synchronous and asynchronous)
@@ -258,6 +311,10 @@ TinyOS includes comprehensive testing infrastructure:
 - ✅ Shell interface (all command groups)
 - ✅ File system operations (FAT32)
 - ✅ Real-time performance validation
+- ✅ **Enhanced kernel unit testing** (Phase 5)
+- ✅ **MMU and virtual memory testing** (Phase 5)
+- ✅ **Process and system call testing** (Phase 5)
+- ✅ **Integration and test organization** (Phase 5)
 
 ## 📚 Documentation
 

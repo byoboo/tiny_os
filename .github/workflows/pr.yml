@@ -59,16 +59,16 @@ jobs:
     
     - name: Run modular integration tests
       run: |
-        chmod +x ./tests/test_*.sh
-        ./tests/test_comprehensive_integration.sh
-        ./tests/test_memory_modular.sh
-        ./tests/test_drivers_modular.sh
-        ./tests/test_filesystem_modular.sh
+        chmod +x ./tests/scripts/test_*.sh
+        ./tests/scripts/test_comprehensive_integration.sh
+        ./tests/scripts/test_memory_modular.sh
+        ./tests/scripts/test_drivers_modular.sh
+        ./tests/scripts/test_filesystem_modular.sh
     
     - name: Test QEMU boot functionality
       run: |
-        chmod +x ./tests/test_qemu_boot.sh
-        ./tests/test_qemu_boot.sh
+        chmod +x ./tests/scripts/test_qemu_boot.sh
+        ./tests/scripts/test_qemu_boot.sh
     
     - name: Generate kernel binary
       run: |
@@ -115,13 +115,13 @@ jobs:
         echo "========================"
         
         # Count test files
-        TEST_COUNT=$(find tests/ -name "*.sh" -type f | wc -l)
+        TEST_COUNT=$(find tests/scripts/ -name "*.sh" -type f | wc -l)
         echo "Test scripts: $TEST_COUNT"
         
         # Check if all major components have tests
         components=("memory" "drivers" "filesystem" "comprehensive")
         for comp in "${components[@]}"; do
-          if find tests/ -name "*${comp}*" -type f | grep -q .; then
+          if find tests/scripts/ -name "*${comp}*" -type f | grep -q .; then
             echo "✅ $comp: Tests present"
           else
             echo "⚠️  $comp: No dedicated tests found"

@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# TinyOS Automated Hardware Test (No expect required)
-# Simple automated hardware testing without interactive dependencies
+# TinyOS External Hardware Integration Test
+# Tests what can be validated from outside the kernel
+# NOTE: Real hardware functionality testing is done internally via 'cargo run' -> 't' command
 
 # Change to project root directory
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 # Colors for output
 RED='\033[0;31m'
@@ -24,6 +25,18 @@ print_success() {
 print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+echo "================================================================"
+echo "  TinyOS External Hardware Integration Test"
+echo "================================================================"
+echo "This test validates hardware system integration from outside the kernel."
+echo "For actual hardware functionality testing, use: cargo run -> 't' command"
+echo "================================================================"
+echo
 
 # Initialize counters
 TESTS_PASSED=0

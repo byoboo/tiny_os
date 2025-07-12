@@ -568,6 +568,27 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     }
                 }
 
+                // Testing Framework Commands (Phase 5)
+                b'T' => {
+                    // Read next character for testing subcommand
+                    if let Some(sub_ch) = context.uart.getc() {
+                        match sub_ch {
+                            b'K' | b'k' => commands::testing::handle_kernel_tests(&context),
+                            b'M' | b'm' => commands::testing::handle_mmu_tests(&context),
+                            b'P' | b'p' => commands::testing::handle_process_tests(&context),
+                            b'S' | b's' => commands::testing::handle_syscall_tests(&context),
+                            b'I' | b'i' => commands::testing::handle_integration_tests(&context),
+                            b'A' | b'a' => commands::testing::handle_all_tests(&context),
+                            b'H' | b'h' => commands::testing::handle_testing_help(&context),
+                            _ => {
+                                context.uart.puts("Invalid testing command. Use TH for help.\r\n");
+                            }
+                        }
+                    } else {
+                        context.uart.puts("Testing commands: TK, TM, TP, TS, TI, TA, TH\r\n");
+                    }
+                }
+
                 // Unknown command
                 _ => {
                     if (32..=126).contains(&ch) {

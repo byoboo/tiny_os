@@ -110,20 +110,20 @@ jobs:
     
     - name: Run modular tests
       run: |
-        chmod +x ./tests/test_*.sh
+        chmod +x ./tests/scripts/test_*.sh
         echo "Running comprehensive integration test..."
-        ./tests/test_comprehensive_integration.sh
+        ./tests/scripts/test_comprehensive_integration.sh
         echo "Running memory modular test..."
-        ./tests/test_memory_modular.sh
+        ./tests/scripts/test_memory_modular.sh
         echo "Running drivers modular test..."
-        ./tests/test_drivers_modular.sh
+        ./tests/scripts/test_drivers_modular.sh
         echo "Running filesystem modular test..."
-        ./tests/test_filesystem_modular.sh
+        ./tests/scripts/test_filesystem_modular.sh
     
     - name: Test QEMU boot
       run: |
-        chmod +x ./tests/test_qemu_boot.sh
-        ./tests/test_qemu_boot.sh
+        chmod +x ./tests/scripts/test_qemu_boot.sh
+        ./tests/scripts/test_qemu_boot.sh
     
     - name: Generate kernel binary
       run: |
@@ -187,8 +187,8 @@ jobs:
         ./test_tinyos.sh --validate-only
         
         # Run modular tests
-        chmod +x ./tests/test_*.sh
-        ./tests/test_comprehensive_integration.sh
+        chmod +x ./tests/scripts/test_*.sh
+        ./tests/scripts/test_comprehensive_integration.sh
     
     - name: Calculate build number
       id: build_number

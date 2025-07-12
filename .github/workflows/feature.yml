@@ -72,23 +72,23 @@ jobs:
         case "${{ steps.feature.outputs.FEATURE_NAME }}" in
           *memory*)
             echo "Running memory-related tests..."
-            ./tests/test_memory_modular.sh || echo "Memory tests failed"
+            ./tests/scripts/test_memory_modular.sh || echo "Memory tests failed"
             ;;
           *driver*)
             echo "Running driver-related tests..."
-            ./tests/test_drivers_modular.sh || echo "Driver tests failed"
+            ./tests/scripts/test_drivers_modular.sh || echo "Driver tests failed"
             ;;
           *filesystem*|*fat32*)
             echo "Running filesystem-related tests..."
-            ./tests/test_filesystem_modular.sh || echo "Filesystem tests failed"
+            ./tests/scripts/test_filesystem_modular.sh || echo "Filesystem tests failed"
             ;;
           *shell*)
             echo "Running shell-related tests..."
-            ./tests/test_qemu_boot.sh || echo "Shell tests failed"
+            ./tests/scripts/test_qemu_boot.sh || echo "Shell tests failed"
             ;;
           *)
             echo "Running comprehensive tests..."
-            ./tests/test_comprehensive_integration.sh || echo "Integration tests failed"
+            ./tests/scripts/test_comprehensive_integration.sh || echo "Integration tests failed"
             ;;
         esac
     
