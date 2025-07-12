@@ -4,7 +4,6 @@
 //! exception handling system.
 
 use core::{
-    mem::transmute,
     option::Option::{self, None, Some},
     prelude::rust_2021::*,
 };

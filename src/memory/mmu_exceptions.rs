@@ -14,7 +14,7 @@
 //! 3. Determining appropriate recovery actions
 //! 4. Integrating with the broader memory management system
 
-use crate::memory::{MemoryManager, BLOCK_SIZE};
+use crate::memory::MemoryManager;
 
 /// MMU exception types as defined by ARM64 architecture
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -189,7 +189,7 @@ impl MmuExceptionHandler {
     fn handle_page_fault(
         &mut self,
         fault_info: MmuFaultInfo,
-        memory_manager: &mut MemoryManager,
+        _memory_manager: &mut MemoryManager,
     ) -> MmuRecoveryAction {
         // For now, treat page faults as fatal in this simple OS
         // In a full OS, this would:

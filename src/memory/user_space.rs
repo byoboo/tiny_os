@@ -11,12 +11,10 @@
 //! - Memory mapping for user processes
 //! - Page table lifecycle management
 
-use core::ptr::{read_volatile, write_volatile};
-
 use crate::memory::{
     mmu::{
-        MemoryAttribute, PageTableEntry, PageType, RegionType, TranslationTable, PAGE_SHIFT,
-        PAGE_SIZE, TTBR_ENTRIES,
+        MemoryAttribute, PageTableEntry, RegionType,
+        PAGE_SIZE,
     },
     MemoryManager,
 };
@@ -332,7 +330,7 @@ impl UserPageTable {
             let page_count = vma.page_count();
 
             for i in 0..page_count {
-                let virt_addr = vma.start_addr + (i as u64 * PAGE_SIZE as u64);
+                let _virt_addr = vma.start_addr + (i as u64 * PAGE_SIZE as u64);
                 let phys_page_addr = phys_addr + (i as u64 * PAGE_SIZE as u64);
 
                 // Create page table entry (simplified)

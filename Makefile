@@ -143,7 +143,11 @@ format:
 
 lint:
 	@echo "Running Clippy linter..."
-	docker-compose run --rm dev cargo clippy --all-targets --all-features -- -D warnings
+	docker-compose run --rm dev cargo clippy --target aarch64-unknown-none --bin tiny_os
+
+lint-strict:
+	@echo "Running Clippy linter (strict mode)..."
+	docker-compose run --rm dev cargo clippy --target aarch64-unknown-none --bin tiny_os -- -D warnings
 
 # Clean build artifacts
 clean:

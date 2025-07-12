@@ -4,8 +4,6 @@
 //! It implements the SVC (SuperVisor Call) instruction handler and basic
 //! system call dispatcher as outlined in Phase 1 of the enhancement plan.
 
-use core::arch::asm;
-
 use crate::uart::Uart;
 
 /// System call numbers - Phase 1 basic implementation
@@ -47,7 +45,7 @@ pub enum SyscallResult {
 }
 
 /// System call dispatcher - handles SVC exceptions
-pub fn handle_syscall(syscall_number: u64, args: &[u64; 6]) -> SyscallResult {
+pub fn handle_syscall(syscall_number: u64, _args: &[u64; 6]) -> SyscallResult {
     let syscall = SyscallNumber::from(syscall_number);
 
     match syscall {

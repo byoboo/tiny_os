@@ -371,7 +371,7 @@ pub fn handle_exception_test_advanced(context: &ShellContext) {
 
 /// Test ESR decoder functionality
 fn test_esr_decoder(context: &ShellContext) {
-    use crate::exceptions::esr_decoder::{EsrDecoder, ExceptionClass};
+    use crate::exceptions::esr_decoder::EsrDecoder;
 
     let decoder = EsrDecoder::new();
 
@@ -473,7 +473,7 @@ fn test_exception_handlers(context: &ShellContext) {
 pub fn handle_esr_test(context: &ShellContext) {
     context.uart.puts("\r\n=== ESR_EL1 Decoder Test ===\r\n");
 
-    use crate::exceptions::esr_decoder::{EsrDecoder, ExceptionClass};
+    use crate::exceptions::esr_decoder::EsrDecoder;
     let decoder = EsrDecoder::new();
 
     context.uart.puts("Testing exception class decoding:\r\n");
@@ -487,7 +487,7 @@ pub fn handle_esr_test(context: &ShellContext) {
         (0xBE000000, "SError"),
     ];
 
-    for (esr, description) in test_values.iter() {
+    for (esr, _description) in test_values.iter() {
         let info = decoder.decode_esr(*esr);
         context.uart.puts("  ESR: 0x");
         context.uart.put_hex(*esr as u64);
@@ -869,8 +869,6 @@ fn display_irq_stats(context: &ShellContext) {
 
 /// Test IRQ source identification
 fn test_irq_source_identification(context: &ShellContext) {
-    use crate::exceptions::irq_integration::{IrqInfo, IrqSource};
-
     context
         .uart
         .puts("   Testing IRQ source identification...\r\n");
@@ -884,7 +882,6 @@ fn test_irq_source_identification(context: &ShellContext) {
     ];
 
     for (irq_id, name) in test_sources.iter() {
-        let source = IrqSource::from(*irq_id);
         context.uart.puts("   IRQ ");
         print_number(&context.uart, *irq_id);
         context.uart.puts(" -> ");

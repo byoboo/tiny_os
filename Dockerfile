@@ -57,18 +57,25 @@ RUN useradd -m -s /bin/bash -u 1000 dev && \
     usermod -aG sudo dev && \
     echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Install development tools
+# Install development tools as root first
 RUN cargo install cargo-watch cargo-expand cargo-tree
 
 # Set up workspace
 WORKDIR /workspace
 RUN chown -R dev:dev /workspace
 
+# Copy rustup environment for dev user
+RUN cp -r /root/.cargo /home/dev/ && \
+    chown -R dev:dev /home/dev/.cargo && \
+    cp -r /root/.rustup /home/dev/ && \
+    chown -R dev:dev /home/dev/.rustup
+
 # Switch to development user
 USER dev
 
-# Set environment variables
+# Set environment variables for dev user
 ENV CARGO_HOME=/home/dev/.cargo
+ENV RUSTUP_HOME=/home/dev/.rustup
 ENV PATH=$CARGO_HOME/bin:$PATH
 
 # Default command

@@ -184,7 +184,7 @@ impl MemoryFaultAnalyzer {
 
     /// Generate a detailed fault report
     pub fn generate_fault_report(fault_info: &MemoryFaultInfo) -> [u8; 512] {
-        let mut report = [0u8; 512];
+        let report = [0u8; 512];
         let mut uart = Uart::new();
         uart.init();
 
