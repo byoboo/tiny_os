@@ -17,75 +17,73 @@ pub fn init_process_management() {
 }
 
 /// Process management statistics
-#[derive(Debug, Clone, Copy)]
+use core::sync::atomic::{AtomicU64, Ordering};
+
+#[derive(Debug)]
 pub struct ProcessManagementStats {
-    pub context_switches: u64,
-    pub privilege_escalations: u64,
-    pub privilege_violations: u64,
-    pub tasks_created: u64,
-    pub tasks_destroyed: u64,
-    pub scheduler_preemptions: u64,
+    pub context_switches: AtomicU64,
+    pub privilege_escalations: AtomicU64,
+    pub privilege_violations: AtomicU64,
+    pub tasks_created: AtomicU64,
+    pub tasks_destroyed: AtomicU64,
+    pub scheduler_preemptions: AtomicU64,
 }
 
 impl ProcessManagementStats {
     pub const fn new() -> Self {
         Self {
-            context_switches: 0,
-            privilege_escalations: 0,
-            privilege_violations: 0,
-            tasks_created: 0,
-            tasks_destroyed: 0,
-            scheduler_preemptions: 0,
+            context_switches: AtomicU64::new(0),
+            privilege_escalations: AtomicU64::new(0),
+            privilege_violations: AtomicU64::new(0),
+            tasks_created: AtomicU64::new(0),
+            tasks_destroyed: AtomicU64::new(0),
+            scheduler_preemptions: AtomicU64::new(0),
         }
     }
 }
 
 /// Global process management statistics
-static mut PROCESS_STATS: ProcessManagementStats = ProcessManagementStats::new();
+static PROCESS_STATS: ProcessManagementStats = ProcessManagementStats::new();
 
 /// Get process management statistics
-pub fn get_process_stats() -> ProcessManagementStats {
-    unsafe { PROCESS_STATS }
+pub fn get_process_stats() -> &'static ProcessManagementStats {
+    &PROCESS_STATS
 }
 
 /// Record a context switch
 pub fn record_context_switch() {
-    unsafe {
-        PROCESS_STATS.context_switches += 1;
-    }
+    PROCESS_STATS
+        .context_switches
+        .fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record a privilege escalation
 pub fn record_privilege_escalation() {
-    unsafe {
-        PROCESS_STATS.privilege_escalations += 1;
-    }
+    PROCESS_STATS
+        .privilege_escalations
+        .fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record a privilege violation
 pub fn record_privilege_violation() {
-    unsafe {
-        PROCESS_STATS.privilege_violations += 1;
-    }
+    PROCESS_STATS
+        .privilege_violations
+        .fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record task creation
 pub fn record_task_creation() {
-    unsafe {
-        PROCESS_STATS.tasks_created += 1;
-    }
+    PROCESS_STATS.tasks_created.fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record task destruction
 pub fn record_task_destruction() {
-    unsafe {
-        PROCESS_STATS.tasks_destroyed += 1;
-    }
+    PROCESS_STATS.tasks_destroyed.fetch_add(1, Ordering::SeqCst);
 }
 
 /// Record scheduler preemption
 pub fn record_scheduler_preemption() {
-    unsafe {
-        PROCESS_STATS.scheduler_preemptions += 1;
-    }
+    PROCESS_STATS
+        .scheduler_preemptions
+        .fetch_add(1, Ordering::SeqCst);
 }

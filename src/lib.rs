@@ -14,6 +14,7 @@ pub mod interrupts;
 pub mod memory;
 pub mod process; // New process management system
 pub mod shell;
+pub mod testing; // Testing framework
 
 // Legacy filesystem module (for backward compatibility)
 // This re-exports types from the new modular filesystem

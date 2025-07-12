@@ -1,0 +1,55 @@
+# TinyOS Docker Build Optimization
+
+# Build artifacts
+target/
+*.img
+*.elf
+*.bin
+
+# Rust artifacts
+**/*.rs.bk
+Cargo.lock
+
+# Git
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+job-logs.txt
+
+# Documentation (include only essential docs)
+*.md
+!README.md
+!DOCKER*.md
+
+# Test artifacts
+tests/logs/
+archived_tests/
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# Development artifacts
+.env
+.env.local
+.bash_history
+.fish_history
+
+# Cache directories
+.cache/
+.cargo/
+.rustup/

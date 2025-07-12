@@ -14,6 +14,8 @@
 
 use core::ptr::{read_volatile, write_volatile};
 
+use spin::Mutex;
+
 use crate::memory::{
     mmu::{RegionType, PAGE_SIZE},
     MemoryManager,
@@ -26,6 +28,7 @@ const MAX_COW_PAGES: usize = 64;
 const MAX_VIRT_ADDRS_PER_PAGE: usize = 8;
 
 /// Maximum number of process IDs per COW page
+#[allow(dead_code)]
 const MAX_PROCESS_IDS_PER_PAGE: usize = 4;
 
 /// Simple array-based vector for no_std environment
@@ -78,7 +81,7 @@ impl<T: Copy + Default> SimpleVec<T> {
         false
     }
 
-    pub fn iter(&self) -> SimpleVecIter<T> {
+    pub fn iter(&self) -> SimpleVecIter<'_, T> {
         SimpleVecIter {
             data: &self.data,
             len: self.len,
@@ -209,7 +212,7 @@ impl CowPage {
 }
 
 /// COW statistics for monitoring
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct CowStatistics {
     /// Total COW pages tracked
     pub cow_pages_count: usize,
@@ -290,6 +293,11 @@ pub struct CowManager {
     /// Next process ID for tracking
     next_process_id: usize,
 }
+
+// SAFETY: In a bare-metal environment, we don't have actual threads,
+// so the raw pointer is safe to share across "threads" (interrupt contexts)
+unsafe impl Send for CowManager {}
+unsafe impl Sync for CowManager {}
 
 impl CowManager {
     /// Create a new COW manager
@@ -580,20 +588,26 @@ impl CowManager {
 }
 
 /// Global COW manager instance
-static mut COW_MANAGER: Option<CowManager> = None;
+static COW_MANAGER: Mutex<Option<CowManager>> = Mutex::new(None);
 
 /// Initialize global COW manager
 pub fn init_cow_manager(memory_manager: *mut MemoryManager) {
-    unsafe {
-        let mut cow_manager = CowManager::new();
-        cow_manager.init(memory_manager);
-        COW_MANAGER = Some(cow_manager);
-    }
+    let mut cow_manager = CowManager::new();
+    cow_manager.init(memory_manager);
+    *COW_MANAGER.lock() = Some(cow_manager);
 }
 
-/// Get global COW manager reference
-pub fn get_cow_manager() -> Option<&'static mut CowManager> {
-    unsafe { COW_MANAGER.as_mut() }
+/// Execute operation with COW manager if available
+pub fn with_cow_manager<F, R>(f: F) -> Option<R>
+where
+    F: FnOnce(&mut CowManager) -> R,
+{
+    let mut guard = COW_MANAGER.lock();
+    if let Some(ref mut manager) = *guard {
+        Some(f(manager))
+    } else {
+        None
+    }
 }
 
 /// Helper function to create COW fault from exception information
@@ -610,10 +624,13 @@ pub fn create_cow_fault_from_exception(
     };
 
     // Get reference count from COW manager
-    let ref_count = get_cow_manager()
-        .and_then(|manager| manager.get_cow_page_info(physical_addr))
-        .map(|page| page.ref_count)
-        .unwrap_or(0);
+    let ref_count = with_cow_manager(|manager| {
+        manager
+            .get_cow_page_info(physical_addr)
+            .map(|page| page.ref_count)
+            .unwrap_or(0)
+    })
+    .unwrap_or(0);
 
     CowFault {
         virtual_address: virtual_addr,

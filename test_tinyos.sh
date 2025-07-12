@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${SCRIPT_DIR}"
-TESTS_DIR="${PROJECT_ROOT}/tests"
+TESTS_DIR="${PROJECT_ROOT}/tests/scripts"
 
 # Test results tracking
 TOTAL_TESTS=0
@@ -125,7 +125,7 @@ run_boot_tests() {
         fi
         print_status $exit_code "QEMU boot test"
     else
-        print_warning "Boot test script not found: tests/test_qemu_boot.sh"
+        print_warning "Boot test script not found: tests/scripts/test_qemu_boot.sh"
     fi
     
     # Basic validation
@@ -145,7 +145,7 @@ run_boot_tests() {
         fi
         print_status $exit_code "System validation"
     else
-        print_warning "Validation test script not found: tests/validate_tinyos.sh"
+        print_warning "Validation test script not found: tests/scripts/validate_tinyos.sh"
     fi
 }
 
@@ -169,7 +169,7 @@ run_memory_tests() {
             fi
             print_status $exit_code "Memory test suite (interactive)"
         else
-            print_warning "Interactive memory test suite not found: tests/test_memory_suite.sh"
+            print_warning "Interactive memory test suite not found: tests/scripts/test_memory_suite.sh"
         fi
     else
         # Use automated test suite by default
@@ -188,7 +188,7 @@ run_memory_tests() {
             fi
             print_status $exit_code "Memory test suite (automated)"
         else
-            print_warning "Automated memory test suite not found: tests/test_memory_automated.sh"
+            print_warning "Automated memory test suite not found: tests/scripts/test_memory_automated.sh"
         fi
     fi
 }
@@ -213,7 +213,7 @@ run_interrupt_tests() {
             fi
             print_status $exit_code "Interrupt test suite (interactive)"
         else
-            print_warning "Interactive interrupt test suite not found: tests/test_interrupt_suite.sh"
+            print_warning "Interactive interrupt test suite not found: tests/scripts/test_interrupt_suite.sh"
         fi
     else
         # Use automated test suite by default
@@ -232,7 +232,7 @@ run_interrupt_tests() {
             fi
             print_status $exit_code "Interrupt test suite (automated)"
         else
-            print_warning "Automated interrupt test suite not found: tests/test_interrupt_automated.sh"
+            print_warning "Automated interrupt test suite not found: tests/scripts/test_interrupt_automated.sh"
         fi
     fi
 }
@@ -257,7 +257,7 @@ run_hardware_tests() {
             fi
             print_status $exit_code "Hardware test suite (interactive)"
         else
-            print_warning "Interactive hardware test suite not found: tests/test_hardware_suite.sh"
+            print_warning "Interactive hardware test suite not found: tests/scripts/test_hardware_suite.sh"
         fi
     else
         # Use automated test suite by default
@@ -276,7 +276,7 @@ run_hardware_tests() {
             fi
             print_status $exit_code "Hardware test suite (automated)"
         else
-            print_warning "Automated hardware test suite not found: tests/test_hardware_automated.sh"
+            print_warning "Automated hardware test suite not found: tests/scripts/test_hardware_automated.sh"
         fi
     fi
     
@@ -296,7 +296,7 @@ run_hardware_tests() {
         fi
         print_status $exit_code "Modular driver architecture"
     else
-        print_warning "Modular driver test suite not found: tests/test_drivers_modular.sh"
+        print_warning "Modular driver test suite not found: tests/scripts/test_drivers_modular.sh"
     fi
 }
 
@@ -332,7 +332,7 @@ run_validation_only() {
         exit_code=$?
         print_status $exit_code "Basic validation"
     else
-        print_warning "Validation test script not found: tests/validate_tinyos.sh"
+        print_warning "Validation test script not found: tests/scripts/validate_tinyos.sh"
     fi
 }
 

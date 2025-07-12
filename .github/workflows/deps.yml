@@ -21,20 +21,27 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
     
-    - name: Setup Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: nightly
-        targets: aarch64-unknown-none
-    
-    - name: Install cargo-update
-      run: cargo install cargo-update
+    - name: Setup Docker Environment
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+        # Verify Docker tools are available
+        docker --version
+        docker-compose --version
+        
+        # Build Docker development environment
+        make setup
     
     - name: Check for outdated dependencies
       id: outdated
       run: |
-        cargo install cargo-outdated
-        OUTDATED=$(cargo outdated --format json) || echo "[]"
+        # Check for outdated dependencies using Docker environment
+        OUTDATED=$(docker-compose run --rm dev bash -c "
+          cargo install cargo-outdated 2>/dev/null || true
+          cargo outdated --format json 2>/dev/null || echo '[]'
+        ")
         echo "OUTDATED=$OUTDATED" >> $GITHUB_OUTPUT
         
         # Check if there are any outdated dependencies
@@ -49,7 +56,8 @@ jobs:
       id: update
       run: |
         echo "🔄 Updating dependencies..."
-        cargo update
+        # Update using Docker environment
+        docker-compose run --rm dev cargo update
         
         # Check if Cargo.lock changed
         if git diff --quiet Cargo.lock; then
@@ -63,17 +71,12 @@ jobs:
       run: |
         echo "🧪 Testing updated dependencies..."
         
-        # Install QEMU for testing
-        sudo apt-get update
-        sudo apt-get install -y qemu-system-arm qemu-system-aarch64
+        # Build and test with updated dependencies using make system
+        make build
+        make test
         
-        # Build with updated dependencies
-        cargo build --target aarch64-unknown-none
-        cargo build --release --target aarch64-unknown-none
-        
-        # Run tests
-        chmod +x ./test_tinyos.sh
-        ./test_tinyos.sh --validate-only
+        # Verify no regressions
+        make check-binary
     
     - name: Create pull request
       if: steps.outdated.outputs.HAS_UPDATES == 'true' && steps.update.outputs.NO_CHANGES == 'false'
@@ -108,8 +111,11 @@ jobs:
     - name: Check for security vulnerabilities
       run: |
         echo "🔐 Security vulnerability check..."
-        cargo install cargo-audit
-        cargo audit || echo "Security audit completed"
+        # Run security audit using Docker environment
+        docker-compose run --rm dev bash -c "
+          cargo install cargo-audit 2>/dev/null || true
+          cargo audit || echo 'Security audit completed'
+        "
 
   # Check for Rust toolchain updates
   rust-updates:
@@ -120,6 +126,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Setup Docker Environment
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+        # Verify Docker tools are available
+        docker --version
+        docker-compose --version
+        
+        # Build Docker development environment
+        make setup
+    
     - name: Check current Rust version
       run: |
         if [ -f rust-toolchain.toml ]; then
@@ -128,10 +147,19 @@ jobs:
         else
           echo "No rust-toolchain.toml found"
         fi
+        
+        # Check Docker environment Rust version
+        docker-compose run --rm dev rustc --version
     
     - name: Check for Rust updates
       run: |
         echo "🦀 Checking for Rust toolchain updates..."
+        
+        # Check latest nightly version using Docker environment
+        docker-compose run --rm dev bash -c "
+          rustup update nightly
+          rustup show
+        "
         
         # This could be expanded to check for nightly updates
         # and create PRs for toolchain updates if needed

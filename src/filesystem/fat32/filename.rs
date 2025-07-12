@@ -160,7 +160,7 @@ fn is_reserved_name(name: &str) -> bool {
 
 /// Generate 8.3 short name with numeric suffix if needed
 pub fn generate_short_name(long_name: &str) -> [u8; 11] {
-    let mut short_name = name_to_83(long_name);
+    let short_name = name_to_83(long_name);
 
     // If the name was truncated, we might need to add a numeric suffix
     // For simplicity, we'll just use the basic conversion

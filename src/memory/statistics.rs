@@ -283,7 +283,7 @@ pub struct DefragmentationResult {
 
 // We need a minimal Vec implementation for no_std
 // This is a simplified version for our use case
-struct Vec<T> {
+pub struct Vec<T> {
     data: [Option<T>; 32], // Fixed size for simplicity
     len: usize,
 }

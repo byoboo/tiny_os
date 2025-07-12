@@ -3,6 +3,8 @@
 //! This module implements interrupt bottom-half processing, work queues,
 //! and soft IRQ mechanism for performance optimization.
 
+use spin::Mutex;
+
 use crate::uart::Uart;
 
 /// Maximum number of work items in the queue
@@ -355,11 +357,9 @@ impl DeferredProcessingManager {
     /// Simple timestamp function (using a counter for now)
     fn get_timestamp(&self) -> u64 {
         // TODO: Use actual timer when available
-        static mut COUNTER: u64 = 0;
-        unsafe {
-            COUNTER += 1;
-            COUNTER
-        }
+        use core::sync::atomic::{AtomicU64, Ordering};
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        COUNTER.fetch_add(1, Ordering::SeqCst)
     }
 }
 
@@ -382,7 +382,8 @@ impl DeferredProcessingStats {
 }
 
 /// Global deferred processing manager
-static mut DEFERRED_PROCESSING: DeferredProcessingManager = DeferredProcessingManager::new();
+static DEFERRED_PROCESSING: Mutex<DeferredProcessingManager> =
+    Mutex::new(DeferredProcessingManager::new());
 
 /// Initialize deferred processing
 pub fn init_deferred_processing() {
@@ -393,7 +394,9 @@ pub fn init_deferred_processing() {
 
 /// Schedule work for deferred processing
 pub fn schedule_work(work_fn: WorkFunction, data: u64, context: u64) -> bool {
-    unsafe { DEFERRED_PROCESSING.schedule_work(work_fn, data, context) }
+    DEFERRED_PROCESSING
+        .lock()
+        .schedule_work(work_fn, data, context)
 }
 
 /// Schedule soft IRQ work
@@ -403,24 +406,24 @@ pub fn schedule_softirq(
     data: u64,
     context: u64,
 ) -> bool {
-    unsafe { DEFERRED_PROCESSING.schedule_softirq(soft_irq_type, work_fn, data, context) }
+    DEFERRED_PROCESSING
+        .lock()
+        .schedule_softirq(soft_irq_type, work_fn, data, context)
 }
 
 /// Process all pending deferred work
 pub fn process_pending_work() {
-    unsafe {
-        DEFERRED_PROCESSING.process_deferred_work();
-    }
+    DEFERRED_PROCESSING.lock().process_deferred_work();
 }
 
 /// Check if there's pending work
 pub fn has_pending_work() -> bool {
-    unsafe { DEFERRED_PROCESSING.has_pending_work() }
+    DEFERRED_PROCESSING.lock().has_pending_work()
 }
 
 /// Get deferred processing statistics
 pub fn get_deferred_stats() -> DeferredProcessingStats {
-    unsafe { DEFERRED_PROCESSING.get_stats() }
+    DEFERRED_PROCESSING.lock().get_stats()
 }
 
 // Example work functions for testing

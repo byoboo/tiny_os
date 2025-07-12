@@ -122,7 +122,7 @@ impl ClusterChain {
     }
 
     /// Find first free cluster (simple linear search)
-    pub fn find_free_cluster(&mut self, sd_card: &mut SdCard) -> Result<u32, Fat32Error> {
+    pub fn find_free_cluster(&mut self, _sd_card: &mut SdCard) -> Result<u32, Fat32Error> {
         // Start searching from cluster 2 (first data cluster)
         for cluster in 2..(self.layout.cluster_count + 2) {
             let next_cluster = self.get_next_cluster(cluster)?;
@@ -197,7 +197,7 @@ impl ClusterChain {
     }
 
     /// Get cluster statistics
-    pub fn get_cluster_stats(&mut self, sd_card: &mut SdCard) -> Result<ClusterStats, Fat32Error> {
+    pub fn get_cluster_stats(&mut self, _sd_card: &mut SdCard) -> Result<ClusterStats, Fat32Error> {
         let mut stats = ClusterStats::new();
 
         // Scan all clusters to count free/used

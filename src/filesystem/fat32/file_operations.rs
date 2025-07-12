@@ -264,7 +264,7 @@ impl FileOperations {
             // Follow cluster chain
             let next_cluster = cluster_chain.get_next_cluster(current_cluster)?;
             if cluster_chain.is_end_of_chain(next_cluster) {
-                result.is_valid = (bytes_validated == file_info.size);
+                result.is_valid = bytes_validated == file_info.size;
                 if !result.is_valid {
                     result.error_message = "File size mismatch";
                 }

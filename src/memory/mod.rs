@@ -53,7 +53,7 @@ pub mod user_space;
 // Re-export key types for convenience
 pub use allocator::BlockAllocator;
 pub use cow::{
-    create_cow_fault_from_exception, get_cow_manager, init_cow_manager, CowFault, CowFaultType,
+    create_cow_fault_from_exception, init_cow_manager, with_cow_manager, CowFault, CowFaultType,
     CowManager, CowPage, CowStatistics, SimpleVec, SimpleVecIter,
 };
 pub use dynamic::{
@@ -83,7 +83,7 @@ pub use stack::{
 pub use statistics::{FragmentationAnalysis, MemoryDefragmenter, MemoryStatistics, MemoryStats};
 pub use testing::MemoryTester;
 pub use user_space::{
-    get_user_space_manager, init_user_space_manager, UserPageTable, UserSpaceManager,
+    init_user_space_manager, with_user_space_manager, UserPageTable, UserSpaceManager,
     UserSpaceStats, VirtualMemoryArea, VmaList, VmaType, USER_SPACE_END, USER_SPACE_START,
 };
 
@@ -188,7 +188,7 @@ impl MemoryManager {
     ///
     /// Returns a statistics collector that can be used for detailed analysis
     /// without borrowing the entire memory manager.
-    pub fn get_statistics(&self) -> MemoryStatistics {
+    pub fn get_statistics(&self) -> MemoryStatistics<'_> {
         MemoryStatistics::new(&self.allocator)
     }
 
@@ -196,7 +196,7 @@ impl MemoryManager {
     ///
     /// Returns a tester that can run various memory validation tests
     /// to ensure the allocator is working correctly.
-    pub fn get_tester(&mut self) -> MemoryTester {
+    pub fn get_tester(&mut self) -> MemoryTester<'_> {
         MemoryTester::new(&mut self.allocator)
     }
 

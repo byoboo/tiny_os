@@ -7,6 +7,8 @@
 //! - Memory optimization and defragmentation
 //! - Hardware-assisted context switching
 
+use spin::Mutex;
+
 use crate::memory::{
     mmu_exceptions::{MmuExceptionType, MmuFaultInfo},
     MemoryManager, PAGE_SIZE,
@@ -172,6 +174,7 @@ impl DynamicMemoryStats {
 pub struct DynamicStackManager {
     stacks: [Option<DynamicStack>; MAX_DYNAMIC_STACKS],
     growth_policy: StackGrowthPolicy,
+    #[allow(dead_code)]
     pressure_threshold: usize,
     next_stack_id: u32,
 }
@@ -246,6 +249,7 @@ impl DynamicStackManager {
         Ok(growth_size as usize)
     }
 
+    #[allow(dead_code)]
     fn calculate_predictive_growth(&self, stack: &DynamicStack) -> u32 {
         // Simple predictive algorithm based on growth history
         if stack.growth_count > 5 {
@@ -259,15 +263,13 @@ impl DynamicStackManager {
     pub fn shrink_unused_stacks(&mut self) -> u32 {
         let mut shrunk_count = 0;
 
-        for stack_opt in self.stacks.iter_mut() {
-            if let Some(stack) = stack_opt {
-                // Simple shrinking logic - can be made more sophisticated
-                if stack.current_size > PAGE_SIZE as usize
-                    && stack.growth_count > stack.shrink_count
-                {
-                    if stack.shrink(PAGE_SIZE as usize).is_ok() {
-                        shrunk_count += 1;
-                    }
+        for stack in self.stacks.iter_mut().flatten() {
+            // Simple shrinking logic - can be made more sophisticated
+            if stack.current_size > PAGE_SIZE as usize
+                && stack.growth_count > stack.shrink_count
+            {
+                if stack.shrink(PAGE_SIZE as usize).is_ok() {
+                    shrunk_count += 1;
                 }
             }
         }
@@ -283,8 +285,11 @@ impl DynamicStackManager {
 /// Lazy page allocator
 pub struct LazyPageAllocator {
     lazy_pages: [Option<LazyPage>; MAX_LAZY_PAGES],
+    #[allow(dead_code)]
     zero_page_address: u64,
+    #[allow(dead_code)]
     allocation_policy: LazyAllocationPolicy,
+    #[allow(dead_code)]
     next_page_index: usize,
 }
 
@@ -353,6 +358,7 @@ impl LazyPageAllocator {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn zero_initialize_page(&self, physical_address: u32) {
         // Zero out the page
         unsafe {
@@ -379,6 +385,7 @@ impl LazyPageAllocator {
 pub struct MemoryPressureHandler {
     current_pressure: PressureLevel,
     pressure_thresholds: [usize; 4], // Low, Medium, High, Critical
+    #[allow(dead_code)]
     last_pressure_check: u64,
     pressure_events: u32,
 }
@@ -458,6 +465,7 @@ impl MemoryPressureHandler {
 /// Hardware-assisted context switcher
 pub struct HardwareContextSwitcher {
     context_switch_count: u32,
+    #[allow(dead_code)]
     last_context_switch_time: u64,
     optimization_enabled: bool,
 }
@@ -671,25 +679,26 @@ impl DynamicMemoryManager {
 }
 
 /// Global dynamic memory manager instance
-static mut DYNAMIC_MEMORY_MANAGER: Option<DynamicMemoryManager> = None;
+static DYNAMIC_MEMORY_MANAGER: Mutex<Option<DynamicMemoryManager>> = Mutex::new(None);
 
 /// Initialize the dynamic memory manager
 pub fn init_dynamic_memory_manager() -> Result<(), &'static str> {
-    unsafe {
-        DYNAMIC_MEMORY_MANAGER = Some(DynamicMemoryManager::new());
-        if let Some(manager) = DYNAMIC_MEMORY_MANAGER.as_mut() {
-            manager.init()?;
-        }
+    *DYNAMIC_MEMORY_MANAGER.lock() = Some(DynamicMemoryManager::new());
+    if let Some(manager) = DYNAMIC_MEMORY_MANAGER.lock().as_mut() {
+        manager.init()?;
     }
     Ok(())
 }
 
-/// Get a mutable reference to the dynamic memory manager
-pub fn get_dynamic_memory_manager() -> Result<&'static mut DynamicMemoryManager, &'static str> {
-    unsafe {
-        DYNAMIC_MEMORY_MANAGER
-            .as_mut()
-            .ok_or("Dynamic memory manager not initialized")
+/// Execute a closure with the dynamic memory manager
+pub fn with_dynamic_memory_manager<F, R>(f: F) -> Result<R, &'static str>
+where
+    F: FnOnce(&mut DynamicMemoryManager) -> R,
+{
+    let mut manager = DYNAMIC_MEMORY_MANAGER.lock();
+    match manager.as_mut() {
+        Some(m) => Ok(f(m)),
+        None => Err("Dynamic memory manager not initialized"),
     }
 }
 
@@ -698,16 +707,14 @@ pub fn handle_dynamic_memory_fault(
     fault_info: &MmuFaultInfo,
     memory_manager: &mut MemoryManager,
 ) -> Result<(), &'static str> {
-    let manager = get_dynamic_memory_manager()?;
-    manager.handle_dynamic_fault(fault_info, memory_manager)
+    with_dynamic_memory_manager(|manager| manager.handle_dynamic_fault(fault_info, memory_manager))?
 }
 
 /// Check memory pressure
 pub fn check_dynamic_memory_pressure(
     available_memory: usize,
 ) -> Result<PressureLevel, &'static str> {
-    let manager = get_dynamic_memory_manager()?;
-    Ok(manager.check_memory_pressure(available_memory))
+    with_dynamic_memory_manager(|manager| manager.check_memory_pressure(available_memory))
 }
 
 /// Create a dynamic stack
@@ -716,33 +723,30 @@ pub fn create_dynamic_stack(
     initial_size: usize,
     max_size: usize,
 ) -> Result<u32, &'static str> {
-    let manager = get_dynamic_memory_manager()?;
-    manager.create_dynamic_stack(base_address, initial_size, max_size)
+    with_dynamic_memory_manager(|manager| {
+        manager.create_dynamic_stack(base_address, initial_size, max_size)
+    })?
 }
 
 /// Add a lazy page
 pub fn add_lazy_page(virtual_address: u64) -> Result<usize, &'static str> {
-    let manager = get_dynamic_memory_manager()?;
-    manager.add_lazy_page(virtual_address)
+    with_dynamic_memory_manager(|manager| manager.add_lazy_page(virtual_address))?
 }
 
 /// Perform fast context switch
 pub fn fast_context_switch(from_asid: u16, to_asid: u16) -> Result<(), &'static str> {
-    let manager = get_dynamic_memory_manager()?;
-    manager.fast_context_switch(from_asid, to_asid)
+    with_dynamic_memory_manager(|manager| manager.fast_context_switch(from_asid, to_asid))?
 }
 
 /// Get dynamic memory statistics
 pub fn get_dynamic_memory_stats() -> Result<DynamicMemoryStats, &'static str> {
-    let manager = get_dynamic_memory_manager()?;
-    Ok(manager.get_statistics().clone())
+    with_dynamic_memory_manager(|manager| manager.get_statistics().clone())
 }
 
 /// Check if dynamic memory management is enabled
 pub fn is_dynamic_memory_enabled() -> bool {
-    unsafe {
-        DYNAMIC_MEMORY_MANAGER
-            .as_ref()
-            .map_or(false, |m| m.is_enabled())
-    }
+    DYNAMIC_MEMORY_MANAGER
+        .lock()
+        .as_ref()
+        .map_or(false, |m| m.is_enabled())
 }

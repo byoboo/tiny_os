@@ -8,6 +8,8 @@
 
 use core::arch::asm;
 
+use spin::Mutex;
+
 use crate::{
     memory::{handle_mmu_exception_global, MemoryManager, MmuRecoveryAction},
     uart::Uart,
@@ -146,6 +148,7 @@ impl MemoryFaultAnalyzer {
     }
 
     /// Read the Exception Link Register (ELR_EL1) to get instruction address
+    #[allow(dead_code)]
     fn read_elr_el1() -> u64 {
         #[cfg(target_arch = "aarch64")]
         {
@@ -184,7 +187,7 @@ impl MemoryFaultAnalyzer {
 
     /// Generate a detailed fault report
     pub fn generate_fault_report(fault_info: &MemoryFaultInfo) -> [u8; 512] {
-        let mut report = [0u8; 512];
+        let report = [0u8; 512];
         let mut uart = Uart::new();
         uart.init();
 
@@ -291,12 +294,11 @@ impl MemoryFaultStats {
     }
 }
 
-/// Global memory fault statistics
-pub static mut MEMORY_FAULT_STATS: MemoryFaultStats = MemoryFaultStats::new();
+pub static MEMORY_FAULT_STATS: Mutex<MemoryFaultStats> = Mutex::new(MemoryFaultStats::new());
 
 /// Get current memory fault statistics
 pub fn get_memory_fault_stats() -> MemoryFaultStats {
-    unsafe { MEMORY_FAULT_STATS }
+    MEMORY_FAULT_STATS.lock().clone()
 }
 
 /// Integrate memory fault analysis with MMU exception handling (Phase 4)
@@ -311,9 +313,9 @@ pub fn handle_memory_fault_with_mmu(
     let fault_info = MemoryFaultAnalyzer::analyze_fault(esr_el1);
 
     // Update statistics
-    unsafe {
-        MEMORY_FAULT_STATS.record_fault(fault_info.fault_type);
-    }
+    MEMORY_FAULT_STATS
+        .lock()
+        .record_fault(fault_info.fault_type);
 
     // Print fault information for debugging
     let mut uart = Uart::new();

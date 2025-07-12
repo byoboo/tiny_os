@@ -273,11 +273,11 @@ pub fn handle_sdcard_read(context: &mut ShellContext) {
             }
 
             context.uart.puts("First 16 bytes: ");
-            for i in 0..16 {
-                if buffer[i] < 16 {
+            for (i, &byte) in buffer.iter().enumerate().take(16) {
+                if byte < 16 {
                     context.uart.putc(b'0');
                 }
-                context.uart.put_hex(buffer[i] as u64);
+                context.uart.put_hex(byte as u64);
                 if i < 15 {
                     context.uart.putc(b' ');
                 }
@@ -303,8 +303,8 @@ pub fn handle_sdcard_write(context: &mut ShellContext) {
 
     // Create a test pattern
     let mut test_buffer = [0u8; 512];
-    for i in 0..512 {
-        test_buffer[i] = (i % 256) as u8;
+    for (i, byte) in test_buffer.iter_mut().enumerate() {
+        *byte = (i % 256) as u8;
     }
 
     match context.sdcard.write_block(1000, &test_buffer) {
@@ -353,7 +353,7 @@ pub fn handle_exception_test_advanced(context: &ShellContext) {
         .uart
         .puts("\r\n2. Exception Statistics Analysis...\r\n");
     let stats = ExceptionStats::get_stats();
-    display_detailed_stats(context, stats);
+    display_detailed_stats(context, &stats);
 
     // Test 3: Exception handlers validation
     context
@@ -371,7 +371,7 @@ pub fn handle_exception_test_advanced(context: &ShellContext) {
 
 /// Test ESR decoder functionality
 fn test_esr_decoder(context: &ShellContext) {
-    use crate::exceptions::esr_decoder::{EsrDecoder, ExceptionClass};
+    use crate::exceptions::esr_decoder::EsrDecoder;
 
     let decoder = EsrDecoder::new();
 
@@ -473,7 +473,7 @@ fn test_exception_handlers(context: &ShellContext) {
 pub fn handle_esr_test(context: &ShellContext) {
     context.uart.puts("\r\n=== ESR_EL1 Decoder Test ===\r\n");
 
-    use crate::exceptions::esr_decoder::{EsrDecoder, ExceptionClass};
+    use crate::exceptions::esr_decoder::EsrDecoder;
     let decoder = EsrDecoder::new();
 
     context.uart.puts("Testing exception class decoding:\r\n");
@@ -487,7 +487,7 @@ pub fn handle_esr_test(context: &ShellContext) {
         (0xBE000000, "SError"),
     ];
 
-    for (esr, description) in test_values.iter() {
+    for (esr, _description) in test_values.iter() {
         let info = decoder.decode_esr(*esr);
         context.uart.puts("  ESR: 0x");
         context.uart.put_hex(*esr as u64);
@@ -869,8 +869,6 @@ fn display_irq_stats(context: &ShellContext) {
 
 /// Test IRQ source identification
 fn test_irq_source_identification(context: &ShellContext) {
-    use crate::exceptions::irq_integration::{IrqInfo, IrqSource};
-
     context
         .uart
         .puts("   Testing IRQ source identification...\r\n");
@@ -884,7 +882,6 @@ fn test_irq_source_identification(context: &ShellContext) {
     ];
 
     for (irq_id, name) in test_sources.iter() {
-        let source = IrqSource::from(*irq_id);
         context.uart.puts("   IRQ ");
         print_number(&context.uart, *irq_id);
         context.uart.puts(" -> ");

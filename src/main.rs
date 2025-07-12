@@ -5,7 +5,7 @@
 use core::arch::global_asm;
 use core::{
     include_str,
-    option::Option::{None, Some},
+    option::Option::None,
     panic::PanicInfo,
     result::Result::{Err, Ok},
 };
@@ -70,7 +70,7 @@ pub extern "C" fn kernel_main() {
     // Initialize stack management
     match init_stack_manager() {
         Ok(()) => uart.puts("✓ Stack management initialized\r\n"),
-        Err(e) => {
+        Err(_e) => {
             uart.puts("⚠ Stack management initialization failed\r\n");
         }
     }
@@ -112,7 +112,7 @@ pub extern "C" fn kernel_main() {
     use tiny_os_lib::memory::init_dynamic_memory_manager;
     match init_dynamic_memory_manager() {
         Ok(()) => uart.puts("✓ Dynamic memory management initialized\r\n"),
-        Err(e) => uart.puts("⚠ Dynamic memory management initialization failed\r\n"),
+        Err(_e) => uart.puts("⚠ Dynamic memory management initialization failed\r\n"),
     }
 
     // Initialize interrupt controller
@@ -124,7 +124,7 @@ pub extern "C" fn kernel_main() {
     uart.puts("About to initialize SD Card...\r\n");
 
     // Create a stub SD card to avoid hardware initialization in QEMU
-    let mut sdcard = SdCard::new();
+    let sdcard = SdCard::new();
     uart.puts("SD Card object created\r\n");
 
     let fat32_fs: Option<Fat32FileSystem> = None;

@@ -11,13 +11,10 @@
 //! - Memory mapping for user processes
 //! - Page table lifecycle management
 
-use core::ptr::{read_volatile, write_volatile};
+use spin::Mutex;
 
 use crate::memory::{
-    mmu::{
-        MemoryAttribute, PageTableEntry, PageType, RegionType, TranslationTable, PAGE_SHIFT,
-        PAGE_SIZE, TTBR_ENTRIES,
-    },
+    mmu::{MemoryAttribute, PageTableEntry, RegionType, PAGE_SIZE},
     MemoryManager,
 };
 
@@ -258,12 +255,11 @@ impl UserPageTable {
     fn allocate_page_table_memory() -> Result<u64, &'static str> {
         // This is a simplified allocation - in reality would use memory manager
         // For now, return a dummy address aligned to page boundary
-        static mut NEXT_PAGE_TABLE_ADDR: u64 = 0x8000_0000;
-        unsafe {
-            let addr = NEXT_PAGE_TABLE_ADDR;
-            NEXT_PAGE_TABLE_ADDR += PAGE_SIZE as u64;
-            Ok(addr)
-        }
+        use core::sync::atomic::{AtomicU64, Ordering};
+
+        static NEXT_PAGE_TABLE_ADDR: AtomicU64 = AtomicU64::new(0x8000_0000);
+        let addr = NEXT_PAGE_TABLE_ADDR.fetch_add(PAGE_SIZE as u64, Ordering::SeqCst);
+        Ok(addr)
     }
 
     /// Add a virtual memory area to this process
@@ -275,7 +271,7 @@ impl UserPageTable {
         permissions: RegionType,
     ) -> Result<usize, &'static str> {
         // Validate address range is in user space
-        if start < USER_SPACE_START || start + size > USER_SPACE_END {
+        if start + size > USER_SPACE_END {
             return Err("Address outside user space");
         }
 
@@ -323,6 +319,7 @@ impl UserPageTable {
     }
 
     /// Update page tables for a VMA (simplified)
+    #[allow(dead_code)]
     fn update_page_tables(&mut self, vma: &VirtualMemoryArea) -> Result<(), &'static str> {
         // This is a simplified implementation
         // In reality, would walk page tables and create entries
@@ -332,7 +329,7 @@ impl UserPageTable {
             let page_count = vma.page_count();
 
             for i in 0..page_count {
-                let virt_addr = vma.start_addr + (i as u64 * PAGE_SIZE as u64);
+                let _virt_addr = vma.start_addr + (i as u64 * PAGE_SIZE as u64);
                 let phys_page_addr = phys_addr + (i as u64 * PAGE_SIZE as u64);
 
                 // Create page table entry (simplified)
@@ -632,46 +629,59 @@ impl UserSpaceManager {
     }
 }
 
+/// SAFETY: UserSpaceManager is safe to send between threads and safe to share
+/// between threads because:
+/// 1. Raw pointer access is always protected by proper synchronization
+/// 2. The raw pointer is only used within safe contexts
+/// 3. All mutable operations are protected by mutex
+unsafe impl Send for UserSpaceManager {}
+unsafe impl Sync for UserSpaceManager {}
+
 /// Global user space manager instance
-static mut USER_SPACE_MANAGER: Option<UserSpaceManager> = None;
+static USER_SPACE_MANAGER: Mutex<Option<UserSpaceManager>> = Mutex::new(None);
 
 /// Initialize global user space manager
 pub fn init_user_space_manager(memory_manager: *mut MemoryManager) {
-    unsafe {
-        let mut manager = UserSpaceManager::new();
-        manager.init(memory_manager);
-        USER_SPACE_MANAGER = Some(manager);
-    }
+    let mut manager = UserSpaceManager::new();
+    manager.init(memory_manager);
+    *USER_SPACE_MANAGER.lock() = Some(manager);
 }
 
-/// Get global user space manager reference
-pub fn get_user_space_manager() -> Option<&'static mut UserSpaceManager> {
-    unsafe { USER_SPACE_MANAGER.as_mut() }
+/// Execute operation with user space manager if available
+pub fn with_user_space_manager<F, R>(f: F) -> Result<R, &'static str>
+where
+    F: FnOnce(&mut UserSpaceManager) -> R,
+{
+    let mut manager = USER_SPACE_MANAGER.lock();
+    match manager.as_mut() {
+        Some(m) => Ok(f(m)),
+        None => Err("User space manager not initialized"),
+    }
 }
 
 /// Helper function to create standard user process memory layout
 pub fn create_standard_user_layout(process_id: usize) -> Result<usize, &'static str> {
-    let manager = get_user_space_manager().ok_or("User space manager not initialized")?;
+    with_user_space_manager(|manager| {
+        // Create page table
+        let slot = manager.create_page_table(process_id)?;
 
-    // Create page table
-    let slot = manager.create_page_table(process_id)?;
+        // Add standard VMAs
+        if let Some(page_table) = manager.get_page_table_mut(slot) {
+            // Code segment: 0x400000 - 0x500000 (1MB)
+            page_table.add_vma(0x400000, 0x100000, VmaType::Code, RegionType::UserCode)?;
 
-    // Add standard VMAs
-    if let Some(page_table) = manager.get_page_table_mut(slot) {
-        // Code segment: 0x400000 - 0x500000 (1MB)
-        page_table.add_vma(0x400000, 0x100000, VmaType::Code, RegionType::UserCode)?;
+            // Data segment: 0x500000 - 0x600000 (1MB)
+            page_table.add_vma(0x500000, 0x100000, VmaType::Data, RegionType::UserData)?;
 
-        // Data segment: 0x500000 - 0x600000 (1MB)
-        page_table.add_vma(0x500000, 0x100000, VmaType::Data, RegionType::UserData)?;
+            // Heap: 0x600000 - 0x700000 (1MB, can grow)
+            page_table.add_vma(0x600000, 0x100000, VmaType::Heap, RegionType::UserData)?;
 
-        // Heap: 0x600000 - 0x700000 (1MB, can grow)
-        page_table.add_vma(0x600000, 0x100000, VmaType::Heap, RegionType::UserData)?;
+            // Stack: 0x7FFFFFFFF000 - 0x800000000000 (4KB, grows down)
+            page_table.add_vma(0x7FFFFFFFF000, 0x1000, VmaType::Stack, RegionType::UserData)?;
+        }
 
-        // Stack: 0x7FFFFFFFF000 - 0x800000000000 (4KB, grows down)
-        page_table.add_vma(0x7FFFFFFFF000, 0x1000, VmaType::Stack, RegionType::UserData)?;
-    }
-
-    Ok(slot)
+        Ok(slot)
+    })?
 }
 
 // End of user_space.rs

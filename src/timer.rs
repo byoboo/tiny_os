@@ -1,33 +1,28 @@
 // TinyOS Timer Module
 // Simple timer implementation for process management
 
+use core::sync::atomic::{AtomicU64, Ordering};
+
 /// Global timer counter
-static mut TIMER_COUNTER: u64 = 0;
+static TIMER_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Initialize timer
 pub fn init() {
     // TODO: Initialize hardware timer
-    unsafe {
-        TIMER_COUNTER = 0;
-    }
+    TIMER_COUNTER.store(0, Ordering::SeqCst);
 }
 
 /// Get current system time (in arbitrary units)
 pub fn get_system_time() -> u64 {
-    unsafe {
-        TIMER_COUNTER += 1;
-        TIMER_COUNTER
-    }
+    TIMER_COUNTER.fetch_add(1, Ordering::SeqCst)
 }
 
 /// Update timer (called from interrupt handler)
 pub fn update_timer() {
-    unsafe {
-        TIMER_COUNTER += 1;
-    }
+    TIMER_COUNTER.fetch_add(1, Ordering::SeqCst);
 }
 
 /// Get elapsed time since start
 pub fn get_elapsed_time() -> u64 {
-    unsafe { TIMER_COUNTER }
+    TIMER_COUNTER.load(Ordering::SeqCst)
 }
