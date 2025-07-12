@@ -26,12 +26,16 @@ jobs:
     
     - name: Setup Docker Environment
       run: |
-        # Build Docker development environment
-        make setup
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
         
-        # Verify Docker environment is ready
+        # Verify Docker tools are available
         docker --version
         docker-compose --version
+        
+        # Build Docker development environment
+        make setup
         
         # Show available make targets
         make help
@@ -114,7 +118,17 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup Docker Environment
-      run: make setup
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+        # Verify Docker tools are available
+        docker --version
+        docker-compose --version
+        
+        # Build Docker development environment
+        make setup
     
     - name: Run tests for scheduled builds
       if: github.event_name == 'schedule'
@@ -211,7 +225,17 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup Docker Environment
-      run: make setup
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+        # Verify Docker tools are available
+        docker --version
+        docker-compose --version
+        
+        # Build Docker development environment
+        make setup
     
     - name: Get version from Cargo.toml
       id: get_version
@@ -287,7 +311,17 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Setup Docker Environment
-      run: make setup
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+        # Verify Docker tools are available
+        docker --version
+        docker-compose --version
+        
+        # Build Docker development environment
+        make setup
     
     - name: Run security audit
       run: |
