@@ -325,13 +325,12 @@ jobs:
     
     - name: Run security audit
       run: |
-        # Run security audit in Docker environment
+        # Run security audit in Docker environment (cargo-audit pre-installed)
         docker-compose run --rm dev cargo audit
     
     - name: Check for outdated dependencies
       run: |
-        # Check for outdated dependencies in Docker environment
+        # Check for outdated dependencies in Docker environment (cargo-outdated pre-installed)
         docker-compose run --rm dev bash -c "
-          cargo install cargo-outdated
           cargo outdated --exit-code 1 || echo 'Some dependencies are outdated'
         "

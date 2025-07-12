@@ -58,7 +58,7 @@ RUN useradd -m -s /bin/bash -u 1000 dev && \
     echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Install development tools as root first
-RUN cargo install cargo-watch cargo-expand cargo-tree
+RUN cargo install cargo-watch cargo-expand cargo-tree cargo-audit cargo-outdated
 
 # Set up workspace
 WORKDIR /workspace
@@ -83,6 +83,9 @@ CMD ["bash"]
 
 # CI stage (minimal for CI/CD)
 FROM base as ci
+
+# Install CI tools
+RUN cargo install cargo-audit cargo-outdated
 
 # CI-specific setup
 WORKDIR /workspace

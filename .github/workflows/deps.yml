@@ -37,9 +37,8 @@ jobs:
     - name: Check for outdated dependencies
       id: outdated
       run: |
-        # Check for outdated dependencies using Docker environment
+        # Check for outdated dependencies using Docker environment (cargo-outdated pre-installed)
         OUTDATED=$(docker-compose run --rm dev bash -c "
-          cargo install cargo-outdated 2>/dev/null || true
           cargo outdated --format json 2>/dev/null || echo '[]'
         ")
         echo "OUTDATED=$OUTDATED" >> $GITHUB_OUTPUT
@@ -111,11 +110,11 @@ jobs:
     - name: Check for security vulnerabilities
       run: |
         echo "🔐 Security vulnerability check..."
-        # Run security audit using Docker environment
-        docker-compose run --rm dev bash -c "
-          cargo install cargo-audit 2>/dev/null || true
-          cargo audit || echo 'Security audit completed'
-        "
+        # Run security audit using Docker environment (cargo-audit pre-installed)
+        docker-compose run --rm dev cargo audit || {
+          echo 'Security audit completed with warnings - please review manually'
+          exit 0
+        }
 
   # Check for Rust toolchain updates
   rust-updates:
