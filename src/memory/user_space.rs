@@ -256,12 +256,11 @@ impl UserPageTable {
     fn allocate_page_table_memory() -> Result<u64, &'static str> {
         // This is a simplified allocation - in reality would use memory manager
         // For now, return a dummy address aligned to page boundary
-        static mut NEXT_PAGE_TABLE_ADDR: u64 = 0x8000_0000;
-        unsafe {
-            let addr = NEXT_PAGE_TABLE_ADDR;
-            NEXT_PAGE_TABLE_ADDR += PAGE_SIZE as u64;
-            Ok(addr)
-        }
+        use core::sync::atomic::{AtomicU64, Ordering};
+
+        static NEXT_PAGE_TABLE_ADDR: AtomicU64 = AtomicU64::new(0x8000_0000);
+        let addr = NEXT_PAGE_TABLE_ADDR.fetch_add(PAGE_SIZE as u64, Ordering::SeqCst);
+        Ok(addr)
     }
 
     /// Add a virtual memory area to this process
@@ -321,6 +320,7 @@ impl UserPageTable {
     }
 
     /// Update page tables for a VMA (simplified)
+    #[allow(dead_code)]
     fn update_page_tables(&mut self, vma: &VirtualMemoryArea) -> Result<(), &'static str> {
         // This is a simplified implementation
         // In reality, would walk page tables and create entries

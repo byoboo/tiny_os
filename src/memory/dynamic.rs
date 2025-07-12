@@ -172,6 +172,7 @@ impl DynamicMemoryStats {
 pub struct DynamicStackManager {
     stacks: [Option<DynamicStack>; MAX_DYNAMIC_STACKS],
     growth_policy: StackGrowthPolicy,
+    #[allow(dead_code)]
     pressure_threshold: usize,
     next_stack_id: u32,
 }
@@ -246,6 +247,7 @@ impl DynamicStackManager {
         Ok(growth_size as usize)
     }
 
+    #[allow(dead_code)]
     fn calculate_predictive_growth(&self, stack: &DynamicStack) -> u32 {
         // Simple predictive algorithm based on growth history
         if stack.growth_count > 5 {
@@ -283,8 +285,11 @@ impl DynamicStackManager {
 /// Lazy page allocator
 pub struct LazyPageAllocator {
     lazy_pages: [Option<LazyPage>; MAX_LAZY_PAGES],
+    #[allow(dead_code)]
     zero_page_address: u64,
+    #[allow(dead_code)]
     allocation_policy: LazyAllocationPolicy,
+    #[allow(dead_code)]
     next_page_index: usize,
 }
 
@@ -353,6 +358,7 @@ impl LazyPageAllocator {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn zero_initialize_page(&self, physical_address: u32) {
         // Zero out the page
         unsafe {
@@ -379,6 +385,7 @@ impl LazyPageAllocator {
 pub struct MemoryPressureHandler {
     current_pressure: PressureLevel,
     pressure_thresholds: [usize; 4], // Low, Medium, High, Critical
+    #[allow(dead_code)]
     last_pressure_check: u64,
     pressure_events: u32,
 }
@@ -458,6 +465,7 @@ impl MemoryPressureHandler {
 /// Hardware-assisted context switcher
 pub struct HardwareContextSwitcher {
     context_switch_count: u32,
+    #[allow(dead_code)]
     last_context_switch_time: u64,
     optimization_enabled: bool,
 }

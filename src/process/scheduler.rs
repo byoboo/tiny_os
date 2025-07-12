@@ -2,6 +2,7 @@
 // Phase 3.3: Basic Task Scheduler
 
 use crate::process::context::{ProcessContext, ProcessState};
+use spin::Mutex;
 
 /// Task ID type
 pub type TaskId = u32;
@@ -56,7 +57,7 @@ impl TaskQueue {
         self.count == 0
     }
 
-    pub fn iter(&self) -> TaskQueueIter {
+    pub fn iter(&self) -> TaskQueueIter<'_> {
         TaskQueueIter {
             queue: self,
             index: 0,
@@ -122,11 +123,9 @@ impl<'a> Iterator for TaskQueueIter<'a> {
 fn get_system_time() -> u64 {
     // TODO: Implement actual system time
     // For now, return a simple counter
-    static mut TIME_COUNTER: u64 = 0;
-    unsafe {
-        TIME_COUNTER += 1;
-        TIME_COUNTER
-    }
+    use core::sync::atomic::{AtomicU64, Ordering};
+    static TIME_COUNTER: AtomicU64 = AtomicU64::new(0);
+    TIME_COUNTER.fetch_add(1, Ordering::SeqCst)
 }
 
 /// Task priority levels
@@ -647,13 +646,11 @@ impl Scheduler {
 }
 
 /// Global scheduler instance
-static mut SCHEDULER: Scheduler = Scheduler::new();
+static SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 
 /// Initialize scheduler
 pub fn init_scheduler() {
-    unsafe {
-        SCHEDULER.init();
-    }
+    SCHEDULER.lock().init();
 }
 
 /// Create a new task
@@ -664,55 +661,55 @@ pub fn create_task(
     stack_base: u64,
     stack_size: u64,
 ) -> TaskId {
-    unsafe { SCHEDULER.create_task(name, priority, entry_point, stack_base, stack_size) }
+    SCHEDULER.lock().create_task(name, priority, entry_point, stack_base, stack_size)
 }
 
 /// Destroy a task
 pub fn destroy_task(task_id: TaskId) -> Result<(), &'static str> {
-    unsafe { SCHEDULER.destroy_task(task_id) }
+    SCHEDULER.lock().destroy_task(task_id)
 }
 
 /// Schedule next task
 pub fn schedule() -> Option<TaskId> {
-    unsafe { SCHEDULER.schedule().map(|task| task.id) }
+    SCHEDULER.lock().schedule().map(|task| task.id)
 }
 
 /// Handle timer preemption
 pub fn handle_timer_preemption() -> bool {
-    unsafe { SCHEDULER.handle_timer_preemption() }
+    SCHEDULER.lock().handle_timer_preemption()
 }
 
 /// Block current task
 pub fn block_current_task() {
-    unsafe { SCHEDULER.block_current_task() }
+    SCHEDULER.lock().block_current_task()
 }
 
 /// Unblock a task
 pub fn unblock_task(task_id: TaskId) -> Result<(), &'static str> {
-    unsafe { SCHEDULER.unblock_task(task_id) }
+    SCHEDULER.lock().unblock_task(task_id)
 }
 
 /// Get current task ID
 pub fn get_current_task_id() -> Option<TaskId> {
-    unsafe { SCHEDULER.get_current_task().map(|task| task.id) }
+    SCHEDULER.lock().get_current_task().map(|task| task.id)
 }
 
 /// Get scheduler statistics
 pub fn get_scheduler_stats() -> SchedulerStats {
-    unsafe { SCHEDULER.get_stats() }
+    SCHEDULER.lock().get_stats()
 }
 
 /// Get task count
 pub fn get_task_count() -> usize {
-    unsafe { SCHEDULER.get_task_count() }
+    SCHEDULER.lock().get_task_count()
 }
 
 /// Enable/disable scheduler
 pub fn set_scheduler_enabled(enabled: bool) {
-    unsafe { SCHEDULER.set_enabled(enabled) }
+    SCHEDULER.lock().set_enabled(enabled)
 }
 
 /// Check if scheduler is enabled
 pub fn is_scheduler_enabled() -> bool {
-    unsafe { SCHEDULER.is_enabled() }
+    SCHEDULER.lock().is_enabled()
 }

@@ -353,7 +353,7 @@ pub fn handle_exception_test_advanced(context: &ShellContext) {
         .uart
         .puts("\r\n2. Exception Statistics Analysis...\r\n");
     let stats = ExceptionStats::get_stats();
-    display_detailed_stats(context, stats);
+    display_detailed_stats(context, &stats);
 
     // Test 3: Exception handlers validation
     context

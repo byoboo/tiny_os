@@ -7,6 +7,7 @@ use core::{
     option::Option::{self, None, Some},
     prelude::rust_2021::*,
 };
+use spin::Mutex;
 
 /// Exception types in ARM64
 #[derive(Debug, Clone, Copy)]
@@ -67,11 +68,8 @@ impl ExceptionContext {
     }
 }
 
-/// Global exception statistics
-pub static mut EXCEPTION_STATS: ExceptionStats = ExceptionStats::new();
-
 /// Exception statistics tracking
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExceptionStats {
     pub sync_exceptions: u64,
     pub irq_exceptions: u64,
@@ -81,6 +79,9 @@ pub struct ExceptionStats {
     pub last_exception_type: Option<ExceptionType>,
     pub last_exception_level: Option<ExceptionLevel>,
 }
+
+/// Global exception statistics
+pub static EXCEPTION_STATS: Mutex<ExceptionStats> = Mutex::new(ExceptionStats::new());
 
 impl ExceptionStats {
     pub const fn new() -> Self {
@@ -101,22 +102,25 @@ impl ExceptionStats {
         self.last_exception_level = Some(exc_level);
 
         match exc_type {
-            ExceptionType::Synchronous => self.sync_exceptions += 1,
-            ExceptionType::Irq => self.irq_exceptions += 1,
-            ExceptionType::Fiq => self.fiq_exceptions += 1,
-            ExceptionType::SError => self.serror_exceptions += 1,
+            ExceptionType::Synchronous => { self.sync_exceptions += 1; },
+            ExceptionType::Irq => { self.irq_exceptions += 1; },
+            ExceptionType::Fiq => { self.fiq_exceptions += 1; },
+            ExceptionType::SError => { self.serror_exceptions += 1; },
         }
     }
 
     /// Get current exception statistics
-    pub fn get_stats() -> &'static ExceptionStats {
-        unsafe { (&raw const EXCEPTION_STATS).as_ref().unwrap() }
+    pub fn get_stats() -> ExceptionStats {
+        EXCEPTION_STATS.lock().clone()
+    }
+
+    /// Record an exception occurrence
+    pub fn record_exception_occurrence(exc_type: ExceptionType, exc_level: ExceptionLevel) {
+        EXCEPTION_STATS.lock().record_exception(exc_type, exc_level);
     }
 
     /// Reset exception statistics
     pub fn reset_stats() {
-        unsafe {
-            EXCEPTION_STATS = ExceptionStats::new();
-        }
+        *EXCEPTION_STATS.lock() = ExceptionStats::new();
     }
 }

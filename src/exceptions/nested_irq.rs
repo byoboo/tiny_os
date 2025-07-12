@@ -4,6 +4,7 @@
 //! interrupt masking, and critical section support.
 
 use core::arch::asm;
+use spin::Mutex;
 
 use crate::uart::Uart;
 
@@ -257,8 +258,7 @@ pub struct CriticalSection {
 impl CriticalSection {
     /// Enter critical section (disable all interrupts)
     pub fn enter() -> Self {
-        let previous_mask =
-            unsafe { NESTED_INTERRUPT_MANAGER.mask_interrupts(InterruptPriority::Critical) };
+        let previous_mask = NESTED_INTERRUPT_MANAGER.lock().mask_interrupts(InterruptPriority::Critical);
 
         Self { previous_mask }
     }
@@ -266,9 +266,7 @@ impl CriticalSection {
 
 impl Drop for CriticalSection {
     fn drop(&mut self) {
-        unsafe {
-            NESTED_INTERRUPT_MANAGER.restore_interrupts(self.previous_mask);
-        }
+        NESTED_INTERRUPT_MANAGER.lock().restore_interrupts(self.previous_mask);
     }
 }
 
@@ -295,7 +293,7 @@ impl NestedInterruptStats {
 }
 
 /// Global nested interrupt manager
-pub static mut NESTED_INTERRUPT_MANAGER: NestedInterruptManager = NestedInterruptManager::new();
+pub static NESTED_INTERRUPT_MANAGER: Mutex<NestedInterruptManager> = Mutex::new(NestedInterruptManager::new());
 
 /// Initialize nested interrupt support
 pub fn init_nested_interrupts() {
@@ -306,19 +304,17 @@ pub fn init_nested_interrupts() {
 
 /// Enter interrupt with priority checking
 pub fn enter_interrupt_with_priority(priority: InterruptPriority) -> bool {
-    unsafe { NESTED_INTERRUPT_MANAGER.enter_interrupt(priority) }
+    NESTED_INTERRUPT_MANAGER.lock().enter_interrupt(priority)
 }
 
 /// Exit current interrupt
 pub fn exit_current_interrupt() {
-    unsafe {
-        NESTED_INTERRUPT_MANAGER.exit_interrupt();
-    }
+    NESTED_INTERRUPT_MANAGER.lock().exit_interrupt();
 }
 
 /// Get nested interrupt statistics
 pub fn get_nested_interrupt_stats() -> NestedInterruptStats {
-    unsafe { NESTED_INTERRUPT_MANAGER.get_stats() }
+    NESTED_INTERRUPT_MANAGER.lock().get_stats()
 }
 
 /// Test nested interrupt functionality

@@ -15,6 +15,7 @@
 //! 4. Integrating with the broader memory management system
 
 use crate::memory::MemoryManager;
+use spin::Mutex;
 
 /// MMU exception types as defined by ARM64 architecture
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -373,13 +374,11 @@ pub fn parse_mmu_exception(
 }
 
 /// Global MMU exception handler instance
-static mut MMU_EXCEPTION_HANDLER: MmuExceptionHandler = MmuExceptionHandler::new();
+static MMU_EXCEPTION_HANDLER: Mutex<MmuExceptionHandler> = Mutex::new(MmuExceptionHandler::new());
 
 /// Initialize MMU exception handling
 pub fn init_mmu_exceptions() {
-    unsafe {
-        MMU_EXCEPTION_HANDLER.init();
-    }
+    MMU_EXCEPTION_HANDLER.lock().init();
 }
 
 /// Handle MMU exception (called from exception vectors)
@@ -392,22 +391,20 @@ pub fn handle_mmu_exception_global(
 ) -> MmuRecoveryAction {
     let fault_info = parse_mmu_exception(esr_el1, far_el1, user_mode, exception_lr);
 
-    unsafe { MMU_EXCEPTION_HANDLER.handle_mmu_exception(fault_info, memory_manager) }
+    MMU_EXCEPTION_HANDLER.lock().handle_mmu_exception(fault_info, memory_manager)
 }
 
 /// Get MMU exception statistics
 pub fn get_mmu_exception_stats() -> MmuExceptionStats {
-    unsafe { MMU_EXCEPTION_HANDLER.get_stats() }
+    MMU_EXCEPTION_HANDLER.lock().get_stats()
 }
 
 /// Check if MMU exception handling is enabled
 pub fn is_mmu_exception_handling_enabled() -> bool {
-    unsafe { MMU_EXCEPTION_HANDLER.is_enabled() }
+    MMU_EXCEPTION_HANDLER.lock().is_enabled()
 }
 
 /// Enable or disable MMU exception handling
 pub fn set_mmu_exception_handling_enabled(enabled: bool) {
-    unsafe {
-        MMU_EXCEPTION_HANDLER.set_enabled(enabled);
-    }
+    MMU_EXCEPTION_HANDLER.lock().set_enabled(enabled);
 }

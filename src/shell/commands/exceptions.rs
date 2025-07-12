@@ -12,7 +12,7 @@
 //! - `extest`: Test exception handling (carefully)
 
 use crate::{
-    exceptions::{get_memory_fault_stats, EXCEPTION_STATS},
+    exceptions::{get_memory_fault_stats, types::ExceptionStats},
     memory::{
         get_mmu_exception_stats, is_mmu_exception_handling_enabled,
         set_mmu_exception_handling_enabled,
@@ -28,16 +28,14 @@ pub fn cmd_exception_stats(args: &[&str], context: &mut ShellContext) {
     }
 
     // Get exception statistics from the global static
-    let (sync_count, irq_count, fiq_count, serror_count, total_count) = unsafe {
-        let stats = &*core::ptr::addr_of!(EXCEPTION_STATS);
-        (
-            stats.sync_exceptions,
-            stats.irq_exceptions,
-            stats.fiq_exceptions,
-            stats.serror_exceptions,
-            stats.total_exceptions,
-        )
-    };
+    let stats = ExceptionStats::get_stats();
+    let (sync_count, irq_count, fiq_count, serror_count, total_count) = (
+        stats.sync_exceptions,
+        stats.irq_exceptions,
+        stats.fiq_exceptions,
+        stats.serror_exceptions,
+        stats.total_exceptions,
+    );
 
     context.uart.puts("Exception Statistics:\r\n");
     context.uart.puts("=====================\r\n");
@@ -160,17 +158,8 @@ pub fn cmd_reset_exception_stats(args: &[&str], context: &mut ShellContext) {
         return;
     }
 
-    // Reset exception statistics using the existing method
-    unsafe {
-        let stats = &mut *core::ptr::addr_of_mut!(EXCEPTION_STATS);
-        stats.sync_exceptions = 0;
-        stats.irq_exceptions = 0;
-        stats.fiq_exceptions = 0;
-        stats.serror_exceptions = 0;
-        stats.total_exceptions = 0;
-        stats.last_exception_type = None;
-        stats.last_exception_level = None;
-    }
+    // Reset exception statistics using the interface
+    ExceptionStats::reset_stats();
 
     context.uart.puts("Exception statistics reset\r\n");
 }

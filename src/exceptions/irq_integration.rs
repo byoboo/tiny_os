@@ -3,8 +3,9 @@
 //! This module integrates the exception system with the existing interrupt
 //! controller, providing proper IRQ routing and acknowledgment.
 
-use super::types::{ExceptionContext, ExceptionLevel, ExceptionType, EXCEPTION_STATS};
+use super::types::{ExceptionContext, ExceptionLevel, ExceptionType, ExceptionStats};
 use crate::{interrupts::InterruptController, uart::Uart};
+use spin::Mutex;
 
 /// IRQ source identification
 #[repr(u32)]
@@ -72,6 +73,11 @@ pub struct IrqControllerIntegration {
     irq_stats: IrqStats,
 }
 
+// SAFETY: In a bare-metal environment, we don't have actual threads,
+// so the raw pointer is safe to share across "threads" (interrupt contexts)
+unsafe impl Send for IrqControllerIntegration {}
+unsafe impl Sync for IrqControllerIntegration {}
+
 impl IrqControllerIntegration {
     pub const fn new() -> Self {
         Self {
@@ -92,9 +98,7 @@ impl IrqControllerIntegration {
     /// Handle an IRQ exception
     pub fn handle_irq(&mut self, ctx: &mut ExceptionContext) -> IrqInfo {
         // Update exception statistics
-        unsafe {
-            EXCEPTION_STATS.record_exception(ExceptionType::Irq, ExceptionLevel::CurrentSpElx);
-        }
+        ExceptionStats::record_exception_occurrence(ExceptionType::Irq, ExceptionLevel::CurrentSpElx);
 
         // Read the interrupt acknowledge register to get the interrupt ID
         let interrupt_id = self.read_interrupt_acknowledge();
@@ -243,23 +247,21 @@ impl IrqStats {
 }
 
 /// Global IRQ controller integration instance
-pub static mut IRQ_CONTROLLER: IrqControllerIntegration = IrqControllerIntegration::new();
+static IRQ_CONTROLLER: Mutex<IrqControllerIntegration> = Mutex::new(IrqControllerIntegration::new());
 
 /// Initialize IRQ controller integration
 pub fn init_irq_integration(interrupt_controller: *mut InterruptController) {
-    unsafe {
-        IRQ_CONTROLLER.init(interrupt_controller);
-    }
+    IRQ_CONTROLLER.lock().init(interrupt_controller);
 }
 
 /// Handle IRQ from exception handler
 pub fn handle_irq_integration(ctx: &mut ExceptionContext) -> IrqInfo {
-    unsafe { IRQ_CONTROLLER.handle_irq(ctx) }
+    IRQ_CONTROLLER.lock().handle_irq(ctx)
 }
 
 /// Get IRQ statistics
 pub fn get_irq_stats() -> IrqStats {
-    unsafe { IRQ_CONTROLLER.get_stats() }
+    IRQ_CONTROLLER.lock().get_stats()
 }
 
 /// Test IRQ controller integration

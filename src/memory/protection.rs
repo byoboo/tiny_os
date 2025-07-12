@@ -214,7 +214,7 @@ impl CorruptionDetection for BlockAllocator {
 // - Stack protection (canaries, guard pages, NX stack)
 // - Control Flow Integrity (CFI)
 
-use core::{mem::MaybeUninit, ptr::addr_of_mut};
+use core::{mem::MaybeUninit, ptr::addr_of_mut, sync::atomic::{AtomicBool, Ordering}};
 
 use crate::{
     memory::{MemoryManager, PAGE_SIZE},
@@ -881,7 +881,7 @@ pub enum PermissionFaultResult {
 /// Global advanced memory protection manager
 static mut ADVANCED_MEMORY_PROTECTION: MaybeUninit<AdvancedMemoryProtection> =
     MaybeUninit::uninit();
-static mut ADVANCED_MEMORY_PROTECTION_INIT: bool = false;
+static ADVANCED_MEMORY_PROTECTION_INIT: AtomicBool = AtomicBool::new(false);
 
 /// Initialize advanced memory protection manager
 pub fn init_advanced_memory_protection(memory_manager: *mut MemoryManager) {
@@ -889,7 +889,7 @@ pub fn init_advanced_memory_protection(memory_manager: *mut MemoryManager) {
         let mut manager = AdvancedMemoryProtection::new();
         manager.init(memory_manager);
         ADVANCED_MEMORY_PROTECTION = MaybeUninit::new(manager);
-        ADVANCED_MEMORY_PROTECTION_INIT = true;
+        ADVANCED_MEMORY_PROTECTION_INIT.store(true, Ordering::SeqCst);
     }
 }
 
@@ -899,7 +899,7 @@ where
     F: FnOnce(&mut AdvancedMemoryProtection) -> R,
 {
     unsafe {
-        if !ADVANCED_MEMORY_PROTECTION_INIT {
+        if !ADVANCED_MEMORY_PROTECTION_INIT.load(Ordering::SeqCst) {
             return None;
         }
         Some(f(

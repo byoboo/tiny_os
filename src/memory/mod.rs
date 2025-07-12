@@ -188,7 +188,7 @@ impl MemoryManager {
     ///
     /// Returns a statistics collector that can be used for detailed analysis
     /// without borrowing the entire memory manager.
-    pub fn get_statistics(&self) -> MemoryStatistics {
+    pub fn get_statistics(&self) -> MemoryStatistics<'_> {
         MemoryStatistics::new(&self.allocator)
     }
 
@@ -196,7 +196,7 @@ impl MemoryManager {
     ///
     /// Returns a tester that can run various memory validation tests
     /// to ensure the allocator is working correctly.
-    pub fn get_tester(&mut self) -> MemoryTester {
+    pub fn get_tester(&mut self) -> MemoryTester<'_> {
         MemoryTester::new(&mut self.allocator)
     }
 

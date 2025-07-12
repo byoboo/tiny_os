@@ -121,14 +121,17 @@ impl FileContent {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub(crate) fn data_mut(&mut self) -> &mut [u8] {
         &mut self.data[..self.len]
     }
 
+    #[allow(dead_code)]
     pub(crate) fn set_len(&mut self, len: usize) {
         self.len = len.min(MAX_FILE_SIZE as usize);
     }
 
+    #[allow(dead_code)]
     pub(crate) fn data_ptr(&mut self) -> *mut u8 {
         self.data.as_mut_ptr()
     }

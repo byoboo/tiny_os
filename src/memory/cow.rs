@@ -26,6 +26,7 @@ const MAX_COW_PAGES: usize = 64;
 const MAX_VIRT_ADDRS_PER_PAGE: usize = 8;
 
 /// Maximum number of process IDs per COW page
+#[allow(dead_code)]
 const MAX_PROCESS_IDS_PER_PAGE: usize = 4;
 
 /// Simple array-based vector for no_std environment
@@ -78,7 +79,7 @@ impl<T: Copy + Default> SimpleVec<T> {
         false
     }
 
-    pub fn iter(&self) -> SimpleVecIter<T> {
+    pub fn iter(&self) -> SimpleVecIter<'_, T> {
         SimpleVecIter {
             data: &self.data,
             len: self.len,

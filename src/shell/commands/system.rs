@@ -151,14 +151,32 @@ pub fn handle_help(context: &ShellContext) {
     context.uart.puts("    4 - Deallocate stack\r\n");
     context.uart.puts("    5 - Switch stack\r\n");
     context.uart.puts("    6 - Stack test\r\n");
-    context.uart.puts("COW Management (Phase 4.4):\r\n");
-    context.uart.puts("  ~   - COW management submenu\r\n");
+    context.uart.puts("User Space Management (Phase 4.4.2):\r\n");
+    context.uart.puts("  |   - User space page table submenu\r\n");
+    context.uart.puts("Advanced Memory Protection (Phase 4.4.3):\r\n");
+    context.uart.puts("  @   - Advanced protection submenu\r\n");
+    context.uart.puts("Dynamic Memory Management (Phase 4.4.4):\r\n");
+    context.uart.puts("  *   - Dynamic memory submenu\r\n");
+    context.uart.puts("Copy-on-Write Management (Phase 4.4):\r\n");
+    context.uart.puts("  (   - COW management submenu\r\n");
     context.uart.puts("    1 - COW status\r\n");
     context.uart.puts("    2 - COW statistics\r\n");
     context.uart.puts("    3 - Create COW mapping\r\n");
-    context.uart.puts("    4 - Force COW protection\r\n");
-    context.uart.puts("    5 - Remove COW protection\r\n");
+    context.uart.puts("    4 - Protect COW page\r\n");
+    context.uart.puts("    5 - Unprotect COW page\r\n");
     context.uart.puts("    6 - COW test\r\n");
+    context.uart.puts("Testing Framework (Phase 5):\r\n");
+    context.uart.puts("  )   - Testing framework submenu\r\n");
+    context.uart.puts("    1 - Kernel tests\r\n");
+    context.uart.puts("    2 - MMU tests\r\n");
+    context.uart.puts("    3 - Process tests\r\n");
+    context.uart.puts("    4 - Syscall tests\r\n");
+    context.uart.puts("    5 - Integration tests\r\n");
+    context.uart.puts("    6 - All tests\r\n");
+    context.uart.puts("Command Line Interface:\r\n");
+    context.uart.puts("  +   - Advanced command routing\r\n");
+    context.uart.puts("    1 - Advanced protection commands\r\n");
+    context.uart.puts("    2 - Dynamic memory commands\r\n");
     context.uart.puts("================================\r\n");
 }
 

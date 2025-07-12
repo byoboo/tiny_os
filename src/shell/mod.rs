@@ -568,27 +568,123 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     }
                 }
 
+                // Copy-on-Write Management (Phase 4.4)
+                b'(' => {
+                    // COW management submenu
+                    context.uart.puts("\r\nCopy-on-Write Management:\r\n");
+                    context.uart.puts("  1 - COW Status\r\n");
+                    context.uart.puts("  2 - COW Statistics\r\n");
+                    context.uart.puts("  3 - Create COW Mapping\r\n");
+                    context.uart.puts("  4 - Protect COW Page\r\n");
+                    context.uart.puts("  5 - Unprotect COW Page\r\n");
+                    context.uart.puts("  6 - Test COW System\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::system::cmd_cow_status(&[], &mut context),
+                            b'2' => commands::system::cmd_cow_stats(&[], &mut context),
+                            b'3' => commands::system::cmd_cow_create(&[], &mut context),
+                            b'4' => commands::system::cmd_cow_protect(&[], &mut context),
+                            b'5' => commands::system::cmd_cow_unprotect(&[], &mut context),
+                            b'6' => commands::system::cmd_cow_test(&[], &mut context),
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
                 // Testing Framework Commands (Phase 5)
-                // Note: 'T' is already handled above for system::handle_time
-                // b'@' => {
-                //     // Read next character for testing subcommand
-                //     if let Some(sub_ch) = context.uart.getc() {
-                //         match sub_ch {
-                //             b'K' | b'k' => commands::testing::handle_kernel_tests(&context),
-                //             b'M' | b'm' => commands::testing::handle_mmu_tests(&context),
-                //             b'P' | b'p' => commands::testing::handle_process_tests(&context),
-                //             b'S' | b's' => commands::testing::handle_syscall_tests(&context),
-                //             b'I' | b'i' => commands::testing::handle_integration_tests(&context),
-                //             b'A' | b'a' => commands::testing::handle_all_tests(&context),
-                //             b'H' | b'h' => commands::testing::handle_testing_help(&context),
-                //             _ => {
-                //                 context.uart.puts("Invalid testing command. Use TH for help.\r\n");
-                //             }
-                //         }
-                //     } else {
-                //         context.uart.puts("Testing commands: TK, TM, TP, TS, TI, TA, TH\r\n");
-                //     }
-                // }
+                b')' => {
+                    // Testing framework submenu
+                    context.uart.puts("\r\nTesting Framework:\r\n");
+                    context.uart.puts("  1 - Kernel Tests\r\n");
+                    context.uart.puts("  2 - MMU Tests\r\n");
+                    context.uart.puts("  3 - Process Tests\r\n");
+                    context.uart.puts("  4 - Syscall Tests\r\n");
+                    context.uart.puts("  5 - Integration Tests\r\n");
+                    context.uart.puts("  6 - All Tests\r\n");
+                    context.uart.puts("  h - Testing Help\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => commands::testing::handle_kernel_tests(&context),
+                            b'2' => commands::testing::handle_mmu_tests(&context),
+                            b'3' => commands::testing::handle_process_tests(&context),
+                            b'4' => commands::testing::handle_syscall_tests(&context),
+                            b'5' => commands::testing::handle_integration_tests(&context),
+                            b'6' => commands::testing::handle_all_tests(&context),
+                            b'h' => commands::testing::handle_testing_help(&context),
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
+
+                // Command Line Interface Commands (enhanced routing)
+                b'+' => {
+                    // Command line interface
+                    context.uart.puts("\r\nCommand Line Interface:\r\n");
+                    context.uart.puts("  1 - Advanced Protection Commands\r\n");
+                    context.uart.puts("  2 - Dynamic Memory Commands\r\n");
+                    context.uart.puts("  h - Command Line Help\r\n");
+                    context.uart.puts("Select option: ");
+
+                    if let Some(option) = context.uart.getc() {
+                        match option {
+                            b'1' => {
+                                context.uart.puts("Advanced Protection Command:\r\n");
+                                context.uart.puts("  s - Status\r\n");
+                                context.uart.puts("  p - Permissions\r\n");
+                                context.uart.puts("  a - ASLR\r\n");
+                                context.uart.puts("  k - Stack\r\n");
+                                context.uart.puts("  t - Test\r\n");
+                                context.uart.puts("  g - Stats\r\n");
+                                context.uart.puts("Select: ");
+                                if let Some(sub_cmd) = context.uart.getc() {
+                                    match sub_cmd {
+                                        b's' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "status"], &mut context),
+                                        b'p' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "permissions"], &mut context),
+                                        b'a' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "aslr"], &mut context),
+                                        b'k' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "stack"], &mut context),
+                                        b't' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "test"], &mut context),
+                                        b'g' => commands::advanced_protection::cmd_advanced_protection(&["advanced_protection", "stats"], &mut context),
+                                        _ => context.uart.puts("Invalid subcommand\r\n"),
+                                    }
+                                }
+                            }
+                            b'2' => {
+                                context.uart.puts("Dynamic Memory Command:\r\n");
+                                context.uart.puts("  s - Status\r\n");
+                                context.uart.puts("  g - Growth\r\n");
+                                context.uart.puts("  l - Lazy\r\n");
+                                context.uart.puts("  p - Pressure\r\n");
+                                context.uart.puts("  o - Optimize\r\n");
+                                context.uart.puts("  c - Context\r\n");
+                                context.uart.puts("  t - Stats\r\n");
+                                context.uart.puts("Select: ");
+                                if let Some(sub_cmd) = context.uart.getc() {
+                                    match sub_cmd {
+                                        b's' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "status"], &mut context),
+                                        b'g' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "growth"], &mut context),
+                                        b'l' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "lazy"], &mut context),
+                                        b'p' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "pressure"], &mut context),
+                                        b'o' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "optimize"], &mut context),
+                                        b'c' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "context"], &mut context),
+                                        b't' => commands::dynamic_memory::cmd_dynamic_memory(&["dynamic_memory", "stats"], &mut context),
+                                        _ => context.uart.puts("Invalid subcommand\r\n"),
+                                    }
+                                }
+                            }
+                            b'h' => {
+                                context.uart.puts("Command Line Interface Help:\r\n");
+                                context.uart.puts("  1 - Use main advanced protection router\r\n");
+                                context.uart.puts("  2 - Use main dynamic memory router\r\n");
+                                context.uart.puts("These commands route through main handlers.\r\n");
+                            }
+                            _ => context.uart.puts("Invalid option\r\n"),
+                        }
+                    }
+                }
 
                 // Unknown command
                 _ => {

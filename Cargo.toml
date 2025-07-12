@@ -13,6 +13,7 @@ raspi3 = []
 std = []
 
 [dependencies]
+spin = "0.9"
 
 [dev-dependencies]
 # No external dev dependencies for no_std embedded target
