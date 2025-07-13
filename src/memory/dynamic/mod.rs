@@ -100,3 +100,17 @@ pub fn is_dynamic_memory_enabled() -> bool {
         .as_ref()
         .map_or(false, |m| m.is_enabled())
 }
+
+/// Enable dynamic memory management
+pub fn enable_dynamic_memory() -> Result<(), &'static str> {
+    with_dynamic_memory_manager(|manager| {
+        manager.set_enabled(true);
+    })
+}
+
+/// Disable dynamic memory management
+pub fn disable_dynamic_memory() -> Result<(), &'static str> {
+    with_dynamic_memory_manager(|manager| {
+        manager.set_enabled(false);
+    })
+}
