@@ -5,7 +5,7 @@
 
 use crate::shell::{commands, core::ShellContext};
 
-/// Route basic system commands (h, t, s, c)
+/// Route basic system commands (h, t, s, c, b, z)
 pub fn route_system_commands(ch: u8, context: &mut ShellContext, start_time: u64) -> bool {
     match ch {
         b'h' | b'H' => {
@@ -22,6 +22,16 @@ pub fn route_system_commands(ch: u8, context: &mut ShellContext, start_time: u64
         }
         b'c' | b'C' => {
             commands::system::handle_health_check(context);
+            true
+        }
+        b'b' | b'B' => {
+            // Benchmark commands menu
+            handle_benchmark_menu(context);
+            true
+        }
+        b'z' | b'Z' => {
+            // Quick performance status
+            commands::benchmark::cmd_perfstat(&[], context);
             true
         }
         _ => false,
@@ -157,5 +167,51 @@ pub fn route_memory_commands(ch: u8, context: &mut ShellContext) -> bool {
             true
         }
         _ => false,
+    }
+}
+
+/// Handle benchmark menu interface
+fn handle_benchmark_menu(context: &mut ShellContext) {
+    context.uart.puts("\r\n🔬 BENCHMARK MENU\r\n");
+    context.uart.puts("================\r\n");
+    context.uart.puts("1 - Run baseline benchmarks\r\n");
+    context.uart.puts("2 - Memory performance tests\r\n");
+    context.uart.puts("3 - Timing calibration\r\n");
+    context.uart.puts("4 - Quick memory test\r\n");
+    context.uart.puts("5 - Quick CPU test\r\n");
+    context.uart.puts("6 - Run all benchmarks\r\n");
+    context.uart.puts("0 - Return to main menu\r\n");
+    context.uart.puts("Select option: ");
+
+    if let Some(option) = context.uart.getc() {
+        context.uart.putc(option);
+        context.uart.puts("\r\n");
+
+        match option {
+            b'1' => {
+                commands::benchmark::cmd_benchmark(&["baseline"], context);
+            }
+            b'2' => {
+                commands::benchmark::cmd_benchmark(&["memory"], context);
+            }
+            b'3' => {
+                commands::benchmark::cmd_benchmark(&["calibrate"], context);
+            }
+            b'4' => {
+                commands::benchmark::cmd_perf(&["memory"], context);
+            }
+            b'5' => {
+                commands::benchmark::cmd_perf(&["cpu"], context);
+            }
+            b'6' => {
+                commands::benchmark::cmd_benchmark(&["all"], context);
+            }
+            b'0' => {
+                context.uart.puts("Returning to main menu\r\n");
+            }
+            _ => {
+                context.uart.puts("Invalid option\r\n");
+            }
+        }
     }
 }

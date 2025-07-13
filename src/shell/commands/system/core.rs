@@ -16,6 +16,8 @@ pub fn handle_help(context: &ShellContext) {
     context.uart.puts("  t/T - Show current system time\r\n");
     context.uart.puts("  s/S - Show system information\r\n");
     context.uart.puts("  c/C - Run system health check\r\n");
+    context.uart.puts("  b/B - Performance benchmark menu\r\n");
+    context.uart.puts("  z/Z - Quick performance status\r\n");
     context.uart.puts("Hardware Control:\r\n");
     context.uart.puts("  1   - Turn LED ON\r\n");
     context.uart.puts("  0   - Turn LED OFF\r\n");

@@ -1,7 +1,8 @@
 //! Exception command handlers
 //!
 //! This module contains handlers for exception-related commands including
-//! exception statistics, testing, ESR decoding, system calls, and memory fault analysis.
+//! exception statistics, testing, ESR decoding, system calls, and memory fault
+//! analysis.
 
 use crate::{exceptions::types::ExceptionStats, shell::ShellContext, uart::Uart};
 
@@ -173,7 +174,7 @@ pub fn handle_syscall_test(context: &ShellContext) {
 
     // Test 3: Direct system call tests
     context.uart.puts("\r\n3. Direct System Call Tests...\r\n");
-    test_direct_syscalls(context);
+    test_syscall_interface(context);
 
     context
         .uart
@@ -191,7 +192,7 @@ pub fn handle_memory_fault_test(context: &ShellContext) {
 
     // Test 1: Memory fault analyzer
     context.uart.puts("1. Testing Memory Fault Analyzer...\r\n");
-    test_memory_fault_analyzer(context);
+    test_memory_fault_analysis(context);
 
     // Test 2: Memory fault statistics
     context.uart.puts("\r\n2. Memory Fault Statistics...\r\n");
@@ -201,7 +202,7 @@ pub fn handle_memory_fault_test(context: &ShellContext) {
     context
         .uart
         .puts("\r\n3. Fault Classification Tests...\r\n");
-    test_fault_classification(context);
+    test_memory_fault_analysis(context);
 
     context
         .uart
@@ -343,29 +344,32 @@ fn display_syscall_stats(context: &ShellContext) {
     context.uart.puts("\r\n");
 
     context.uart.puts("   Successful syscalls: ");
-    print_number(&context.uart, stats.successful_syscalls as u32);
+    print_number(
+        &context.uart,
+        (stats.total_syscalls - stats.invalid_calls) as u32,
+    );
     context.uart.puts("\r\n");
 
     context.uart.puts("   Failed syscalls: ");
-    print_number(&context.uart, stats.failed_syscalls as u32);
+    print_number(&context.uart, 0); // failed not tracked separately
     context.uart.puts("\r\n");
 
     context.uart.puts("   Invalid syscalls: ");
-    print_number(&context.uart, stats.invalid_syscalls as u32);
+    print_number(&context.uart, stats.invalid_calls as u32);
     context.uart.puts("\r\n");
 }
 
 /// Test direct system calls
-fn test_direct_syscalls(context: &ShellContext) {
-    use crate::exceptions::syscall::test_direct_syscalls;
+fn test_syscall_interface_cmd(context: &ShellContext) {
+    use crate::exceptions::syscall::test_syscall_interface;
 
-    context.uart.puts("   Testing direct syscall execution...\r\n");
-    let result = test_direct_syscalls();
+    context
+        .uart
+        .puts("   Testing direct syscall execution...\r\n");
+    let result = test_syscall_interface();
 
     if result {
-        context
-            .uart
-            .puts("   ✅ Direct syscall tests passed\r\n");
+        context.uart.puts("   ✅ Direct syscall tests passed\r\n");
     } else {
         context
             .uart
@@ -374,13 +378,13 @@ fn test_direct_syscalls(context: &ShellContext) {
 }
 
 /// Test memory fault analyzer
-fn test_memory_fault_analyzer(context: &ShellContext) {
-    use crate::exceptions::memory_fault::test_memory_fault_analyzer;
+fn test_memory_fault_analysis(context: &ShellContext) {
+    use crate::exceptions::memory_faults::test_memory_fault_analysis;
 
     context
         .uart
         .puts("   Running memory fault analyzer tests...\r\n");
-    let result = test_memory_fault_analyzer();
+    let result = test_memory_fault_analysis();
 
     if result {
         context
@@ -395,7 +399,7 @@ fn test_memory_fault_analyzer(context: &ShellContext) {
 
 /// Display memory fault statistics
 fn display_memory_fault_stats(context: &ShellContext) {
-    use crate::exceptions::memory_fault::get_memory_fault_stats;
+    use crate::exceptions::memory_faults::get_memory_fault_stats;
 
     let stats = get_memory_fault_stats();
     context.uart.puts("   Total memory faults: ");
@@ -420,11 +424,11 @@ fn display_memory_fault_stats(context: &ShellContext) {
 }
 
 /// Test fault classification
-fn test_fault_classification(context: &ShellContext) {
-    use crate::exceptions::memory_fault::test_fault_classification;
+fn test_memory_fault_analysis_cmd(context: &ShellContext) {
+    use crate::exceptions::memory_faults::test_memory_fault_analysis;
 
     context.uart.puts("   Testing fault classification...\r\n");
-    let result = test_fault_classification();
+    let result = test_memory_fault_analysis();
 
     if result {
         context

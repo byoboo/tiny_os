@@ -1,7 +1,8 @@
 //! Deferred Processing command handlers
 //!
-//! This module contains handlers for deferred processing-related commands including
-//! work queue testing, soft IRQ system testing, and performance monitoring.
+//! This module contains handlers for deferred processing-related commands
+//! including work queue testing, soft IRQ system testing, and performance
+//! monitoring.
 
 use crate::{shell::ShellContext, uart::Uart};
 
