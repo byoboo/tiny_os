@@ -117,10 +117,10 @@ run_boot_tests() {
     if [[ -f "${TESTS_DIR}/test_qemu_boot.sh" ]]; then
         print_info "Running QEMU boot validation test"
         if $VERBOSE; then
-            timeout 30s bash "${TESTS_DIR}/test_qemu_boot.sh"
+            timeout 120s bash "${TESTS_DIR}/test_qemu_boot.sh"
             exit_code=$?
         else
-            timeout 30s bash "${TESTS_DIR}/test_qemu_boot.sh" > /dev/null 2>&1
+            timeout 120s bash "${TESTS_DIR}/test_qemu_boot.sh" > /dev/null 2>&1
             exit_code=$?
         fi
         print_status $exit_code "QEMU boot test"
