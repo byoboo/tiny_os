@@ -1,12 +1,13 @@
 //! Central Command Router
 //!
 //! This module provides the central command routing logic that dispatches
-//! incoming commands to the appropriate specialized routers based on command type.
+//! incoming commands to the appropriate specialized routers based on command
+//! type.
 
-use crate::shell::{commands, routers, core::ShellContext};
+use crate::shell::{commands, core::ShellContext, routers};
 
 /// Main command routing function
-/// 
+///
 /// This function receives a command character and routes it to the appropriate
 /// handler based on the command type and complexity.
 pub fn route_command(ch: u8, context: &mut ShellContext, start_time: u64) {
@@ -35,7 +36,7 @@ pub fn route_command(ch: u8, context: &mut ShellContext, start_time: u64) {
         // Process Management (Phase 3)
         b'&' => routers::route_process_management(context),
 
-        // Exception Management (Phase 4)  
+        // Exception Management (Phase 4)
         b'^' => routers::route_exception_management(context),
 
         // Virtual Memory Management (Phase 4.2)
@@ -68,11 +69,19 @@ pub fn route_command(ch: u8, context: &mut ShellContext, start_time: u64) {
         b']' => commands::process::handle_scheduler_test(context),
 
         // Filesystem commands
-        b'd' | b'D' => commands::filesystem::handle_directory_listing(&context.uart, &mut context.fat32_fs),
-        b'n' | b'N' => commands::filesystem::handle_filesystem_mount_info(&context.uart, &mut context.fat32_fs),
-        b'o' | b'O' => commands::filesystem::handle_change_directory(&context.uart, &mut context.fat32_fs),
+        b'd' | b'D' => {
+            commands::filesystem::handle_directory_listing(&context.uart, &mut context.fat32_fs)
+        }
+        b'n' | b'N' => {
+            commands::filesystem::handle_filesystem_mount_info(&context.uart, &mut context.fat32_fs)
+        }
+        b'o' | b'O' => {
+            commands::filesystem::handle_change_directory(&context.uart, &mut context.fat32_fs)
+        }
         b'u' | b'U' => commands::filesystem::handle_read_file(&context.uart, &mut context.fat32_fs),
-        b'k' | b'K' => commands::filesystem::handle_change_to_root(&context.uart, &mut context.fat32_fs),
+        b'k' | b'K' => {
+            commands::filesystem::handle_change_to_root(&context.uart, &mut context.fat32_fs)
+        }
 
         // Printable character feedback
         _ => {
@@ -81,7 +90,9 @@ pub fn route_command(ch: u8, context: &mut ShellContext, start_time: u64) {
                 context.uart.putc(ch);
                 context.uart.puts("\r\n");
             } else {
-                context.uart.puts("Non-printable character (control code)\r\n");
+                context
+                    .uart
+                    .puts("Non-printable character (control code)\r\n");
             }
         }
     }
@@ -103,7 +114,7 @@ fn route_advanced_command_interface(context: &mut ShellContext) {
             }
             b'2' => {
                 context.uart.puts("Enter dynamic memory command: ");
-                // For now, show status - in real implementation would parse input  
+                // For now, show status - in real implementation would parse input
                 commands::dynamic_memory::cmd_dynamic_memory(&["status"], context);
             }
             _ => context.uart.puts("Invalid option\r\n"),

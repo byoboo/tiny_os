@@ -1,9 +1,9 @@
 //! Memory Layout and Address Space Constants
 //!
-//! This module defines address space layouts, constants, and standard memory layouts
-//! for user space processes.
+//! This module defines address space layouts, constants, and standard memory
+//! layouts for user space processes.
 
-use super::vma::{VmaType, VirtualMemoryArea};
+use super::vma::{VirtualMemoryArea, VmaType};
 use crate::memory::mmu::RegionType;
 
 /// User space virtual address ranges
@@ -35,7 +35,7 @@ pub fn create_standard_vmas() -> [VirtualMemoryArea; 4] {
             VmaType::Code,
             RegionType::UserCode,
         ),
-        // Data segment  
+        // Data segment
         VirtualMemoryArea::new(
             STANDARD_DATA_START,
             STANDARD_DATA_START + STANDARD_DATA_SIZE,

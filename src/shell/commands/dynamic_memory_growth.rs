@@ -1,5 +1,7 @@
-use crate::memory::dynamic::{create_dynamic_stack, get_dynamic_memory_stats};
-use crate::shell::core::ShellContext;
+use crate::{
+    memory::dynamic::{create_dynamic_stack, get_dynamic_memory_stats},
+    shell::core::ShellContext,
+};
 
 /// Manage dynamic stack growth operations
 pub fn cmd_dynamic_memory_growth(args: &[&str], context: &mut ShellContext) {

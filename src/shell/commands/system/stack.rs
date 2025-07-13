@@ -3,8 +3,8 @@
 //! This module contains handlers for stack allocation, deallocation, switching,
 //! status monitoring, and testing functionality.
 
+use super::utils::{parse_number, print_hex, print_number};
 use crate::shell::ShellContext;
-use super::utils::{print_number, print_hex, parse_number};
 
 /// Stack status command
 pub fn cmd_stack_status(_args: &[&str], context: &mut ShellContext) {

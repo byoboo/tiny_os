@@ -139,11 +139,17 @@ pub fn route_memory_commands(ch: u8, context: &mut ShellContext) -> bool {
             true
         }
         b'z' | b'Z' => {
-            commands::memory::handle_comprehensive_memory_test(&context.uart, &mut context.memory_manager);
+            commands::memory::handle_comprehensive_memory_test(
+                &context.uart,
+                &mut context.memory_manager,
+            );
             true
         }
         b'g' | b'G' => {
-            commands::memory::handle_memory_corruption_check(&context.uart, &context.memory_manager);
+            commands::memory::handle_memory_corruption_check(
+                &context.uart,
+                &context.memory_manager,
+            );
             true
         }
         b'r' | b'R' => {

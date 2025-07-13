@@ -7,7 +7,8 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum DataFaultStatus {
-    /// Address size fault in level 0 of translation or translation table base register
+    /// Address size fault in level 0 of translation or translation table base
+    /// register
     AddressSizeLevel0 = 0x00,
     /// Address size fault in level 1 of translation
     AddressSizeLevel1 = 0x01,
@@ -49,7 +50,8 @@ pub enum DataFaultStatus {
     ExternalWalkLevel2 = 0x1E,
     /// Synchronous External abort on translation table walk, level 3
     ExternalWalkLevel3 = 0x1F,
-    /// Synchronous parity or ECC error on memory access, not on translation table walk
+    /// Synchronous parity or ECC error on memory access, not on translation
+    /// table walk
     ParityErrorMemory = 0x18,
     /// Synchronous parity or ECC error on translation table walk, level 0
     ParityErrorWalkLevel0 = 0x1A,
@@ -136,20 +138,38 @@ impl DataFaultStatus {
             DataFaultStatus::TagCheckFault => "Synchronous Tag Check Fault",
             DataFaultStatus::AsynchronousExternal => "Asynchronous External abort",
             DataFaultStatus::ParityErrorMemory => "Synchronous parity/ECC error on memory access",
-            DataFaultStatus::ExternalWalkLevel0 => "Synchronous External abort on translation table walk, level 0",
-            DataFaultStatus::ExternalWalkLevel1 => "Synchronous External abort on translation table walk, level 1",
-            DataFaultStatus::ExternalWalkLevel2 => "Synchronous External abort on translation table walk, level 2",
-            DataFaultStatus::ExternalWalkLevel3 => "Synchronous External abort on translation table walk, level 3",
-            DataFaultStatus::ParityErrorWalkLevel0 => "Synchronous parity/ECC error on translation table walk, level 0",
-            DataFaultStatus::ParityErrorWalkLevel1 => "Synchronous parity/ECC error on translation table walk, level 1",
-            DataFaultStatus::ParityErrorWalkLevel2 => "Synchronous parity/ECC error on translation table walk, level 2",
-            DataFaultStatus::ParityErrorWalkLevel3 => "Synchronous parity/ECC error on translation table walk, level 3",
+            DataFaultStatus::ExternalWalkLevel0 => {
+                "Synchronous External abort on translation table walk, level 0"
+            }
+            DataFaultStatus::ExternalWalkLevel1 => {
+                "Synchronous External abort on translation table walk, level 1"
+            }
+            DataFaultStatus::ExternalWalkLevel2 => {
+                "Synchronous External abort on translation table walk, level 2"
+            }
+            DataFaultStatus::ExternalWalkLevel3 => {
+                "Synchronous External abort on translation table walk, level 3"
+            }
+            DataFaultStatus::ParityErrorWalkLevel0 => {
+                "Synchronous parity/ECC error on translation table walk, level 0"
+            }
+            DataFaultStatus::ParityErrorWalkLevel1 => {
+                "Synchronous parity/ECC error on translation table walk, level 1"
+            }
+            DataFaultStatus::ParityErrorWalkLevel2 => {
+                "Synchronous parity/ECC error on translation table walk, level 2"
+            }
+            DataFaultStatus::ParityErrorWalkLevel3 => {
+                "Synchronous parity/ECC error on translation table walk, level 3"
+            }
             DataFaultStatus::AlignmentFault => "Alignment fault",
             DataFaultStatus::DebugException => "Debug exception",
             DataFaultStatus::TlbConflict => "TLB conflict abort",
             DataFaultStatus::UnsupportedAtomic => "Unsupported atomic hardware update fault",
             DataFaultStatus::ImplementationDefined => "Implementation defined fault",
-            DataFaultStatus::ImplementationDefinedExclusive => "Implementation defined fault (Exclusive/Atomic)",
+            DataFaultStatus::ImplementationDefinedExclusive => {
+                "Implementation defined fault (Exclusive/Atomic)"
+            }
         }
     }
 
@@ -200,10 +220,28 @@ impl DataFaultStatus {
     /// Get the translation table level involved in the fault
     pub fn translation_level(&self) -> Option<u8> {
         match self {
-            DataFaultStatus::AddressSizeLevel0 | DataFaultStatus::TranslationLevel0 | DataFaultStatus::ExternalWalkLevel0 | DataFaultStatus::ParityErrorWalkLevel0 => Some(0),
-            DataFaultStatus::AddressSizeLevel1 | DataFaultStatus::TranslationLevel1 | DataFaultStatus::AccessFlagLevel1 | DataFaultStatus::PermissionLevel1 | DataFaultStatus::ExternalWalkLevel1 | DataFaultStatus::ParityErrorWalkLevel1 => Some(1),
-            DataFaultStatus::AddressSizeLevel2 | DataFaultStatus::TranslationLevel2 | DataFaultStatus::AccessFlagLevel2 | DataFaultStatus::PermissionLevel2 | DataFaultStatus::ExternalWalkLevel2 | DataFaultStatus::ParityErrorWalkLevel2 => Some(2),
-            DataFaultStatus::AddressSizeLevel3 | DataFaultStatus::TranslationLevel3 | DataFaultStatus::AccessFlagLevel3 | DataFaultStatus::PermissionLevel3 | DataFaultStatus::ExternalWalkLevel3 | DataFaultStatus::ParityErrorWalkLevel3 => Some(3),
+            DataFaultStatus::AddressSizeLevel0
+            | DataFaultStatus::TranslationLevel0
+            | DataFaultStatus::ExternalWalkLevel0
+            | DataFaultStatus::ParityErrorWalkLevel0 => Some(0),
+            DataFaultStatus::AddressSizeLevel1
+            | DataFaultStatus::TranslationLevel1
+            | DataFaultStatus::AccessFlagLevel1
+            | DataFaultStatus::PermissionLevel1
+            | DataFaultStatus::ExternalWalkLevel1
+            | DataFaultStatus::ParityErrorWalkLevel1 => Some(1),
+            DataFaultStatus::AddressSizeLevel2
+            | DataFaultStatus::TranslationLevel2
+            | DataFaultStatus::AccessFlagLevel2
+            | DataFaultStatus::PermissionLevel2
+            | DataFaultStatus::ExternalWalkLevel2
+            | DataFaultStatus::ParityErrorWalkLevel2 => Some(2),
+            DataFaultStatus::AddressSizeLevel3
+            | DataFaultStatus::TranslationLevel3
+            | DataFaultStatus::AccessFlagLevel3
+            | DataFaultStatus::PermissionLevel3
+            | DataFaultStatus::ExternalWalkLevel3
+            | DataFaultStatus::ParityErrorWalkLevel3 => Some(3),
             _ => None,
         }
     }

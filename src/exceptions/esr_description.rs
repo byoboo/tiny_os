@@ -2,7 +2,7 @@
 //!
 //! Functions for generating human-readable descriptions of ESR information
 
-use super::esr_info::{EsrInfo, EsrDetails};
+use super::esr_info::{EsrDetails, EsrInfo};
 
 /// Get a comprehensive description of ESR information
 pub fn get_description(esr_info: &EsrInfo) -> &'static str {
@@ -15,12 +15,12 @@ pub fn is_recoverable_fault(esr_info: &EsrInfo) -> bool {
         EsrDetails::DataAbort { dfsc, .. } => {
             // Translation and permission faults are typically recoverable
             dfsc.is_translation_fault() || dfsc.is_permission_fault()
-        },
+        }
         EsrDetails::InstructionAbort { ifsc, .. } => {
             // Translation and permission faults for instruction aborts
             let fault_type = *ifsc & 0x3C;
             matches!(fault_type, 0x04..=0x0F)
-        },
+        }
         _ => false,
     }
 }
@@ -38,13 +38,13 @@ pub fn get_fault_severity(esr_info: &EsrInfo) -> u8 {
             } else {
                 2 // Error - other data fault
             }
-        },
+        }
         EsrDetails::InstructionAbort { .. } => 2, // Error - instruction fetch issue
-        EsrDetails::SystemCall { .. } => 0, // Info - normal system call
-        EsrDetails::Breakpoint { .. } => 0, // Info - debug breakpoint
-        EsrDetails::Watchpoint { .. } => 0, // Info - debug watchpoint
-        EsrDetails::SoftwareStep { .. } => 0, // Info - debug step
-        _ => 1, // Warning - unknown exception
+        EsrDetails::SystemCall { .. } => 0,       // Info - normal system call
+        EsrDetails::Breakpoint { .. } => 0,       // Info - debug breakpoint
+        EsrDetails::Watchpoint { .. } => 0,       // Info - debug watchpoint
+        EsrDetails::SoftwareStep { .. } => 0,     // Info - debug step
+        _ => 1,                                   // Warning - unknown exception
     }
 }
 

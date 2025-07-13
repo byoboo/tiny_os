@@ -1,5 +1,7 @@
-use crate::memory::dynamic::{is_dynamic_memory_enabled, get_dynamic_memory_stats};
-use crate::shell::core::ShellContext;
+use crate::{
+    memory::dynamic::{get_dynamic_memory_stats, is_dynamic_memory_enabled},
+    shell::core::ShellContext,
+};
 
 /// Detailed dynamic memory status and basic statistics
 pub fn cmd_dynamic_memory_status(_args: &[&str], context: &mut ShellContext) {

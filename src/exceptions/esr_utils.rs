@@ -2,8 +2,7 @@
 //!
 //! Helper functions for ESR manipulation and analysis
 
-use super::esr_info::EsrInfo;
-use super::exception_class::ExceptionClass;
+use super::{esr_info::EsrInfo, exception_class::ExceptionClass};
 
 /// Extract exception class from raw ESR value
 pub fn extract_exception_class(esr: u32) -> ExceptionClass {
@@ -61,42 +60,42 @@ pub fn esr_equals_ignore_iss(esr1: u32, esr2: u32) -> bool {
     let ec2 = (esr2 >> 26) & 0x3F;
     let il1 = (esr1 >> 25) & 1;
     let il2 = (esr2 >> 25) & 1;
-    
+
     ec1 == ec2 && il1 == il2
 }
 
 /// Get a summary of ESR statistics for a batch of ESRs
 pub fn analyze_esr_batch(esrs: &[u32]) -> EsrBatchAnalysis {
     let mut analysis = EsrBatchAnalysis::new();
-    
+
     for &esr in esrs {
         let info = EsrInfo::new(esr);
         analysis.total_count += 1;
-        
+
         match info.exception_class {
             ExceptionClass::DataAbortLower | ExceptionClass::DataAbortSame => {
                 analysis.data_abort_count += 1;
-            },
+            }
             ExceptionClass::InstructionAbortLower | ExceptionClass::InstructionAbortSame => {
                 analysis.instruction_abort_count += 1;
-            },
+            }
             ExceptionClass::Svc32 | ExceptionClass::Svc64 => {
                 analysis.system_call_count += 1;
-            },
+            }
             _ => {
                 analysis.other_exception_count += 1;
-            },
+            }
         }
-        
+
         if info.is_translation_fault() {
             analysis.translation_fault_count += 1;
         }
-        
+
         if info.is_permission_fault() {
             analysis.permission_fault_count += 1;
         }
     }
-    
+
     analysis
 }
 
@@ -124,7 +123,7 @@ impl EsrBatchAnalysis {
             permission_fault_count: 0,
         }
     }
-    
+
     /// Get the percentage of data aborts
     pub fn data_abort_percentage(&self) -> f32 {
         if self.total_count == 0 {
@@ -133,7 +132,7 @@ impl EsrBatchAnalysis {
             (self.data_abort_count as f32 / self.total_count as f32) * 100.0
         }
     }
-    
+
     /// Get the percentage of instruction aborts
     pub fn instruction_abort_percentage(&self) -> f32 {
         if self.total_count == 0 {
@@ -142,7 +141,7 @@ impl EsrBatchAnalysis {
             (self.instruction_abort_count as f32 / self.total_count as f32) * 100.0
         }
     }
-    
+
     /// Get the percentage of system calls
     pub fn system_call_percentage(&self) -> f32 {
         if self.total_count == 0 {

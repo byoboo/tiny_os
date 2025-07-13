@@ -1,17 +1,19 @@
 //! Dynamic Memory Manager
 //!
-//! This module provides the main dynamic memory manager that coordinates all dynamic memory
-//! subsystems including stack management, lazy allocation, pressure handling, and context switching.
+//! This module provides the main dynamic memory manager that coordinates all
+//! dynamic memory subsystems including stack management, lazy allocation,
+//! pressure handling, and context switching.
 
+use super::{
+    context::HardwareContextSwitcher,
+    lazy::LazyPageAllocator,
+    pressure::{MemoryPressureHandler, OptimizationStrategy},
+    stack::{DynamicStackManager, PressureLevel},
+};
 use crate::memory::{
     mmu_exceptions::{MmuExceptionType, MmuFaultInfo},
     MemoryManager,
 };
-
-use super::context::HardwareContextSwitcher;
-use super::lazy::LazyPageAllocator;
-use super::pressure::{MemoryPressureHandler, OptimizationStrategy};
-use super::stack::{DynamicStackManager, PressureLevel};
 
 /// Dynamic memory statistics
 #[derive(Debug, Clone)]

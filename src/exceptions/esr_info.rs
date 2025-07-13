@@ -3,8 +3,7 @@
 //! Defines the core data structures for holding decoded ESR information
 //! including EsrInfo struct and EsrDetails enum.
 
-use super::exception_class::ExceptionClass;
-use super::data_fault_status::DataFaultStatus;
+use super::{data_fault_status::DataFaultStatus, exception_class::ExceptionClass};
 
 /// Decoded ESR information
 #[derive(Debug, Clone)]
@@ -26,7 +25,7 @@ pub struct EsrInfo {
 pub enum EsrDetails {
     /// Unknown exception or unsupported class
     Unknown,
-    
+
     /// Data abort syndrome
     DataAbort {
         /// Data Fault Status Code
@@ -48,7 +47,7 @@ pub enum EsrDetails {
         /// Synchronous fault bit
         sf: bool,
     },
-    
+
     /// Instruction abort syndrome
     InstructionAbort {
         /// Instruction Fault Status Code
@@ -62,13 +61,13 @@ pub enum EsrDetails {
         /// Set when fault address is valid
         set: bool,
     },
-    
+
     /// System call syndrome
     SystemCall {
         /// SVC immediate value (for SVC instructions)
         imm16: u16,
     },
-    
+
     /// System register access syndrome
     SystemRegister {
         /// Direction (1 = read, 0 = write)
@@ -86,13 +85,13 @@ pub enum EsrDetails {
         /// Op2 field
         op2: u8,
     },
-    
+
     /// Breakpoint syndrome
     Breakpoint {
         /// Breakpoint comment field
         comment: u16,
     },
-    
+
     /// Watchpoint syndrome
     Watchpoint {
         /// Debug state change
@@ -102,7 +101,7 @@ pub enum EsrDetails {
         /// Watchpoint register number
         wrn: u8,
     },
-    
+
     /// Software step syndrome
     SoftwareStep {
         /// Exception state
@@ -144,8 +143,8 @@ impl EsrInfo {
                     ar: (iss & (1 << 14)) != 0,
                     sf: (iss & (1 << 16)) != 0,
                 }
-            },
-            
+            }
+
             ExceptionClass::InstructionAbortLower | ExceptionClass::InstructionAbortSame => {
                 EsrDetails::InstructionAbort {
                     ifsc: iss & 0x3F,
@@ -154,48 +153,43 @@ impl EsrInfo {
                     fnv: (iss & (1 << 10)) != 0,
                     set: (iss & (1 << 11)) != 0,
                 }
+            }
+
+            ExceptionClass::Svc32 | ExceptionClass::Svc64 => EsrDetails::SystemCall {
+                imm16: (iss & 0xFFFF) as u16,
             },
-            
-            ExceptionClass::Svc32 | ExceptionClass::Svc64 => {
-                EsrDetails::SystemCall {
-                    imm16: (iss & 0xFFFF) as u16,
-                }
+
+            ExceptionClass::SystemRegister => EsrDetails::SystemRegister {
+                direction: (iss & (1 << 0)) != 0,
+                rt: ((iss >> 5) & 0x1F) as u8,
+                crn: ((iss >> 10) & 0xF) as u8,
+                crm: ((iss >> 1) & 0xF) as u8,
+                op0: ((iss >> 20) & 0x3) as u8,
+                op1: ((iss >> 14) & 0x7) as u8,
+                op2: ((iss >> 17) & 0x7) as u8,
             },
-            
-            ExceptionClass::SystemRegister => {
-                EsrDetails::SystemRegister {
-                    direction: (iss & (1 << 0)) != 0,
-                    rt: ((iss >> 5) & 0x1F) as u8,
-                    crn: ((iss >> 10) & 0xF) as u8,
-                    crm: ((iss >> 1) & 0xF) as u8,
-                    op0: ((iss >> 20) & 0x3) as u8,
-                    op1: ((iss >> 14) & 0x7) as u8,
-                    op2: ((iss >> 17) & 0x7) as u8,
-                }
+
+            ExceptionClass::BreakpointLower
+            | ExceptionClass::BreakpointSame
+            | ExceptionClass::Bkpt32 => EsrDetails::Breakpoint {
+                comment: (iss & 0xFFFF) as u16,
             },
-            
-            ExceptionClass::BreakpointLower | ExceptionClass::BreakpointSame |
-            ExceptionClass::Bkpt32 => {
-                EsrDetails::Breakpoint {
-                    comment: (iss & 0xFFFF) as u16,
-                }
-            },
-            
+
             ExceptionClass::WatchpointLower | ExceptionClass::WatchpointSame => {
                 EsrDetails::Watchpoint {
                     dsc: (iss & (1 << 14)) != 0,
                     wpt: ((iss >> 5) & 0x1F) as u8,
                     wrn: (iss & 0xF) as u8,
                 }
-            },
-            
+            }
+
             ExceptionClass::SoftwareStepLower | ExceptionClass::SoftwareStepSame => {
                 EsrDetails::SoftwareStep {
                     ex: (iss & (1 << 6)) != 0,
                     ss: (iss & (1 << 21)) != 0,
                 }
-            },
-            
+            }
+
             _ => EsrDetails::Unknown,
         }
     }
@@ -231,8 +225,9 @@ impl EsrInfo {
         match &self.details {
             EsrDetails::DataAbort { dfsc, .. } => dfsc.is_translation_fault(),
             EsrDetails::InstructionAbort { ifsc, .. } => {
-                matches!(*ifsc & 0x3C, 0x04..=0x07) // Translation faults levels 0-3
-            },
+                matches!(*ifsc & 0x3C, 0x04..=0x07) // Translation faults levels
+                                                    // 0-3
+            }
             _ => false,
         }
     }
@@ -242,8 +237,9 @@ impl EsrInfo {
         match &self.details {
             EsrDetails::DataAbort { dfsc, .. } => dfsc.is_permission_fault(),
             EsrDetails::InstructionAbort { ifsc, .. } => {
-                matches!(*ifsc & 0x3C, 0x0C..=0x0F) // Permission faults levels 1-3
-            },
+                matches!(*ifsc & 0x3C, 0x0C..=0x0F) // Permission faults levels
+                                                    // 1-3
+            }
             _ => false,
         }
     }

@@ -1,5 +1,7 @@
-use crate::memory::dynamic::{add_lazy_page, get_dynamic_memory_stats};
-use crate::shell::core::ShellContext;
+use crate::{
+    memory::dynamic::{add_lazy_page, get_dynamic_memory_stats},
+    shell::core::ShellContext,
+};
 
 /// Manage lazy page allocation and monitoring
 pub fn cmd_dynamic_memory_lazy(args: &[&str], context: &mut ShellContext) {

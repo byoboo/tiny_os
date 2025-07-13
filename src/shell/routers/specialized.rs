@@ -87,7 +87,9 @@ pub fn route_testing_framework(context: &mut ShellContext) {
 
 /// Route user space page table management commands
 pub fn route_user_space_management(context: &mut ShellContext) {
-    context.uart.puts("\r\nUser Space Page Table Management:\r\n");
+    context
+        .uart
+        .puts("\r\nUser Space Page Table Management:\r\n");
     context.uart.puts("  1 - User Space Status\r\n");
     context.uart.puts("  2 - Create User Page Table\r\n");
     context.uart.puts("  3 - Destroy User Page Table\r\n");
@@ -209,7 +211,9 @@ pub fn route_dynamic_memory_management(context: &mut ShellContext) {
             b'2' => commands::dynamic_memory::cmd_dynamic_memory_growth(&["growth"], context),
             b'3' => commands::dynamic_memory::cmd_dynamic_memory_lazy(&["lazy"], context),
             b'4' => commands::dynamic_memory::cmd_dynamic_memory_pressure(&["pressure"], context),
-            b'5' => commands::dynamic_memory::cmd_dynamic_memory_optimize(&["optimization"], context),
+            b'5' => {
+                commands::dynamic_memory::cmd_dynamic_memory_optimize(&["optimization"], context)
+            }
             b'6' => commands::dynamic_memory::cmd_dynamic_memory_stats(&[], context),
             _ => context.uart.puts("Invalid option\r\n"),
         }

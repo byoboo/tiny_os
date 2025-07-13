@@ -1,7 +1,7 @@
 //! Dynamic Memory Management Module
 //!
 //! This module provides advanced dynamic memory management features including:
-//! - Dynamic stack growth and shrinking  
+//! - Dynamic stack growth and shrinking
 //! - Lazy page allocation
 //! - Memory pressure handling
 //! - Memory optimization and defragmentation
@@ -9,10 +9,7 @@
 
 use spin::Mutex;
 
-use crate::memory::{
-    mmu_exceptions::MmuFaultInfo,
-    MemoryManager,
-};
+use crate::memory::{mmu_exceptions::MmuFaultInfo, MemoryManager};
 
 // Re-export module components
 pub mod context;

@@ -15,16 +15,18 @@ pub mod task;
 
 // Re-export key types and functions for compatibility
 pub use core::Scheduler;
+// For backward compatibility, re-export everything that was in the original module
+pub use core::Scheduler as SchedulerCompat;
+
 pub use global::{
     block_current_task, create_task, destroy_task, get_current_task_id, get_ready_count,
-    get_scheduler_stats, get_task_count, handle_timer_preemption, has_ready_tasks,
-    init_scheduler, is_scheduler_enabled, schedule, set_scheduler_enabled, unblock_task,
-    with_scheduler, yield_task,
+    get_scheduler_stats, get_task_count, handle_timer_preemption, has_ready_tasks, init_scheduler,
+    is_scheduler_enabled, schedule, set_scheduler_enabled, unblock_task, with_scheduler,
+    yield_task,
 };
 pub use queue::{TaskList, TaskQueue, TaskQueueIter};
 pub use stats::SchedulerStats;
-pub use task::{Task, TaskId, TaskPriority};
-
-// For backward compatibility, re-export everything that was in the original module
-pub use core::Scheduler as SchedulerCompat;
-pub use task::{Task as TaskCompat, TaskId as TaskIdCompat, TaskPriority as TaskPriorityCompat};
+pub use task::{
+    Task, Task as TaskCompat, TaskId, TaskId as TaskIdCompat, TaskPriority,
+    TaskPriority as TaskPriorityCompat,
+};

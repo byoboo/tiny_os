@@ -1,7 +1,8 @@
 //! Dynamic Stack Management
 //!
-//! This module handles dynamic stack growth and shrinking with configurable policies.
-//! Supports conservative, aggressive, and predictive growth strategies based on usage patterns.
+//! This module handles dynamic stack growth and shrinking with configurable
+//! policies. Supports conservative, aggressive, and predictive growth
+//! strategies based on usage patterns.
 
 use crate::memory::PAGE_SIZE;
 
@@ -172,9 +173,7 @@ impl DynamicStackManager {
 
         for stack in self.stacks.iter_mut().flatten() {
             // Simple shrinking logic - can be made more sophisticated
-            if stack.current_size > PAGE_SIZE as usize
-                && stack.growth_count > stack.shrink_count
-            {
+            if stack.current_size > PAGE_SIZE as usize && stack.growth_count > stack.shrink_count {
                 if stack.shrink(PAGE_SIZE as usize).is_ok() {
                     shrunk_count += 1;
                 }

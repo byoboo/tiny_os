@@ -2,6 +2,7 @@
 // Focused module for process and system statistics
 
 use core::sync::atomic::Ordering;
+
 use crate::{process, shell::ShellContext};
 
 /// Handle process statistics display

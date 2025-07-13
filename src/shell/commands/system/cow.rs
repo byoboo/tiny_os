@@ -3,8 +3,8 @@
 //! This module contains handlers for COW page management, status monitoring,
 //! mapping creation, protection control, and testing functionality.
 
+use super::utils::{print_hex, print_number};
 use crate::shell::ShellContext;
-use super::utils::{print_number, print_hex};
 
 /// COW Status command
 pub fn cmd_cow_status(_args: &[&str], context: &mut ShellContext) {

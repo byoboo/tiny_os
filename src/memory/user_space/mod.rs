@@ -1,6 +1,7 @@
 //! User Space Memory Management Module
 //!
-//! This module implements user space page table management for user space memory isolation.
+//! This module implements user space page table management for user space
+//! memory isolation.
 //!
 //! # Features
 //! - Per-process page table creation and management
@@ -23,8 +24,8 @@ pub mod vma;
 
 // Re-export key types and functions for backward compatibility
 pub use layout::{
-    create_standard_vmas, is_kernel_space_address, is_user_space_address, 
-    KERNEL_SPACE_END, KERNEL_SPACE_START, USER_SPACE_END, USER_SPACE_START,
+    create_standard_vmas, is_kernel_space_address, is_user_space_address, KERNEL_SPACE_END,
+    KERNEL_SPACE_START, USER_SPACE_END, USER_SPACE_START,
 };
 pub use manager::{UserSpaceManager, UserSpaceStats, MAX_USER_PROCESSES};
 pub use mapping::MemoryMapper;
@@ -61,7 +62,7 @@ pub fn create_standard_user_layout(process_id: usize) -> Result<usize, &'static 
 
         // Add standard VMAs using the layout module
         let standard_vmas = layout::create_standard_vmas();
-        
+
         if let Some(page_table) = manager.get_page_table_mut(slot) {
             for vma in standard_vmas.iter() {
                 let size = vma.end_addr - vma.start_addr;

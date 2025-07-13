@@ -1,7 +1,7 @@
 //! System command utility functions
 //!
-//! This module contains shared utility functions used across system command modules
-//! for formatting, printing, and common operations.
+//! This module contains shared utility functions used across system command
+//! modules for formatting, printing, and common operations.
 
 use crate::uart::Uart;
 

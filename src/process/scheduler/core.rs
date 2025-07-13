@@ -3,13 +3,12 @@
 //! This module provides the main scheduling logic including
 //! task switching, preemption, and priority management.
 
-use crate::process::context::ProcessState;
-
 use super::{
     queue::TaskList,
     stats::SchedulerStats,
     task::{Task, TaskId, TaskPriority},
 };
+use crate::process::context::ProcessState;
 
 /// Basic round-robin scheduler with priority levels
 pub struct Scheduler {
@@ -203,12 +202,12 @@ impl Scheduler {
     /// Get scheduler statistics
     pub fn get_stats(&self) -> SchedulerStats {
         let mut stats = self.stats;
-        
+
         // Update current task counts
         let ready_count: usize = self.ready_queues.iter().map(|q| q.len()).sum();
         let running_count = if self.current_task.is_some() { 1 } else { 0 };
         let blocked_count = 0; // Would need blocked queue implementation
-        
+
         stats.update_task_counts(ready_count, blocked_count, running_count);
         stats
     }

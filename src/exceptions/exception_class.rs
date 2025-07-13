@@ -182,12 +182,18 @@ impl ExceptionClass {
 
     /// Check if this is a data abort exception
     pub fn is_data_abort(&self) -> bool {
-        matches!(self, ExceptionClass::DataAbortLower | ExceptionClass::DataAbortSame)
+        matches!(
+            self,
+            ExceptionClass::DataAbortLower | ExceptionClass::DataAbortSame
+        )
     }
 
     /// Check if this is an instruction abort exception
     pub fn is_instruction_abort(&self) -> bool {
-        matches!(self, ExceptionClass::InstructionAbortLower | ExceptionClass::InstructionAbortSame)
+        matches!(
+            self,
+            ExceptionClass::InstructionAbortLower | ExceptionClass::InstructionAbortSame
+        )
     }
 
     /// Check if this is a system call exception

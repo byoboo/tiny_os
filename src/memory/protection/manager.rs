@@ -1,7 +1,8 @@
 //! Advanced Memory Protection Manager
 //!
 //! This module provides the central coordinator for all advanced memory
-//! protection features including page permissions, ASLR, stack protection, and CFI.
+//! protection features including page permissions, ASLR, stack protection, and
+//! CFI.
 
 use core::{
     mem::MaybeUninit,
@@ -9,16 +10,18 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
-use crate::{
-    memory::{MemoryManager, PAGE_SIZE},
-    process::scheduler::get_current_task_id,
-};
-
 use super::{
     aslr::AslrManager,
     cfi::CfiManager,
-    permissions::{AdvancedProtectionStats, PagePermissions, PermissionFaultType, PermissionFaultResult, ProtectedPage},
+    permissions::{
+        AdvancedProtectionStats, PagePermissions, PermissionFaultResult, PermissionFaultType,
+        ProtectedPage,
+    },
     stack::AdvancedStackProtection,
+};
+use crate::{
+    memory::{MemoryManager, PAGE_SIZE},
+    process::scheduler::get_current_task_id,
 };
 
 /// Maximum number of pages that can be tracked for permissions
@@ -50,7 +53,8 @@ impl AdvancedMemoryProtection {
     /// Create a new advanced memory protection manager
     pub const fn new() -> Self {
         Self {
-            protected_pages: [ProtectedPage::new(0, 0, PagePermissions::none(), 0); MAX_PROTECTED_PAGES],
+            protected_pages: [ProtectedPage::new(0, 0, PagePermissions::none(), 0);
+                MAX_PROTECTED_PAGES],
             protected_page_count: 0,
             memory_manager: None,
             aslr_manager: AslrManager::new(),
@@ -132,16 +136,24 @@ impl AdvancedMemoryProtection {
         // Check if this is a legitimate access
         if let Some(permissions) = self.get_page_permissions(virtual_addr) {
             match fault_type {
-                PermissionFaultType::Read | PermissionFaultType::ReadViolation if permissions.is_readable() => {
+                PermissionFaultType::Read | PermissionFaultType::ReadViolation
+                    if permissions.is_readable() =>
+                {
                     return PermissionFaultResult::Continue;
                 }
-                PermissionFaultType::Write | PermissionFaultType::WriteViolation if permissions.is_writable() => {
+                PermissionFaultType::Write | PermissionFaultType::WriteViolation
+                    if permissions.is_writable() =>
+                {
                     return PermissionFaultResult::Continue;
                 }
-                PermissionFaultType::Execute | PermissionFaultType::ExecuteViolation if permissions.is_executable() => {
+                PermissionFaultType::Execute | PermissionFaultType::ExecuteViolation
+                    if permissions.is_executable() =>
+                {
                     return PermissionFaultResult::Continue;
                 }
-                PermissionFaultType::UserAccess | PermissionFaultType::UserAccessViolation if permissions.user_accessible => {
+                PermissionFaultType::UserAccess | PermissionFaultType::UserAccessViolation
+                    if permissions.user_accessible =>
+                {
                     return PermissionFaultResult::Continue;
                 }
                 _ => {
@@ -205,7 +217,8 @@ impl AdvancedMemoryProtection {
 
     /// Pop and validate return address for CFI
     pub fn pop_return_address(&mut self, process_id: usize, expected_address: u64) -> bool {
-        let result = self.cfi_manager
+        let result = self
+            .cfi_manager
             .pop_return_address(process_id, expected_address);
         if !result {
             self.stats.cfi_violations += 1;
@@ -219,14 +232,14 @@ impl AdvancedMemoryProtection {
         let mut stats = self.stats;
         let (canary_checks, stack_overflows) = self.stack_protection.get_stats();
         let (return_validations, cfi_violations) = self.cfi_manager.get_stats();
-        
+
         // Update core stats
         stats.stack_protections = canary_checks;
         stats.canary_violations = stack_overflows;
         stats.cfi_violations = cfi_violations;
         stats.return_address_mismatches = return_validations;
         stats.aslr_randomizations = self.aslr_manager.get_randomizations();
-        
+
         // Update backward compatibility fields
         stats.total_protected_pages = stats.protected_pages;
         stats.protected_stacks = stats.stack_protections;
@@ -235,7 +248,7 @@ impl AdvancedMemoryProtection {
         stats.faults_handled = stats.permission_faults;
         stats.faults_terminated = stats.permission_faults / 2; // Simplified estimate
         stats.rop_attacks_blocked = stats.cfi_violations;
-        
+
         stats
     }
 
@@ -267,7 +280,7 @@ impl AdvancedMemoryProtection {
         // 2. Update hardware page table with permission bits
         // 3. Flush TLB if necessary
         // 4. Handle any hardware-specific permission enforcement
-        
+
         // For now, this is a no-op simulation
         Ok(())
     }

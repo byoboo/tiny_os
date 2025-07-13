@@ -10,4 +10,4 @@ mod router;
 mod routers;
 
 // Re-export core shell functionality
-pub use core::{ShellContext, run_shell};
+pub use core::{run_shell, ShellContext};

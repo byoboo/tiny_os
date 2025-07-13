@@ -1,7 +1,7 @@
 //! Memory Pressure Handling
 //!
-//! This module handles memory pressure detection and implements optimization strategies
-//! based on available memory levels.
+//! This module handles memory pressure detection and implements optimization
+//! strategies based on available memory levels.
 
 use super::stack::PressureLevel;
 

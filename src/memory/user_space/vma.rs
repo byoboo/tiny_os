@@ -1,7 +1,7 @@
 //! Virtual Memory Area Management
 //!
-//! This module handles Virtual Memory Areas (VMAs) for user processes, including
-//! creation, management, and operations on virtual memory regions.
+//! This module handles Virtual Memory Areas (VMAs) for user processes,
+//! including creation, management, and operations on virtual memory regions.
 
 use crate::memory::{mmu::RegionType, PAGE_SIZE};
 

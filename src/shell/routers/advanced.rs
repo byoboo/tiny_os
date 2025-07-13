@@ -44,7 +44,9 @@ pub fn route_exception_management(context: &mut ShellContext) {
             b'1' => commands::exceptions::cmd_exception_stats(&["ex"], context),
             b'2' => commands::exceptions::cmd_mmu_stats(&["mmu"], context),
             b'3' => {
-                context.uart.puts("Enable (1) or Disable (2) MMU handling? ");
+                context
+                    .uart
+                    .puts("Enable (1) or Disable (2) MMU handling? ");
                 if let Some(choice) = context.uart.getc() {
                     match choice {
                         b'1' => commands::exceptions::cmd_mmu_control(&["mmuctl", "on"], context),
@@ -54,11 +56,19 @@ pub fn route_exception_management(context: &mut ShellContext) {
                 }
             }
             b'4' => {
-                context.uart.puts("Test type: (1) Alignment, (2) Null deref: ");
+                context
+                    .uart
+                    .puts("Test type: (1) Alignment, (2) Null deref: ");
                 if let Some(choice) = context.uart.getc() {
                     match choice {
-                        b'1' => commands::exceptions::cmd_test_exceptions(&["extest", "alignment"], context),
-                        b'2' => commands::exceptions::cmd_test_exceptions(&["extest", "nullderef"], context),
+                        b'1' => commands::exceptions::cmd_test_exceptions(
+                            &["extest", "alignment"],
+                            context,
+                        ),
+                        b'2' => commands::exceptions::cmd_test_exceptions(
+                            &["extest", "nullderef"],
+                            context,
+                        ),
                         _ => context.uart.puts("Invalid choice\r\n"),
                     }
                 }
@@ -71,7 +81,9 @@ pub fn route_exception_management(context: &mut ShellContext) {
 
 /// Route virtual memory management submenu commands
 pub fn route_virtual_memory_management(context: &mut ShellContext) {
-    context.uart.puts("\r\nVirtual Memory Management Commands:\r\n");
+    context
+        .uart
+        .puts("\r\nVirtual Memory Management Commands:\r\n");
     context.uart.puts("  1 - Virtual Memory Status\r\n");
     context.uart.puts("  2 - Enable MMU\r\n");
     context.uart.puts("  3 - Disable MMU\r\n");

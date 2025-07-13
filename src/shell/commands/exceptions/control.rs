@@ -2,9 +2,7 @@
 // Focused module for MMU and exception control operations
 
 use crate::{
-    memory::{
-        disable_mmu_global, enable_mmu_global, set_mmu_exception_handling_enabled,
-    },
+    memory::{disable_mmu_global, enable_mmu_global, set_mmu_exception_handling_enabled},
     shell::ShellContext,
 };
 

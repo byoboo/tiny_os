@@ -3,8 +3,8 @@
 //! This module contains handlers for essential system commands including
 //! help display, time information, system info, and health diagnostics.
 
-use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 use super::utils::{print_number, print_time};
+use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 
 /// Handle the help command (h/H)
 pub fn handle_help(context: &ShellContext) {

@@ -1,7 +1,7 @@
 //! Hardware-Assisted Context Switching
 //!
-//! This module provides hardware-assisted context switching capabilities using ARM64 specific
-//! optimizations for ASID management and TLB invalidation.
+//! This module provides hardware-assisted context switching capabilities using
+//! ARM64 specific optimizations for ASID management and TLB invalidation.
 
 /// Hardware-assisted context switcher
 pub struct HardwareContextSwitcher {

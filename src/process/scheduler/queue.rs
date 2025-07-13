@@ -71,12 +71,12 @@ impl TaskQueue {
     /// Remove a specific task by ID
     pub fn remove(&mut self, task_id: TaskId) -> Option<Task> {
         let mut current = self.head;
-        
+
         for _ in 0..self.count {
             if let Some(ref task) = self.tasks[current] {
                 if task.id == task_id {
                     let removed_task = self.tasks[current].take();
-                    
+
                     // Shift elements to fill the gap
                     let mut shift_pos = current;
                     for _ in 0..(self.count - 1) {
@@ -84,7 +84,7 @@ impl TaskQueue {
                         self.tasks[shift_pos] = self.tasks[next_pos].take();
                         shift_pos = next_pos;
                     }
-                    
+
                     self.count -= 1;
                     if self.count == 0 {
                         self.head = 0;
@@ -92,13 +92,13 @@ impl TaskQueue {
                     } else {
                         self.tail = (self.tail + 15) % 16; // Move tail back
                     }
-                    
+
                     return removed_task;
                 }
             }
             current = (current + 1) % 16;
         }
-        
+
         None
     }
 }

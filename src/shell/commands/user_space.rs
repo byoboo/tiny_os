@@ -64,7 +64,9 @@ pub fn handle_user_space_status(context: &ShellContext) {
         });
 
         // Show current active page table
-        if let Ok(Some(current_slot)) = with_user_space_manager(|manager| manager.get_current_active()) {
+        if let Ok(Some(current_slot)) =
+            with_user_space_manager(|manager| manager.get_current_active())
+        {
             context.uart.puts("\r\nCurrently Active: Slot ");
             context.uart.put_hex(current_slot as u64);
             context.uart.puts("\r\n");

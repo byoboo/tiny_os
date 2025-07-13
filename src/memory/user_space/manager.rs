@@ -3,8 +3,8 @@
 //! This module provides the central manager for all user space operations,
 //! coordinating page tables, processes, and system-wide user space resources.
 
-use crate::memory::MemoryManager;
 use super::page_table::UserPageTable;
+use crate::memory::MemoryManager;
 
 /// Maximum number of user processes that can have page tables
 pub const MAX_USER_PROCESSES: usize = 32;

@@ -1,7 +1,7 @@
 //! Lazy Page Allocation
 //!
-//! This module provides lazy page allocation functionality with support for different
-//! allocation policies and efficient zero-page initialization.
+//! This module provides lazy page allocation functionality with support for
+//! different allocation policies and efficient zero-page initialization.
 
 use crate::memory::{MemoryManager, PAGE_SIZE};
 

@@ -170,7 +170,7 @@ pub struct AdvancedProtectionStats {
     pub stack_protections: usize,
     /// Number of return address mismatches
     pub return_address_mismatches: usize,
-    
+
     // Backward compatibility fields
     /// Total number of protected pages (alias for protected_pages)
     pub total_protected_pages: usize,

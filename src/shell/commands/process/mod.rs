@@ -8,6 +8,6 @@ pub mod stats;
 
 // Re-export all command handlers for shell integration
 pub use context::handle_process_context_test;
-pub use privilege::{handle_privilege_test, handle_privilege_stats};
-pub use scheduler::{handle_scheduler_test, handle_scheduler_stats};
+pub use privilege::{handle_privilege_stats, handle_privilege_test};
+pub use scheduler::{handle_scheduler_stats, handle_scheduler_test};
 pub use stats::handle_process_stats;

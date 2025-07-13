@@ -1,5 +1,7 @@
-use crate::memory::dynamic::{check_dynamic_memory_pressure, get_dynamic_memory_stats, PressureLevel};
-use crate::shell::core::ShellContext;
+use crate::{
+    memory::dynamic::{check_dynamic_memory_pressure, get_dynamic_memory_stats, PressureLevel},
+    shell::core::ShellContext,
+};
 
 /// Monitor memory pressure and handle optimization
 pub fn cmd_dynamic_memory_pressure(_args: &[&str], context: &mut ShellContext) {

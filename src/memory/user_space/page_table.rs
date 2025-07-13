@@ -5,10 +5,12 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
+use super::{
+    layout::is_user_space_address,
+    mapping::MemoryMapper,
+    vma::{VirtualMemoryArea, VmaList, VmaType},
+};
 use crate::memory::{mmu::RegionType, PAGE_SIZE};
-use super::vma::{VmaList, VmaType, VirtualMemoryArea};
-use super::mapping::MemoryMapper;
-use super::layout::is_user_space_address;
 
 /// User space page table for a single process
 #[derive(Debug, Clone, Copy)]

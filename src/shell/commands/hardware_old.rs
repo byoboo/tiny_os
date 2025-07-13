@@ -62,8 +62,6 @@ fn print_number(uart: &crate::uart::Uart, mut num: u32) {
     }
 }
 
-
-
 /// Handle interrupt status command (i/I)
 pub fn handle_interrupt_status(context: &ShellContext) {
     let int_stats = context.interrupt_controller.get_interrupt_stats();

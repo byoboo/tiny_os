@@ -3,9 +3,14 @@
 //! This module handles memory mapping operations and virtual-to-physical
 //! address translation for user space processes.
 
-use crate::memory::{mmu::{MemoryAttribute, PageTableEntry}, PAGE_SIZE};
-use super::vma::{VirtualMemoryArea, VmaType};
-use super::layout::is_user_space_address;
+use super::{
+    layout::is_user_space_address,
+    vma::{VirtualMemoryArea, VmaType},
+};
+use crate::memory::{
+    mmu::{MemoryAttribute, PageTableEntry},
+    PAGE_SIZE,
+};
 
 /// Memory mapping operations
 pub struct MemoryMapper;

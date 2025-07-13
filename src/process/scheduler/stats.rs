@@ -8,44 +8,44 @@
 pub struct SchedulerStats {
     /// Total number of task switches
     pub task_switches: u64,
-    
+
     /// Total number of tasks created
     pub tasks_created: u64,
-    
+
     /// Total number of tasks destroyed
     pub tasks_destroyed: u64,
-    
+
     /// Number of preemptions due to time slice expiration
     pub preemptions: u64,
-    
+
     /// Number of voluntary context switches (blocking)
     pub voluntary_switches: u64,
-    
+
     /// Number of involuntary context switches (preemption)
     pub involuntary_switches: u64,
-    
+
     /// Total scheduler run time
     pub total_run_time: u64,
-    
+
     /// Number of idle cycles
     pub idle_cycles: u64,
-    
+
     /// Current number of ready tasks
     pub ready_tasks: usize,
-    
+
     /// Current number of blocked tasks
     pub blocked_tasks: usize,
-    
+
     /// Current number of running tasks (should be 0 or 1)
     pub running_tasks: usize,
-    
+
     // Backward compatibility fields
     /// Context switches (alias for task_switches)
     pub context_switches: u64,
-    
+
     /// Scheduler calls
     pub scheduler_calls: u64,
-    
+
     /// Idle time
     pub idle_time: u64,
 }

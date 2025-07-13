@@ -1,5 +1,7 @@
-use crate::memory::dynamic::{fast_context_switch, get_dynamic_memory_stats, is_dynamic_memory_enabled};
-use crate::shell::core::ShellContext;
+use crate::{
+    memory::dynamic::{fast_context_switch, get_dynamic_memory_stats, is_dynamic_memory_enabled},
+    shell::core::ShellContext,
+};
 
 /// Hardware-assisted context switching and comprehensive statistics
 pub fn cmd_dynamic_memory_context(args: &[&str], context: &mut ShellContext) {
