@@ -61,10 +61,12 @@ pub fn create_standard_vmas() -> [VirtualMemoryArea; 4] {
 
 /// Validate that an address range is within user space
 pub fn is_user_space_address(start: u64, size: u64) -> bool {
-    start >= USER_SPACE_START && start + size <= USER_SPACE_END
+    // USER_SPACE_START is 0, so start is always >= 0, but we need to check overflow
+    start.saturating_add(size) <= USER_SPACE_END
 }
 
 /// Validate that an address is within kernel space
 pub fn is_kernel_space_address(addr: u64) -> bool {
-    addr >= KERNEL_SPACE_START && addr <= KERNEL_SPACE_END
+    addr >= KERNEL_SPACE_START
+    // KERNEL_SPACE_END is u64::MAX, so addr is always <= u64::MAX
 }

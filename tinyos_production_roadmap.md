@@ -24,6 +24,206 @@ Your TinyOS project has an excellent foundation with:
 
 ---
 
+## Phase 0: Development Infrastructure (1-2 weeks)
+
+### 0.1 Separate Build Container Project (Week 1)
+**PROBLEM**: Current workflow rebuilds container on every run, slowing development cycles
+
+**SOLUTION**: Create separate `tinyos-build-container` project with prebuilt images
+
+**Tasks**:
+- [ ] **Create new repository**: `tinyos-build-container` (separate from main OS)
+- [ ] **Dockerfile optimization**: Multi-stage builds for smaller images
+- [ ] **GitHub Container Registry**: Automated builds and publishing
+- [ ] **Version tagging**: Semantic versioning for build environment changes
+- [ ] **ARM64 + AMD64 support**: Multi-arch container builds for M1/Intel Macs
+
+**New Repository Structure**:
+```
+tinyos-build-container/
+├── Dockerfile
+├── .github/workflows/build-and-publish.yml
+├── scripts/
+│   ├── install-rust-toolchain.sh
+│   ├── install-qemu.sh
+│   └── setup-cross-compile.sh
+├── README.md
+└── VERSION
+```
+
+**Container Contents**:
+- Rust toolchain with `aarch64-unknown-none-softfloat` target
+- QEMU system emulation for ARM64
+- Cross-compilation tools (binutils, GDB for ARM64)
+- Build scripts and utilities
+- Testing frameworks
+
+**GitHub Actions Workflow**:
+```yaml
+# .github/workflows/build-and-publish.yml
+name: Build and Publish Container
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/tinyos-build:latest
+            ghcr.io/${{ github.repository_owner }}/tinyos-build:${{ github.sha }}
+```
+
+**Success Criteria**: Container builds in < 30 seconds (vs current multi-minute setup)
+
+---
+
+### 0.2 Update TinyOS Build System (Week 1-2)
+**GOAL**: TinyOS project uses prebuilt container for fast development
+
+**Tasks**:
+- [ ] **Update GitHub Actions**: Use prebuilt container from registry
+- [ ] **Local development scripts**: Pull container instead of building
+- [ ] **Documentation updates**: New setup instructions using prebuilt container
+- [ ] **Dependency management**: Container version pinning in TinyOS repo
+- [ ] **Fallback mechanism**: Build container locally if registry unavailable
+
+**Updated TinyOS Workflow**:
+```yaml
+# .github/workflows/ci.yml (in main TinyOS repo)
+name: TinyOS CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/tinyos-build:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build TinyOS
+        run: cargo build
+      - name: Run Tests
+        run: ./test_tinyos.sh all
+      - name: Test in QEMU
+        run: ./test_tinyos.sh validate
+```
+
+**Updated Local Development**:
+```bash
+# New run.sh (uses prebuilt container)
+#!/bin/bash
+echo "Pulling latest build container..."
+docker pull ghcr.io/yourusername/tinyos-build:latest
+
+echo "Building TinyOS..."
+docker run --rm -v $(pwd):/workspace \
+  ghcr.io/yourusername/tinyos-build:latest \
+  bash -c "cd /workspace && cargo build"
+
+echo "Running in QEMU..."
+docker run --rm -it -v $(pwd):/workspace \
+  ghcr.io/yourusername/tinyos-build:latest \
+  bash -c "cd /workspace && ./run.sh"
+```
+
+**Files to update in TinyOS**:
+- `.github/workflows/` - Use prebuilt container
+- `run.sh` - Pull container instead of building
+- `test_tinyos.sh` - Support containerized testing
+- `README.md` - Updated setup instructions
+- `.container-version` - Pin container version
+
+**Success Criteria**: 
+- Local development cycle: < 30 seconds from code change to QEMU
+- CI/CD pipeline: < 2 minutes total (vs current longer times)
+- New developer setup: < 5 minutes (just `docker pull` + `./run.sh`)
+
+---
+
+### 0.3 Development Velocity Improvements (Week 2)
+**GOAL**: Optimize the entire development workflow
+
+**Tasks**:
+- [ ] **Incremental builds**: Cache Rust compilation artifacts in container
+- [ ] **Fast testing modes**: Quick smoke tests vs full test suite
+- [ ] **Live reload**: File watching for automatic rebuilds
+- [ ] **Parallel testing**: Run test suites concurrently
+- [ ] **Development docs**: Workflow optimization guide
+
+**Container Optimizations**:
+```dockerfile
+# Multi-stage Dockerfile for faster rebuilds
+FROM rust:1.75 AS rust-base
+RUN rustup target add aarch64-unknown-none-softfloat
+
+FROM ubuntu:22.04 AS qemu-base  
+RUN apt-get update && apt-get install -y qemu-system-arm
+
+FROM qemu-base AS final
+COPY --from=rust-base /usr/local/cargo /usr/local/cargo
+COPY --from=rust-base /usr/local/rustup /usr/local/rustup
+# Pre-compile common dependencies
+COPY dummy-project/ /tmp/dummy-project
+RUN cd /tmp/dummy-project && cargo build --target aarch64-unknown-none-softfloat
+```
+
+**Fast Development Script**:
+```bash
+# dev.sh - Fast development loop
+#!/bin/bash
+CONTAINER="ghcr.io/yourusername/tinyos-build:latest"
+
+# Pull container if needed (once per day)
+if ! docker images $CONTAINER | grep -q "hours ago\|minutes ago"; then
+    echo "Pulling latest container..."
+    docker pull $CONTAINER
+fi
+
+# Quick build and test
+echo "Quick build..."
+docker run --rm -v $(pwd):/workspace -v cargo-cache:/usr/local/cargo/registry \
+  $CONTAINER bash -c "cd /workspace && cargo build --target aarch64-unknown-none-softfloat"
+
+if [ "$1" = "test" ]; then
+    echo "Running quick tests..."
+    docker run --rm -v $(pwd):/workspace \
+      $CONTAINER bash -c "cd /workspace && ./test_tinyos.sh validate"
+fi
+
+if [ "$1" = "run" ]; then
+    echo "Starting QEMU..."
+    docker run --rm -it -v $(pwd):/workspace \
+      $CONTAINER bash -c "cd /workspace && ./run.sh"
+fi
+```
+
+**Success Criteria**: Complete development cycle (edit→build→test→run) in < 1 minute
+
+---
+
 ## Phase 1: Foundation Completion (4-6 weeks)
 
 ### 1.1 Exception Vectors Implementation (Week 1-2)
@@ -302,11 +502,12 @@ pub mod tinyos_runtime {
 
 | Phase | Duration | Key Deliverables |
 |-------|----------|------------------|
+| **Phase 0** | 1-2 weeks | Build container infrastructure |
 | **Phase 1** | 4-6 weeks | Exception handling, Enhanced CLI |
 | **Phase 2** | 6-8 weeks | Virtual memory, Process management |
 | **Phase 3** | 4-6 weeks | File system, Application runtime |
 | **Phase 4** | 3-4 weeks | Pi optimizations, Multi-core |
-| **Total** | **17-24 weeks** | **Production-ready v1.0** |
+| **Total** | **18-26 weeks** | **Production-ready v1.0** |
 
 ---
 
