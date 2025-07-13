@@ -9,15 +9,36 @@
 
 use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 
-// Import refactored modules
-pub mod led;
-pub mod interrupts;
+// TODO: Import refactored modules when ready
+// For now using existing functions directly
+// Exception functions extracted to hardware/exceptions.rs
 
-pub use led::{handle_led_on, handle_led_off, handle_led_toggle};
-pub use interrupts::{
-    handle_interrupt_status, handle_interrupt_toggle, handle_interrupt_test,
-    handle_irq_integration_test, handle_nested_interrupt_test,
-};
+// === LED COMMANDS (extracted to hardware/led.rs) ===
+/// Handle LED ON command (1)
+pub fn handle_led_on(context: &mut ShellContext) {
+    context.gpio.set_high(42);
+    context.led_state = true;
+    context.uart.puts("LED turned ON\r\n");
+}
+
+/// Handle LED OFF command (0)
+pub fn handle_led_off(context: &mut ShellContext) {
+    context.gpio.set_low(42);
+    context.led_state = false;
+    context.uart.puts("LED turned OFF\r\n");
+}
+
+/// Handle LED toggle command (l/L)
+pub fn handle_led_toggle(context: &mut ShellContext) {
+    context.led_state = !context.led_state;
+    if context.led_state {
+        context.gpio.set_high(42);
+        context.uart.puts("LED toggled ON\r\n");
+    } else {
+        context.gpio.set_low(42);
+        context.uart.puts("LED toggled OFF\r\n");
+    }
+}
 
 /// Helper function to print numbers  
 #[inline]

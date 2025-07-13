@@ -7,6 +7,7 @@ pub mod advanced_protection;
 pub mod dynamic_memory;
 pub mod exceptions;
 pub mod filesystem;
+#[path = "hardware_old.rs"]
 pub mod hardware;
 pub mod memory;
 pub mod process;
