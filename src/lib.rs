@@ -18,6 +18,7 @@ pub mod optimization; // Week 3: Hardware optimization framework
 pub mod process; // New process management system
 pub mod shell;
 pub mod testing; // Testing framework
+pub mod utils; // Utility functions for no_std environment
 
 // Legacy filesystem module (for backward compatibility)
 // This re-exports types from the new modular filesystem
