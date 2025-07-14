@@ -27,3 +27,7 @@ pub mod user_space;
 
 // Week 4: Simple hardware integration commands
 pub mod week4_simple;
+
+// Week-based feature commands
+pub mod week5; // Week 5: Network and Advanced I/O
+pub mod week6; // Week 6: Advanced Security and Real-time

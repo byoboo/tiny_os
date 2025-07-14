@@ -130,6 +130,16 @@ pub fn route_enhanced_hardware_commands(ch: u8, context: &mut ShellContext) -> b
             handle_week4_menu(context);
             true
         }
+        // Week 5: Network and Advanced I/O Commands
+        b'5' => {
+            handle_week5_menu(context);
+            true
+        }
+        // Week 6: Advanced Security and Real-time Commands
+        b'6' => {
+            handle_week6_menu(context);
+            true
+        }
         _ => false,
     }
 }
@@ -248,6 +258,110 @@ fn handle_week4_power_submenu(context: &mut ShellContext) {
             b'4' => commands::week4_simple::cmd_week4_gpu_power(&["gpu-power", "idle"], context),
             b'5' => commands::week4_simple::cmd_week4_gpu_power(&["gpu-power", "full"], context),
             _ => context.uart.puts("Invalid option\n"),
+        }
+    }
+}
+
+/// Handle week 5 network and advanced I/O menu
+fn handle_week5_menu(context: &mut ShellContext) {
+    context.uart.puts("\n🌐 WEEK 5 NETWORK & ADVANCED I/O\n");
+    context.uart.puts("==================================\n");
+    context.uart.puts("  1 - Network Overview\n");
+    context.uart.puts("  2 - Network Status\n");
+    context.uart.puts("  3 - I/O Performance\n");
+    context.uart.puts("  4 - Comprehensive Benchmark\n");
+    context.uart.puts("  5 - Network Interfaces\n");
+    context.uart.puts("  6 - I/O Protocols\n");
+    context.uart.puts("  7 - Week 5 Capabilities\n");
+    context.uart.puts("  h - Help\n");
+    context.uart.puts("Choose option: ");
+
+    if let Some(option) = context.uart.getc() {
+        context.uart.putc(option);
+        context.uart.puts("\n");
+        
+        match option {
+            b'1' => {
+                commands::week5::cmd_week5(&["overview"], context);
+            }
+            b'2' => {
+                commands::week5::cmd_week5_network(&["status"], context);
+            }
+            b'3' => {
+                commands::week5::cmd_week5_io(&["performance"], context);
+            }
+            b'4' => {
+                commands::week5::cmd_week5(&["benchmark"], context);
+            }
+            b'5' => {
+                commands::week5::cmd_week5_network(&["interfaces"], context);
+            }
+            b'6' => {
+                commands::week5::cmd_week5_io(&["protocols"], context);
+            }
+            b'7' => {
+                commands::week5::cmd_week5(&["capabilities"], context);
+            }
+            b'h' | b'H' => {
+                commands::week5::cmd_week5(&["help"], context);
+            }
+            _ => {
+                context.uart.puts("Invalid option\n");
+            }
+        }
+    }
+}
+
+/// Handle week 6 security and real-time menu
+fn handle_week6_menu(context: &mut ShellContext) {
+    context.uart.puts("\n🔒 WEEK 6 SECURITY & REAL-TIME\n");
+    context.uart.puts("=================================\n");
+    context.uart.puts("  1 - Security Overview\n");
+    context.uart.puts("  2 - Security Status\n");
+    context.uart.puts("  3 - Real-time Metrics\n");
+    context.uart.puts("  4 - System Hardening\n");
+    context.uart.puts("  5 - Security Scan\n");
+    context.uart.puts("  6 - RT Performance Test\n");
+    context.uart.puts("  7 - Comprehensive Benchmark\n");
+    context.uart.puts("  8 - Week 6 Capabilities\n");
+    context.uart.puts("  h - Help\n");
+    context.uart.puts("Choose option: ");
+
+    if let Some(option) = context.uart.getc() {
+        context.uart.putc(option);
+        context.uart.puts("\n");
+        
+        match option {
+            b'1' => {
+                commands::week6::cmd_week6(&["overview"], context);
+            }
+            b'2' => {
+                commands::week6::cmd_week6_security(&["status"], context);
+            }
+            b'3' => {
+                commands::week6::cmd_week6_realtime(&["metrics"], context);
+            }
+            b'4' => {
+                commands::week6::cmd_week6_hardening(&["status"], context);
+            }
+            b'5' => {
+                commands::week6::cmd_week6_security(&["scan"], context);
+            }
+            b'6' => {
+                commands::week6::cmd_week6_realtime(&["latency"], context);
+            }
+            b'7' => {
+                commands::week6::cmd_week6(&["benchmark"], context);
+            }
+            b'8' => {
+                commands::week6::cmd_week6(&["capabilities"], context);
+            }
+            b'h' | b'H' => {
+                commands::week6::cmd_week6(&["help"], context);
+            }
+            _ => {
+                context.uart.puts("Invalid option\n");
+            }
         }
     }
 }

@@ -15,6 +15,13 @@ pub mod cache;
 // Week 4: Advanced Hardware Features
 pub mod week4_simple;
 pub mod pcie; // Re-enabled
+pub mod power_management; // Re-enabled with no_std formatting
+
+// Week 5: Network and Advanced I/O
+pub mod week5_network;
+
+// Week 6: Advanced Security and Real-time
+pub mod week6_security;
 
 // Re-export commonly used types
 pub use mailbox::{Mailbox, GpuMemoryFlags, test_mailbox};
