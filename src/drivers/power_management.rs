@@ -2,11 +2,10 @@
 // Week 4 Implementation: Intelligent power control with GPU integration
 // Building on Week 3 VideoCore and optimization infrastructure
 
-// Temporarily disabled imports until full restoration
-// use crate::drivers::dma::{get_dma_controller};
-// use crate::drivers::cache::{get_cache_controller};
-// use crate::drivers::pcie::{get_pcie_controller};
-// use crate::benchmarks::timing::get_cycles;
+use crate::drivers::dma::get_dma_controller;
+use crate::drivers::cache::get_cache_controller;
+use crate::drivers::pcie::get_pcie_controller;
+use crate::benchmarks::timing::get_cycles;
 use crate::utils::formatting::{write_number_to_buffer, write_hex_to_buffer};
 use core::ptr::{read_volatile, write_volatile};
 

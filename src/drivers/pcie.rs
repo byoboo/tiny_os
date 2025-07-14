@@ -2,8 +2,8 @@
 // Advanced hardware acceleration and device communication
 // Week 4 Implementation: Building on Week 3 GPU foundation
 
-// use crate::drivers::dma::{get_dma_controller, DmaChannel};
-// use crate::benchmarks::timing::get_cycles;
+use crate::drivers::dma::get_dma_controller;
+use crate::benchmarks::timing::get_cycles;
 use core::ptr::{read_volatile, write_volatile};
 
 /// PCIe 2.0 Base Address for Pi 4/5
