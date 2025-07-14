@@ -49,3 +49,38 @@ pub enum DriverError {
     Busy,
     Unsupported,
 }
+
+/// Hardware version detection for platform-specific optimizations
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HardwareVersion {
+    RaspberryPi3,
+    RaspberryPi4,
+    RaspberryPi5,
+    Unknown,
+}
+
+/// Raspberry Pi 4 specific configuration
+pub struct RaspberryPi4Config {
+    pub cortex_a72: bool,
+    pub enhanced_dma: bool,
+    pub usb3_support: bool,
+    pub pcie_available: bool,
+}
+
+impl Default for RaspberryPi4Config {
+    fn default() -> Self {
+        Self {
+            cortex_a72: true,
+            enhanced_dma: true,
+            usb3_support: true,
+            pcie_available: true,
+        }
+    }
+}
+
+/// Hardware version detection function
+pub fn detect_hardware_version() -> HardwareVersion {
+    // TODO: Implement actual hardware detection via device tree or CPU ID
+    // For now, default to Pi 4 as our primary target
+    HardwareVersion::RaspberryPi4
+}

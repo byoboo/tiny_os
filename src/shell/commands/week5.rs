@@ -87,7 +87,7 @@ fn show_week5_overview(context: &mut ShellContext) {
     let mut buffer = [0u8; 32];
     
     context.uart.puts("\n📊 Aggregate Bandwidth: ");
-    write_number_to_buffer(caps.max_aggregate_bandwidth_gbps as usize, &mut buffer);
+    write_number_to_buffer(caps.max_aggregate_bandwidth_gbps as u64, &mut buffer);
     context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
     context.uart.puts(" Gbps\n");
 }
@@ -100,7 +100,7 @@ fn show_week5_capabilities_detailed(context: &mut ShellContext) {
     context.uart.puts("\n=== Week 5 Detailed Capabilities ===\n");
     
     context.uart.puts("Network Interfaces: ");
-    write_number_to_buffer(caps.total_network_interfaces as usize, &mut buffer);
+    write_number_to_buffer(caps.total_network_interfaces as u64, &mut buffer);
     context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
     context.uart.puts(" available\n");
     
@@ -134,13 +134,13 @@ fn show_network_status(context: &mut ShellContext) {
         let mut buffer = [0u8; 32];
         
         context.uart.puts("Active Interfaces: ");
-        write_number_to_buffer(stats.total_interfaces_active as usize, &mut buffer);
+        write_number_to_buffer(stats.total_interfaces_active as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts("/4\n");
         
         if stats.ethernet_speed_mbps > 0 {
             context.uart.puts("• Ethernet: ");
-            write_number_to_buffer(stats.ethernet_speed_mbps as usize, &mut buffer);
+            write_number_to_buffer(stats.ethernet_speed_mbps as u64, &mut buffer);
             context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
             context.uart.puts(" Mbps ✅\n");
         } else {
@@ -149,7 +149,7 @@ fn show_network_status(context: &mut ShellContext) {
         
         if stats.wifi_speed_mbps > 0 {
             context.uart.puts("• WiFi 6: ");
-            write_number_to_buffer(stats.wifi_speed_mbps as usize, &mut buffer);
+            write_number_to_buffer(stats.wifi_speed_mbps as u64, &mut buffer);
             context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
             context.uart.puts(" Mbps ✅\n");
         } else {
@@ -157,7 +157,7 @@ fn show_network_status(context: &mut ShellContext) {
         }
         
         context.uart.puts("• USB 3.0 Bandwidth: ");
-        write_number_to_buffer(stats.usb3_bandwidth_mbps as usize, &mut buffer);
+        write_number_to_buffer(stats.usb3_bandwidth_mbps as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts(" Mbps\n");
     } else {
@@ -174,22 +174,22 @@ fn show_io_performance(context: &mut ShellContext) {
         let mut buffer = [0u8; 32];
         
         context.uart.puts("Active Protocols: ");
-        write_number_to_buffer(perf.active_protocol_count as usize, &mut buffer);
+        write_number_to_buffer(perf.active_protocol_count as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts("\n");
         
         context.uart.puts("• SPI Max Frequency: ");
-        write_number_to_buffer(perf.spi_max_frequency_mhz as usize, &mut buffer);
+        write_number_to_buffer(perf.spi_max_frequency_mhz as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts(" MHz\n");
         
         context.uart.puts("• I2C Max Frequency: ");
-        write_number_to_buffer(perf.i2c_max_frequency_khz as usize, &mut buffer);
+        write_number_to_buffer(perf.i2c_max_frequency_khz as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts(" kHz\n");
         
         context.uart.puts("• Total Bandwidth: ");
-        write_number_to_buffer(perf.total_bandwidth_mbps as usize, &mut buffer);
+        write_number_to_buffer(perf.total_bandwidth_mbps as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts(" Mbps\n");
     } else {

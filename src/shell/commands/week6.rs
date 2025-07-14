@@ -115,12 +115,12 @@ fn show_week6_overview(context: &mut ShellContext) {
     let mut buffer = [0u8; 32];
     
     context.uart.puts("\n📊 Overall Security Score: ");
-    write_number_to_buffer(caps.security_score as usize, &mut buffer);
+    write_number_to_buffer(caps.security_score as u64, &mut buffer);
     context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
     context.uart.puts("%\n");
     
     context.uart.puts("⏱️ Real-time Performance: ");
-    write_number_to_buffer(caps.rt_performance_score as usize, &mut buffer);
+    write_number_to_buffer(caps.rt_performance_score as u64, &mut buffer);
     context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
     context.uart.puts("%\n");
 }
@@ -133,7 +133,7 @@ fn show_week6_capabilities_detailed(context: &mut ShellContext) {
     context.uart.puts("\n=== Week 6 Detailed Capabilities ===\n");
     
     context.uart.puts("Security Features Available: ");
-    write_number_to_buffer(caps.total_security_features as usize, &mut buffer);
+    write_number_to_buffer(caps.total_security_features as u64, &mut buffer);
     context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
     context.uart.puts("\n");
     
@@ -199,32 +199,32 @@ fn show_realtime_metrics(context: &mut ShellContext) {
         let mut buffer = [0u8; 32];
         
         context.uart.puts("Average Latency: ");
-        write_number_to_buffer(metrics.average_latency_us as usize, &mut buffer);
+        write_number_to_buffer(metrics.average_latency_us as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts(" μs\n");
         
         context.uart.puts("Maximum Latency: ");
-        write_number_to_buffer(metrics.max_latency_us as usize, &mut buffer);
+        write_number_to_buffer(metrics.max_latency_us as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts(" μs\n");
         
         context.uart.puts("Context Switch Time: ");
-        write_number_to_buffer(metrics.context_switch_time_us as usize, &mut buffer);
+        write_number_to_buffer(metrics.context_switch_time_us as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts(" μs\n");
         
         context.uart.puts("Scheduler Overhead: ");
-        write_number_to_buffer(metrics.scheduler_overhead_percent as usize, &mut buffer);
+        write_number_to_buffer(metrics.scheduler_overhead_percent as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts("%\n");
         
         context.uart.puts("Missed Deadlines: ");
-        write_number_to_buffer(metrics.missed_deadlines as usize, &mut buffer);
+        write_number_to_buffer(metrics.missed_deadlines as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts("\n");
         
         context.uart.puts("Active RT Tasks: ");
-        write_number_to_buffer(metrics.active_rt_tasks as usize, &mut buffer);
+        write_number_to_buffer(metrics.active_rt_tasks as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts("\n");
     } else {
@@ -257,7 +257,7 @@ fn show_hardening_status(context: &mut ShellContext) {
         context.uart.puts("\n");
         
         context.uart.puts("Overall Security Score: ");
-        write_number_to_buffer(status.overall_security_score as usize, &mut buffer);
+        write_number_to_buffer(status.overall_security_score as u64, &mut buffer);
         context.uart.puts(core::str::from_utf8(&buffer).unwrap_or("?"));
         context.uart.puts("%\n");
     } else {
