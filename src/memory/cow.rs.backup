@@ -12,14 +12,12 @@
 //! - COW statistics and monitoring
 //! - Memory sharing between processes/stacks
 
-use core::ptr::{read_volatile, write_volatile};
+// Re-export modular components from cow/ directory
+pub use self::cow::*;
 
-use spin::Mutex;
-
-use crate::memory::{
-    mmu::{RegionType, PAGE_SIZE},
-    MemoryManager,
-};
+// Include modular cow implementation
+#[path = "cow/mod.rs"]
+mod cow;
 
 /// Maximum number of COW pages that can be tracked
 const MAX_COW_PAGES: usize = 64;
