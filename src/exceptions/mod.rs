@@ -15,6 +15,9 @@ pub mod softirq;
 pub mod work_item;
 pub mod work_queue;
 
+// Performance profiling
+pub mod profiling;
+
 pub mod esr_decoder;
 pub mod handler;
 pub mod init;
