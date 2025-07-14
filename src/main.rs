@@ -120,6 +120,93 @@ pub extern "C" fn kernel_main() {
     interrupt_controller.init();
     uart.puts("✓ Interrupt controller initialized\r\n");
 
+    // Week 3: Initialize VideoCore GPU integration
+    uart.puts("Initializing Week 3 VideoCore GPU integration...\r\n");
+    
+    // Initialize mailbox communication
+    use tiny_os_lib::drivers::mailbox;
+    match mailbox::init() {
+        Ok(()) => uart.puts("✓ VideoCore mailbox initialized\r\n"),
+        Err(e) => {
+            uart.puts("⚠ Mailbox initialization failed: ");
+            uart.puts(e);
+            uart.puts("\r\n");
+        }
+    }
+    
+    // Initialize VideoCore GPU
+    use tiny_os_lib::drivers::videocore;
+    match videocore::init() {
+        Ok(()) => {
+            uart.puts("✓ VideoCore GPU initialized\r\n");
+            let gpu = videocore::get_gpu();
+            if let Some(caps) = gpu.get_capabilities() {
+                if caps.has_advanced_features {
+                    uart.puts("🚀 Pi 4/5 VideoCore VI features available\r\n");
+                } else {
+                    uart.puts("📝 Pi 3 VideoCore IV compatibility mode\r\n");
+                }
+            }
+        }
+        Err(e) => {
+            uart.puts("⚠ VideoCore initialization failed: ");
+            uart.puts(e);
+            uart.puts("\r\n");
+        }
+    }
+    
+    // Initialize DMA controller
+    use tiny_os_lib::drivers::dma;
+    let mailbox = mailbox::get_mailbox();
+    let is_pi4_or_5 = mailbox.is_pi4_or_5();
+    match dma::init(is_pi4_or_5) {
+        Ok(()) => {
+            uart.puts("✓ DMA controller initialized\r\n");
+            if is_pi4_or_5 {
+                uart.puts("🚀 Pi 4/5 enhanced DMA features enabled\r\n");
+            } else {
+                uart.puts("📝 Pi 3 DMA compatibility mode\r\n");
+            }
+        }
+        Err(e) => {
+            uart.puts("⚠ DMA initialization failed: ");
+            uart.puts(e);
+            uart.puts("\r\n");
+        }
+    }
+    
+    // Initialize cache controller
+    use tiny_os_lib::drivers::cache;
+    cache::init(is_pi4_or_5);
+    uart.puts("✓ Cache controller initialized\r\n");
+    if is_pi4_or_5 {
+        uart.puts("🚀 Cortex-A72/A76 cache optimizations enabled\r\n");
+    } else {
+        uart.puts("📝 Cortex-A53 cache compatibility mode\r\n");
+    }
+    
+    // Initialize optimization framework
+    use tiny_os_lib::optimization;
+    match optimization::init() {
+        Ok(()) => uart.puts("✓ Hardware optimization framework initialized\r\n"),
+        Err(e) => {
+            uart.puts("⚠ Optimization framework failed: ");
+            uart.puts(e);
+            uart.puts("\r\n");
+        }
+    }
+    
+    // Initialize GPU benchmarks
+    use tiny_os_lib::benchmarks::gpu_performance;
+    match gpu_performance::init() {
+        Ok(()) => uart.puts("✓ GPU performance benchmarks ready\r\n"),
+        Err(e) => {
+            uart.puts("⚠ GPU benchmarks initialization failed: ");
+            uart.puts(e);
+            uart.puts("\r\n");
+        }
+    }
+
     // Initialize SD Card (defer FAT32 mounting to avoid stack overflow)
     uart.puts("About to initialize SD Card...\r\n");
 

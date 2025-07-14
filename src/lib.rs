@@ -14,6 +14,7 @@ pub mod exceptions;
 pub mod filesystem; // New modular filesystem system
 pub mod interrupts;
 pub mod memory;
+pub mod optimization; // Week 3: Hardware optimization framework
 pub mod process; // New process management system
 pub mod shell;
 pub mod testing; // Testing framework

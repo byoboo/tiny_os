@@ -7,6 +7,7 @@ pub mod memory;
 pub mod timing;
 pub mod power;
 pub mod comparison;
+pub mod gpu_performance;
 
 // Re-export key benchmarking functions
 pub use memory::MemoryBenchmarks;

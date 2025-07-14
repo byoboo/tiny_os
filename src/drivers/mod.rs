@@ -12,11 +12,23 @@ pub mod sdcard;
 pub mod timer;
 pub mod uart;
 
+// Week 3: VideoCore GPU Integration drivers
+pub mod mailbox;
+pub mod videocore;
+pub mod dma;
+pub mod cache;
+
 // Re-export commonly used driver types for convenience
 pub use gpio::{Gpio, GpioFunction};
 pub use sdcard::SdCard;
 pub use timer::SystemTimer;
 pub use uart::Uart;
+
+// Week 3: VideoCore and DMA exports
+pub use mailbox::{Mailbox, GpuMemoryFlags, test_mailbox};
+pub use videocore::{VideoCore, GpuTaskType, GpuStatus};
+pub use dma::DmaController;
+pub use cache::CacheController;
 
 /// Common traits for hardware drivers
 pub mod traits {
