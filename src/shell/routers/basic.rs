@@ -125,6 +125,11 @@ pub fn route_enhanced_hardware_commands(ch: u8, context: &mut ShellContext) -> b
             commands::hardware::handle_deferred_processing_test(context);
             true
         }
+        // Week 4: Advanced Hardware Integration Commands
+        b'4' => {
+            handle_week4_menu(context);
+            true
+        }
         _ => false,
     }
 }
@@ -174,4 +179,75 @@ pub fn route_memory_commands(ch: u8, context: &mut ShellContext) -> bool {
 fn handle_benchmark_menu(context: &mut ShellContext) {
     use crate::shell::commands::benchmark::benchmark_menu;
     benchmark_menu(context);
+}
+
+/// Handle week 4 advanced hardware integration menu
+fn handle_week4_menu(context: &mut ShellContext) {
+    context.uart.puts("\n🚀 WEEK 4 ADVANCED HARDWARE FEATURES\n");
+    context.uart.puts("=====================================\n");
+    context.uart.puts("  1 - Initialize Week 4 features\n");
+    context.uart.puts("  2 - Show system status\n");
+    context.uart.puts("  3 - Run benchmarks\n");
+    context.uart.puts("  4 - Power management\n");
+    context.uart.puts("  5 - PCIe devices\n");
+    context.uart.puts("  6 - Thermal management\n");
+    context.uart.puts("  h - Help\n");
+    context.uart.puts("Select option: ");
+
+    if let Some(option) = context.uart.getc() {
+        context.uart.putc(option);
+        context.uart.puts("\n");
+        
+        match option {
+            b'1' => {
+                commands::week4_simple::cmd_week4_init(&["init"], context);
+            }
+            b'2' => {
+                commands::week4_simple::cmd_week4_status(&["status"], context);
+            }
+            b'3' => {
+                commands::week4_simple::cmd_week4_benchmark(&["benchmark"], context);
+            }
+            b'4' => {
+                handle_week4_power_submenu(context);
+            }
+            b'5' => {
+                commands::week4_simple::cmd_week4_devices(&["devices"], context);
+            }
+            b'6' => {
+                commands::week4_simple::cmd_week4_thermal(&["thermal"], context);
+            }
+            b'h' | b'H' => {
+                commands::week4_simple::cmd_week4_help(&["help"], context);
+            }
+            _ => {
+                context.uart.puts("Invalid option\n");
+            }
+        }
+    }
+}
+
+/// Handle Week 4 power management submenu
+fn handle_week4_power_submenu(context: &mut ShellContext) {
+    context.uart.puts("\n⚡ Power Management Options:\n");
+    context.uart.puts("  1 - CPU frequency (min)\n");
+    context.uart.puts("  2 - CPU frequency (medium)\n");
+    context.uart.puts("  3 - CPU frequency (max)\n");
+    context.uart.puts("  4 - GPU power (idle)\n");
+    context.uart.puts("  5 - GPU power (full)\n");
+    context.uart.puts("Select option: ");
+
+    if let Some(option) = context.uart.getc() {
+        context.uart.putc(option);
+        context.uart.puts("\n");
+
+        match option {
+            b'1' => commands::week4_simple::cmd_week4_cpu_freq(&["cpu-freq", "min"], context),
+            b'2' => commands::week4_simple::cmd_week4_cpu_freq(&["cpu-freq", "medium"], context),
+            b'3' => commands::week4_simple::cmd_week4_cpu_freq(&["cpu-freq", "max"], context),
+            b'4' => commands::week4_simple::cmd_week4_gpu_power(&["gpu-power", "idle"], context),
+            b'5' => commands::week4_simple::cmd_week4_gpu_power(&["gpu-power", "full"], context),
+            _ => context.uart.puts("Invalid option\n"),
+        }
+    }
 }

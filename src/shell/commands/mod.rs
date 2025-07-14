@@ -21,3 +21,9 @@ pub mod process;
 pub mod system;
 pub mod testing;
 pub mod user_space;
+
+// Week 4: Advanced hardware integration commands
+// pub mod week4_advanced; // Temporarily disabled until format! issues resolved
+
+// Week 4: Simple hardware integration commands
+pub mod week4_simple;

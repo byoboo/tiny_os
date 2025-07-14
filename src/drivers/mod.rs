@@ -11,12 +11,20 @@ pub mod gpio;
 pub mod sdcard;
 pub mod timer;
 pub mod uart;
+// pub mod power_management; // Temporarily disabled until format! issues resolved
 
 // Week 3: VideoCore GPU Integration drivers
 pub mod mailbox;
 pub mod videocore;
 pub mod dma;
 pub mod cache;
+
+// Week 4: Advanced Hardware Features (Simplified)
+pub mod week4_simple;
+
+// Week 4: Full Implementation (under development)
+// pub mod pcie; // Temporarily disabled until compilation issues resolved
+// pub mod power_management; // Temporarily disabled until compilation issues resolved
 
 // Re-export commonly used driver types for convenience
 pub use gpio::{Gpio, GpioFunction};

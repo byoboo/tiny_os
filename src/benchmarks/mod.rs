@@ -8,6 +8,7 @@ pub mod timing;
 pub mod power;
 pub mod comparison;
 pub mod gpu_performance;
+// pub mod week4_advanced; // Temporarily disabled until format! issues resolved
 
 // Re-export key benchmarking functions
 pub use memory::MemoryBenchmarks;
