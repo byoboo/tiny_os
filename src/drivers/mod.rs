@@ -17,15 +17,25 @@ pub mod dma;
 pub mod cache;
 
 // Week 4: Advanced Hardware Features
-pub mod week4_simple;
 pub mod pcie; // Re-enabled
 pub mod power_management; // Re-enabled with no_std formatting
 
 // Week 5: Network and Advanced I/O
-pub mod week5_network;
+pub mod network;
 
 // Week 6: Advanced Security and Real-time
+pub mod security;
+
+// Performance monitoring and benchmarking
+pub mod performance;
+
+// Legacy week-specific modules (deprecated - use new modular structure)
+#[deprecated(note = "Use drivers::network instead")]
+pub mod week5_network;
+#[deprecated(note = "Use drivers::security instead")]
 pub mod week6_security;
+#[deprecated(note = "Use drivers::performance instead")]
+pub mod week4_simple;
 
 // Re-export commonly used types
 pub use mailbox::{Mailbox, GpuMemoryFlags, test_mailbox};
@@ -38,6 +48,11 @@ pub use gpio::{Gpio, GpioPin, GpioFunction};
 pub use sdcard::{SdCard, SdCardError};
 pub use timer::{SystemTimer, TimerChannel};
 pub use uart::{Uart, UartConfig};
+
+// Re-export Week 4-6 modular types
+pub use network::{NetworkController, NetworkInterface, NetworkError};
+pub use security::{SecurityController, SecurityLevel, SecurityError};
+pub use performance::{BenchmarkSuite, PerformanceError, OptimizationLevel};
 
 /// Simple DriverError for compatibility
 #[derive(Debug, Clone, Copy, PartialEq)]

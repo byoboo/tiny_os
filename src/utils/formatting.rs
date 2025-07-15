@@ -109,9 +109,33 @@ pub fn write_hex_with_text(context: &mut crate::shell::ShellContext, prefix: &st
 pub fn write_bool_with_text(context: &mut crate::shell::ShellContext, prefix: &str, value: bool, suffix: &str) {
     context.uart.puts(prefix);
     if value {
-        context.uart.puts("true");
+        context.uart.puts("Active");
     } else {
-        context.uart.puts("false");
+        context.uart.puts("Inactive");
     }
     context.uart.puts(suffix);
+}
+
+/// Helper to write status with conditional text
+pub fn write_status_with_text(context: &mut crate::shell::ShellContext, prefix: &str, condition: bool, true_text: &str, false_text: &str, suffix: &str) {
+    context.uart.puts(prefix);
+    if condition {
+        context.uart.puts(true_text);
+    } else {
+        context.uart.puts(false_text);
+    }
+    context.uart.puts(suffix);
+}
+
+/// Helper to write error result 
+pub fn write_error_result(context: &mut crate::shell::ShellContext, prefix: &str, result: Result<(), crate::drivers::network::NetworkError>) {
+    context.uart.puts(prefix);
+    match result {
+        Ok(()) => context.uart.puts("Success"),
+        Err(e) => {
+            context.uart.puts("Failed: ");
+            context.uart.puts(e.as_str());
+        }
+    }
+    context.uart.puts("\n");
 }
