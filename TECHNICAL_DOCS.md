@@ -1021,7 +1021,6 @@ pub struct VirtualMemoryDescriptor {
 #### Documentation
 
 - **README.md**: Project overview and quick start
-- **TECHNICAL_DOCS.md**: This comprehensive technical guide
 - **PROJECT_STATUS.md**: Current project status and roadmap
 - **Source Code**: Extensively commented source code
 

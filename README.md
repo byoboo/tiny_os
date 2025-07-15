@@ -483,7 +483,6 @@ TinyOS features a comprehensive testing infrastructure combining shell script au
 
 ## 📚 Documentation
 
-- **[Technical Documentation](TECHNICAL_DOCS.md)** - Comprehensive technical details
 - **[Project Status](PROJECT_STATUS.md)** - Current implementation status
 - **[Build Guide](build.md)** - Detailed build instructions
 - **[API Reference](api.md)** - Complete API documentation
