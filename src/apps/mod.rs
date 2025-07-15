@@ -22,34 +22,39 @@ pub trait Application {
 
 /// Application runtime for managing applications
 pub struct ApplicationRuntime {
-    current_app: Option<Box<dyn Application>>,
+    // We'll manage applications differently in no_std environment
+    is_running: bool,
 }
 
 impl ApplicationRuntime {
     /// Create a new application runtime
     pub fn new() -> Self {
         Self {
-            current_app: None,
+            is_running: false,
         }
     }
     
-    /// Launch an application
-    pub fn launch(&mut self, mut app: Box<dyn Application>) -> Result<(), &'static str> {
+    /// Launch an application (simplified for no_std)
+    pub fn launch<T: Application>(&mut self, mut app: T) -> Result<(), &'static str> {
         // Initialize the application
         app.init()?;
+        
+        // Set running state
+        self.is_running = true;
         
         // Run the application
         let result = app.run();
         
         // Clean up
         app.cleanup();
+        self.is_running = false;
         
         result
     }
     
     /// Check if an application is currently running
     pub fn is_running(&self) -> bool {
-        self.current_app.is_some()
+        self.is_running
     }
 }
 

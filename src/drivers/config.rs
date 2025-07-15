@@ -43,9 +43,15 @@ pub struct DefaultHardware;
 impl DefaultHardware {
     /// Detect the current hardware version
     pub fn detect_version() -> HardwareVersionEnum {
-        // For now, default to Pi4
-        // This could be enhanced with actual hardware detection
-        HardwareVersionEnum::Pi4
+        // Use compile-time feature detection
+        #[cfg(feature = "raspi3")]
+        {
+            HardwareVersionEnum::Pi3
+        }
+        #[cfg(not(feature = "raspi3"))]
+        {
+            HardwareVersionEnum::Pi4
+        }
     }
 }
 
@@ -54,9 +60,24 @@ impl HardwareVersion for DefaultHardware {
         Self::detect_version()
     }
     
-    // Pi 4/5 base addresses
+    // Hardware addresses - Pi 3 vs Pi 4/5
+    #[cfg(feature = "raspi3")]
+    const GPIO_BASE: u32 = 0x3F200000;
+    #[cfg(not(feature = "raspi3"))]
     const GPIO_BASE: u32 = 0xFE200000;
+    
+    #[cfg(feature = "raspi3")]
+    const EMMC_BASE: u32 = 0x3F300000;
+    #[cfg(not(feature = "raspi3"))]
     const EMMC_BASE: u32 = 0xFE300000;
+    
+    #[cfg(feature = "raspi3")]
+    const TIMER_BASE: u32 = 0x3F003000;
+    #[cfg(not(feature = "raspi3"))]
     const TIMER_BASE: u32 = 0xFE003000;
+    
+    #[cfg(feature = "raspi3")]
+    const UART_BASE: u32 = 0x3F201000;
+    #[cfg(not(feature = "raspi3"))]
     const UART_BASE: u32 = 0xFE201000;
 }

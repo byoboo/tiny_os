@@ -4,7 +4,6 @@
 //! Extracted from week5_network.rs
 
 use super::{NetworkError, NetworkMetrics};
-use crate::utils::formatting::{write_number_to_buffer, write_hex_to_buffer};
 use core::ptr::{read_volatile, write_volatile};
 
 /// Ethernet Controller Base Address (Pi 4/5)

@@ -3,10 +3,10 @@
 //! Efficient text buffer implementation optimized for Raspberry Pi 4/5 performance.
 //! Uses static memory allocation for no_std embedded environment.
 
-/// Maximum number of lines in the text buffer
-const MAX_LINES: usize = 1000;
-/// Maximum line length
-const MAX_LINE_LENGTH: usize = 256;
+/// Maximum number of lines in the text buffer (reduced for embedded systems)
+const MAX_LINES: usize = 500;
+/// Maximum line length (reduced for terminal efficiency)
+const MAX_LINE_LENGTH: usize = 128;
 
 /// Cursor direction for movement
 #[derive(Debug, Clone, Copy)]
@@ -22,7 +22,7 @@ pub enum CursorDirection {
 }
 
 /// Simple string buffer for no_std environment
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct LineBuffer {
     data: [u8; MAX_LINE_LENGTH],
     length: usize,
@@ -30,7 +30,7 @@ pub struct LineBuffer {
 
 impl LineBuffer {
     /// Create a new empty line buffer
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             data: [0; MAX_LINE_LENGTH],
             length: 0,
@@ -158,7 +158,7 @@ impl TextBuffer {
     /// Create a new empty text buffer
     pub fn new() -> Self {
         Self {
-            lines: [LineBuffer::new(); MAX_LINES],
+            lines: [const { LineBuffer::new() }; MAX_LINES],
             line_count: 1,
             cursor: (0, 0),
             modified: false,
@@ -274,7 +274,8 @@ impl TextBuffer {
         } else if row > 0 {
             // Merge with previous line
             let new_col = self.lines[row - 1].len();
-            if self.lines[row - 1].append(&self.lines[row]) {
+            let current_line = self.lines[row].clone();
+            if self.lines[row - 1].append(&current_line) {
                 // Shift lines up
                 for i in row..self.line_count - 1 {
                     self.lines[i] = self.lines[i + 1].clone();
@@ -298,7 +299,8 @@ impl TextBuffer {
             self.modified = true;
         } else if row < self.line_count - 1 {
             // Merge with next line
-            if self.lines[row].append(&self.lines[row + 1]) {
+            let next_line = self.lines[row + 1].clone();
+            if self.lines[row].append(&next_line) {
                 // Shift lines up
                 for i in row + 1..self.line_count - 1 {
                     self.lines[i] = self.lines[i + 1].clone();

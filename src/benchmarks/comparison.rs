@@ -3,7 +3,7 @@
 //! This module provides benchmarking capabilities for comparing TinyOS performance
 //! against equivalent Linux operations. Focuses on Pi 4/5 optimization advantages.
 
-use crate::benchmarks::timing;
+// use crate::benchmarks::timing; // Unused import
 use crate::benchmarks::power::measure_operation_power;
 
 /// Linux comparison benchmark results

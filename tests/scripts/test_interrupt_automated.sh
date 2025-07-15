@@ -2,7 +2,7 @@
 
 # TinyOS External Interrupt Integration Test
 # Tests what can be validated from outside the kernel
-# NOTE: Real interrupt functionality testing is done internally via 'cargo run' -> 't' command
+# NOTE: Real interrupt functionality testing is done internally via 'make run-local' -> 'test' command
 
 # Change to project root directory
 cd "$(dirname "$0")/../.."

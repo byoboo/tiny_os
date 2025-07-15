@@ -28,7 +28,7 @@ impl MemoryBenchmarks {
         let start = timing::get_cycles();
         
         // Perform sequential allocations
-        for i in 0..10 {
+        for _i in 0..10 {
             if let Some(_ptr) = manager.allocate_block() {
                 self.allocations_done += 1;
                 self.bytes_allocated += 4096; // Assuming 4KB blocks
@@ -65,7 +65,7 @@ impl MemoryBenchmarks {
         let mut allocated_blocks = [None; 10];
         
         // Mixed allocation/deallocation pattern
-        for round in 0..3 {
+        for _round in 0..3 {
             // Allocation phase
             for i in 0..5 {
                 if let Some(ptr) = manager.allocate_block() {

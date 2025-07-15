@@ -2,7 +2,6 @@
 // Interface for security, real-time scheduling, and system hardening
 
 use crate::shell::ShellContext;
-use crate::drivers::security::*;
 
 /// Main security command handler
 pub fn cmd_security(args: &[&str], context: &mut ShellContext) {

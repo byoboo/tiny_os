@@ -21,7 +21,8 @@ pub struct TextEditor {
     ui: EditorUI,
     input_handler: InputHandler,
     file_ops: FileOperations,
-    current_file: Option<&'static str>,
+    current_file: [u8; 256],
+    current_file_len: usize,
     running: bool,
 }
 
@@ -33,31 +34,64 @@ impl TextEditor {
             ui: EditorUI::new(),
             input_handler: InputHandler::new(),
             file_ops: FileOperations::new(),
-            current_file: None,
+            current_file: [0; 256],
+            current_file_len: 0,
             running: false,
         }
     }
     
     /// Create a text editor with a file to open
-    pub fn with_file(filename: &'static str) -> Self {
+    pub fn with_file(filename: &str) -> Self {
         let mut editor = Self::new();
-        editor.current_file = Some(filename);
+        editor.set_current_file(filename);
         editor
     }
     
+    /// Set the current file name
+    fn set_current_file(&mut self, filename: &str) {
+        self.current_file_len = filename.len().min(self.current_file.len());
+        self.current_file[..self.current_file_len].copy_from_slice(filename.as_bytes());
+    }
+    
+    /// Get the current file name
+    fn get_current_file(&self) -> Option<&str> {
+        if self.current_file_len > 0 {
+            Some(unsafe { 
+                core::str::from_utf8_unchecked(&self.current_file[..self.current_file_len]) 
+            })
+        } else {
+            None
+        }
+    }
+    
     /// Load a file into the editor
-    pub fn load_file(&mut self, filename: &'static str) -> Result<(), &'static str> {
-        let content = self.file_ops.read_file(filename)?;
-        self.buffer.load_content(content);
-        self.current_file = Some(filename);
+    pub fn load_file(&mut self, filename: &str) -> Result<(), &'static str> {
+        let mut content_buffer = [0u8; 64 * 1024]; // 64KB buffer
+        let content_size = self.file_ops.read_file(filename, &mut content_buffer)?;
+        
+        // Convert bytes to string and load into buffer
+        let content_str = unsafe { 
+            core::str::from_utf8_unchecked(&content_buffer[..content_size]) 
+        };
+        self.buffer.load_content(content_str);
+        self.set_current_file(filename);
         Ok(())
     }
     
     /// Save the current buffer to file
     pub fn save_file(&mut self) -> Result<(), &'static str> {
-        if let Some(filename) = self.current_file {
-            let content = self.buffer.get_content();
-            self.file_ops.write_file(filename, content)?;
+        if let Some(filename) = self.get_current_file() {
+            // Create a copy of the filename to avoid borrowing issues
+            let mut filename_buffer = [0u8; 256];
+            let filename_len = filename.len().min(filename_buffer.len());
+            filename_buffer[..filename_len].copy_from_slice(filename.as_bytes());
+            let filename_str = unsafe { 
+                core::str::from_utf8_unchecked(&filename_buffer[..filename_len]) 
+            };
+            
+            let mut content_buffer = [0u8; 64 * 1024]; // 64KB buffer
+            let content_size = self.buffer.get_content_formatted(&mut content_buffer);
+            self.file_ops.write_file(filename_str, &content_buffer[..content_size])?;
             self.buffer.mark_saved();
             Ok(())
         } else {
@@ -66,10 +100,11 @@ impl TextEditor {
     }
     
     /// Save the current buffer to a new file
-    pub fn save_file_as(&mut self, filename: &'static str) -> Result<(), &'static str> {
-        let content = self.buffer.get_content();
-        self.file_ops.write_file(filename, content)?;
-        self.current_file = Some(filename);
+    pub fn save_file_as(&mut self, filename: &str) -> Result<(), &'static str> {
+        let mut content_buffer = [0u8; 64 * 1024]; // 64KB buffer
+        let content_size = self.buffer.get_content_formatted(&mut content_buffer);
+        self.file_ops.write_file(filename, &content_buffer[..content_size])?;
+        self.set_current_file(filename);
         self.buffer.mark_saved();
         Ok(())
     }
@@ -79,8 +114,16 @@ impl TextEditor {
         self.running = true;
         
         // Load file if specified
-        if let Some(filename) = self.current_file {
-            if let Err(e) = self.load_file(filename) {
+        if let Some(filename) = self.get_current_file() {
+            // Create a temporary buffer to store the filename
+            let mut filename_buffer = [0u8; 256];
+            let filename_len = filename.len();
+            filename_buffer[..filename_len].copy_from_slice(filename.as_bytes());
+            let filename_str = unsafe { 
+                core::str::from_utf8_unchecked(&filename_buffer[..filename_len]) 
+            };
+            
+            if let Err(e) = self.load_file(filename_str) {
                 context.uart.puts("Warning: Could not load file: ");
                 context.uart.puts(e);
                 context.uart.puts("\n");
@@ -97,24 +140,25 @@ impl TextEditor {
                 match self.input_handler.process_input(input) {
                     input::InputAction::Insert(ch) => {
                         self.buffer.insert_char(ch);
-                        self.ui.draw_editor(&self.buffer, context);
+                        self.ui.update_content_only(&self.buffer, context);
                     }
                     input::InputAction::Backspace => {
                         self.buffer.backspace();
-                        self.ui.draw_editor(&self.buffer, context);
+                        self.ui.update_content_only(&self.buffer, context);
                     }
                     input::InputAction::Delete => {
                         self.buffer.delete();
-                        self.ui.draw_editor(&self.buffer, context);
+                        self.ui.update_content_only(&self.buffer, context);
                     }
                     input::InputAction::MoveCursor(dir) => {
                         self.buffer.move_cursor(dir);
-                        self.ui.draw_editor(&self.buffer, context);
+                        self.ui.update_cursor_only(&self.buffer, context);
                     }
                     input::InputAction::Save => {
                         match self.save_file() {
                             Ok(_) => {
                                 self.ui.show_message("File saved", context);
+                                self.ui.update_status_only(&self.buffer, context);
                             }
                             Err(e) => {
                                 self.ui.show_message(e, context);

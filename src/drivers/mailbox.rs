@@ -4,7 +4,7 @@
 //! mailbox interface using property tags for GPU operations, memory allocation,
 //! and hardware detection.
 
-use core::ptr;
+// use core::ptr; // Unused import
 
 /// Mailbox communication channels
 #[repr(u8)]

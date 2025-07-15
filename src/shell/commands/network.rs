@@ -2,7 +2,6 @@
 // Interface for network and high-speed I/O features
 
 use crate::shell::ShellContext;
-use crate::drivers::network::*;
 
 /// Handle network commands
 pub fn cmd_network_network(args: &[&str], context: &mut ShellContext) {

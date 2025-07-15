@@ -139,14 +139,10 @@ pub extern "C" fn kernel_main() {
     match videocore::init() {
         Ok(()) => {
             uart.puts("✓ VideoCore GPU initialized\r\n");
-            let gpu = videocore::get_gpu();
-            if let Some(caps) = gpu.get_capabilities() {
-                if caps.has_advanced_features {
-                    uart.puts("🚀 Pi 4/5 VideoCore VI features available\r\n");
-                } else {
-                    uart.puts("📝 Pi 3 VideoCore IV compatibility mode\r\n");
-                }
-            }
+            #[cfg(feature = "raspi3")]
+            uart.puts("📝 Pi 3 VideoCore IV compatibility mode\r\n");
+            #[cfg(not(feature = "raspi3"))]
+            uart.puts("🚀 Pi 4/5 VideoCore VI features available\r\n");
         }
         Err(e) => {
             uart.puts("⚠ VideoCore initialization failed: ");
@@ -158,15 +154,18 @@ pub extern "C" fn kernel_main() {
     // Initialize DMA controller
     use tiny_os_lib::drivers::dma;
     let mailbox = mailbox::get_mailbox();
-    let is_pi4_or_5 = mailbox.is_pi4_or_5();
+    // Use compile-time feature detection for hardware version
+    #[cfg(feature = "raspi3")]
+    let is_pi4_or_5 = false;
+    #[cfg(not(feature = "raspi3"))]
+    let is_pi4_or_5 = true;
     match dma::init(is_pi4_or_5) {
         Ok(()) => {
             uart.puts("✓ DMA controller initialized\r\n");
-            if is_pi4_or_5 {
-                uart.puts("🚀 Pi 4/5 enhanced DMA features enabled\r\n");
-            } else {
-                uart.puts("📝 Pi 3 DMA compatibility mode\r\n");
-            }
+            #[cfg(feature = "raspi3")]
+            uart.puts("📝 Pi 3 DMA compatibility mode\r\n");
+            #[cfg(not(feature = "raspi3"))]
+            uart.puts("🚀 Pi 4/5 enhanced DMA features enabled\r\n");
         }
         Err(e) => {
             uart.puts("⚠ DMA initialization failed: ");
@@ -179,11 +178,10 @@ pub extern "C" fn kernel_main() {
     use tiny_os_lib::drivers::cache;
     cache::init(is_pi4_or_5);
     uart.puts("✓ Cache controller initialized\r\n");
-    if is_pi4_or_5 {
-        uart.puts("🚀 Cortex-A72/A76 cache optimizations enabled\r\n");
-    } else {
-        uart.puts("📝 Cortex-A53 cache compatibility mode\r\n");
-    }
+    #[cfg(feature = "raspi3")]
+    uart.puts("📝 Cortex-A53 cache compatibility mode\r\n");
+    #[cfg(not(feature = "raspi3"))]
+    uart.puts("🚀 Cortex-A72/A76 cache optimizations enabled\r\n");
     
     // Initialize optimization framework
     use tiny_os_lib::optimization;
@@ -224,7 +222,7 @@ pub extern "C" fn kernel_main() {
     // System ready
     uart.puts("================================\r\n");
     uart.puts("✓ TinyOS Ready!\r\n");
-    uart.puts("Available commands (type 'h' for help):\r\n");
+    uart.puts("Type 'help' for available commands\r\n");
     uart.puts("================================\r\n");
 
     // Create shell context and start the shell

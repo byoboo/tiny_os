@@ -18,7 +18,14 @@ pub fn cmd_edit(args: &[&str], context: &mut ShellContext) {
         context.uart.puts("Opening file: ");
         context.uart.puts(filename);
         context.uart.puts("\n");
-        TextEditor::with_file(filename)
+        // Create editor and load file manually to avoid lifetime issues
+        let mut editor = TextEditor::new();
+        if let Err(e) = editor.load_file(filename) {
+            context.uart.puts("Warning: Could not load file: ");
+            context.uart.puts(e);
+            context.uart.puts("\n");
+        }
+        editor
     } else {
         // Open empty editor
         context.uart.puts("Opening new file\n");
@@ -28,6 +35,9 @@ pub fn cmd_edit(args: &[&str], context: &mut ShellContext) {
     // Show editor startup message
     context.uart.puts("\n╔══════════════════════════════════════════════════════════════════════════════╗\n");
     context.uart.puts("║                            TinyOS Text Editor                               ║\n");
+    #[cfg(feature = "raspi3")]
+    context.uart.puts("║                      Optimized for Raspberry Pi 3                          ║\n");
+    #[cfg(not(feature = "raspi3"))]
     context.uart.puts("║                      Optimized for Raspberry Pi 4/5                        ║\n");
     context.uart.puts("╚══════════════════════════════════════════════════════════════════════════════╝\n");
     context.uart.puts("\nControls:\n");
@@ -113,81 +123,4 @@ fn show_editor_help(context: &mut ShellContext) {
     context.uart.puts("  editor config.txt   - Open config.txt\n\n");
 }
 
-/// Quick editor command for testing
-pub fn cmd_quick_edit(args: &[&str], context: &mut ShellContext) {
-    context.uart.puts("Quick Edit Mode - Simplified editor for testing\n");
-    context.uart.puts("Type 'quit' to exit\n\n");
-    
-    let mut buffer = String::new();
-    
-    loop {
-        context.uart.puts("> ");
-        
-        // Simple line input
-        let mut line = String::new();
-        loop {
-            if let Some(ch) = context.uart.getc() {
-                if ch == b'\n' || ch == b'\r' {
-                    break;
-                } else if ch == 8 || ch == 127 { // Backspace
-                    if !line.is_empty() {
-                        line.pop();
-                        context.uart.puts("\x08 \x08"); // Backspace, space, backspace
-                    }
-                } else if ch >= 32 && ch <= 126 { // Printable characters
-                    line.push(ch as char);
-                    context.uart.putc(ch);
-                }
-            }
-        }
-        
-        context.uart.puts("\n");
-        
-        if line.trim() == "quit" {
-            break;
-        }
-        
-        buffer.push_str(&line);
-        buffer.push('\n');
-    }
-    
-    if !buffer.is_empty() {
-        context.uart.puts("Content entered:\n");
-        context.uart.puts("================\n");
-        context.uart.puts(&buffer);
-        context.uart.puts("================\n");
-        
-        if args.len() > 1 {
-            context.uart.puts("Would save to: ");
-            context.uart.puts(args[1]);
-            context.uart.puts("\n");
-        }
-    }
-    
-    context.uart.puts("Quick edit session ended.\n");
-}
-
-/// Editor benchmark command
-pub fn cmd_editor_benchmark(args: &[&str], context: &mut ShellContext) {
-    context.uart.puts("TinyOS Text Editor Performance Benchmark\n");
-    context.uart.puts("========================================\n\n");
-    
-    // Simulate editor performance metrics
-    context.uart.puts("Startup time: < 10ms\n");
-    context.uart.puts("Character insertion latency: < 1ms\n");
-    context.uart.puts("Screen refresh rate: 60 FPS equivalent\n");
-    context.uart.puts("Memory usage: < 64KB\n");
-    context.uart.puts("File loading (1KB): < 5ms\n");
-    context.uart.puts("File saving (1KB): < 10ms\n");
-    context.uart.puts("Cursor movement: < 0.5ms\n");
-    context.uart.puts("Search operation: < 2ms per 1000 chars\n\n");
-    
-    context.uart.puts("Optimization Features:\n");
-    context.uart.puts("• Efficient text buffer implementation\n");
-    context.uart.puts("• Minimal screen redraws\n");
-    context.uart.puts("• Optimized input processing\n");
-    context.uart.puts("• Pi 4/5 specific optimizations\n");
-    context.uart.puts("• Real-time responsive interface\n\n");
-    
-    context.uart.puts("Performance validation complete.\n");
-}
+// Removed unused quick_edit and benchmark commands for streamlined implementation

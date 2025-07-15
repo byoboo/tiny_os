@@ -7,10 +7,20 @@ use super::NetworkError;
 use core::ptr::{read_volatile, write_volatile};
 
 /// USB 3.0 Controller Base Address
+#[cfg(feature = "raspi3")]
+const USB3_XHCI_BASE: usize = 0x3D500000;
+#[cfg(not(feature = "raspi3"))]
 const USB3_XHCI_BASE: usize = 0xFD500000;
 
 /// SPI Master Controller Addresses
+#[cfg(feature = "raspi3")]
+const SPI0_BASE: usize = 0x3F204000;
+#[cfg(not(feature = "raspi3"))]
 const SPI0_BASE: usize = 0xFE204000;
+
+#[cfg(feature = "raspi3")]
+const SPI1_BASE: usize = 0x3F215080;
+#[cfg(not(feature = "raspi3"))]
 const SPI1_BASE: usize = 0xFE215080;
 
 /// High-Speed I/O Protocols

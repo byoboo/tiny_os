@@ -16,10 +16,5 @@ mod dynamic_memory_pressure;
 #[path = "dynamic_memory_status.rs"]
 mod dynamic_memory_status;
 
-// Re-export all command functions
-pub use dynamic_memory_context::{cmd_dynamic_memory_context, cmd_dynamic_memory_stats};
-pub use dynamic_memory_core::cmd_dynamic_memory;
-pub use dynamic_memory_growth::cmd_dynamic_memory_growth;
-pub use dynamic_memory_lazy::cmd_dynamic_memory_lazy;
-pub use dynamic_memory_pressure::{cmd_dynamic_memory_optimize, cmd_dynamic_memory_pressure};
-pub use dynamic_memory_status::cmd_dynamic_memory_status;
+// Note: Re-exports removed as these functions are not used in the current command-line shell
+// They are kept as modules for future reference and automated testing

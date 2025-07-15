@@ -166,13 +166,30 @@ pub fn handle_system_info(context: &ShellContext) {
         .puts("\r\n=== TinyOS System Information ===\r\n");
     context.uart.puts("  OS Name: TinyOS\r\n");
     context.uart.puts("  Version: 0.1.0\r\n");
+    #[cfg(feature = "raspi3")]
+    context
+        .uart
+        .puts("  Platform: Raspberry Pi 3 (AArch64)\r\n");
+    #[cfg(not(feature = "raspi3"))]
     context
         .uart
         .puts("  Platform: Raspberry Pi 4/5 (AArch64)\r\n");
     context.uart.puts("  Architecture: ARM64\r\n");
     context.uart.puts("  Timer Frequency: 1MHz\r\n");
+    
+    #[cfg(feature = "raspi3")]
+    context.uart.puts("  UART Base: 0x3F201000\r\n");
+    #[cfg(not(feature = "raspi3"))]
     context.uart.puts("  UART Base: 0xFE201000\r\n");
+    
+    #[cfg(feature = "raspi3")]
+    context.uart.puts("  GPIO Base: 0x3F200000\r\n");
+    #[cfg(not(feature = "raspi3"))]
     context.uart.puts("  GPIO Base: 0xFE200000\r\n");
+    
+    #[cfg(feature = "raspi3")]
+    context.uart.puts("  GIC Base: 0x3F841000\r\n");
+    #[cfg(not(feature = "raspi3"))]
     context.uart.puts("  GIC Base: 0xFF841000\r\n");
     context.uart.puts("  LED Pin: GPIO 42\r\n");
 

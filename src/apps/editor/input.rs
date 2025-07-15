@@ -260,17 +260,22 @@ impl InputHandler {
 /// Helper functions for input processing
 impl InputHandler {
     /// Process a string of input bytes
-    pub fn process_string(&mut self, bytes: &[u8]) -> Vec<InputAction> {
-        let mut actions = Vec::new();
+    pub fn process_string(&mut self, bytes: &[u8], actions: &mut [InputAction]) -> usize {
+        let mut count = 0;
         
         for &byte in bytes {
+            if count >= actions.len() {
+                break;
+            }
+            
             let action = self.process_input(byte);
             if !matches!(action, InputAction::None) {
-                actions.push(action);
+                actions[count] = action;
+                count += 1;
             }
         }
         
-        actions
+        count
     }
     
     /// Check if a byte is a printable ASCII character
