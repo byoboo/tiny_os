@@ -7,6 +7,7 @@
 #![no_std]
 
 // Core modules (available in no_std environments)
+pub mod apps; // Application framework with text editor
 pub mod benchmarks; // Performance measurement and optimization validation
 // (temporarily disabled)
 pub mod drivers; // New modular driver system

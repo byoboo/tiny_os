@@ -82,6 +82,11 @@ pub fn route_command(ch: u8, context: &mut ShellContext, start_time: u64) {
         b'k' | b'K' => {
             commands::filesystem::handle_change_to_root(&context.uart, &mut context.fat32_fs)
         }
+        
+        // Text Editor (Week 7 Feature)
+        b'E' => {
+            commands::editor::cmd_edit(&[], context);
+        }
 
         // Printable character feedback
         _ => {
@@ -103,6 +108,7 @@ fn route_advanced_command_interface(context: &mut ShellContext) {
     context.uart.puts("\r\nAdvanced Command Interface:\r\n");
     context.uart.puts("  1 - Advanced Protection Commands\r\n");
     context.uart.puts("  2 - Dynamic Memory Commands\r\n");
+    context.uart.puts("  3 - Text Editor (Week 7 Feature)\r\n");
     context.uart.puts("Select option: ");
 
     if let Some(option) = context.uart.getc() {
@@ -116,6 +122,10 @@ fn route_advanced_command_interface(context: &mut ShellContext) {
                 context.uart.puts("Enter dynamic memory command: ");
                 // For now, show status - in real implementation would parse input
                 commands::dynamic_memory::cmd_dynamic_memory(&["status"], context);
+            }
+            b'3' => {
+                context.uart.puts("Launching Text Editor...\r\n");
+                commands::editor::cmd_edit(&[], context);
             }
             _ => context.uart.puts("Invalid option\r\n"),
         }

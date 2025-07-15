@@ -12,6 +12,7 @@ pub mod dynamic_memory_growth;
 pub mod dynamic_memory_lazy;
 pub mod dynamic_memory_pressure;
 pub mod dynamic_memory_status;
+pub mod editor; // Text editor commands
 pub mod exceptions;
 pub mod filesystem;
 
