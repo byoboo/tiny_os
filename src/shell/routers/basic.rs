@@ -125,19 +125,19 @@ pub fn route_enhanced_hardware_commands(ch: u8, context: &mut ShellContext) -> b
             commands::hardware::handle_deferred_processing_test(context);
             true
         }
-        // Week 4: Advanced Hardware Integration Commands
+        // Performance: Advanced Hardware Integration Commands
         b'4' => {
-            handle_week4_menu(context);
+            handle_performance_menu(context);
             true
         }
-        // Week 5: Network and Advanced I/O Commands
+        // Network: Advanced I/O Commands
         b'5' => {
-            handle_week5_menu(context);
+            handle_network_menu(context);
             true
         }
-        // Week 6: Advanced Security and Real-time Commands
+        // Security: Advanced Security and Real-time Commands
         b'6' => {
-            handle_week6_menu(context);
+            handle_security_menu(context);
             true
         }
         _ => false,
@@ -191,11 +191,11 @@ fn handle_benchmark_menu(context: &mut ShellContext) {
     benchmark_menu(context);
 }
 
-/// Handle week 4 advanced hardware integration menu
-fn handle_week4_menu(context: &mut ShellContext) {
-    context.uart.puts("\n🚀 WEEK 4 ADVANCED HARDWARE FEATURES\n");
-    context.uart.puts("=====================================\n");
-    context.uart.puts("  1 - Initialize Week 4 features\n");
+/// Handle performance advanced hardware integration menu
+fn handle_performance_menu(context: &mut ShellContext) {
+    context.uart.puts("\n🚀 PERFORMANCE FEATURES\n");
+    context.uart.puts("=======================\n");
+    context.uart.puts("  1 - Initialize performance features\n");
     context.uart.puts("  2 - Show system status\n");
     context.uart.puts("  3 - Run benchmarks\n");
     context.uart.puts("  4 - Power management\n");
@@ -210,25 +210,25 @@ fn handle_week4_menu(context: &mut ShellContext) {
         
         match option {
             b'1' => {
-                commands::week4_simple::cmd_week4_init(&["init"], context);
+                commands::performance::cmd_performance_init(&["init"], context);
             }
             b'2' => {
-                commands::week4_simple::cmd_week4_status(&["status"], context);
+                commands::performance::cmd_performance_status(&["status"], context);
             }
             b'3' => {
-                commands::week4_simple::cmd_week4_benchmark(&["benchmark"], context);
+                commands::performance::cmd_performance_benchmark(&["benchmark"], context);
             }
             b'4' => {
-                handle_week4_power_submenu(context);
+                handle_performance_power_submenu(context);
             }
             b'5' => {
-                commands::week4_simple::cmd_week4_devices(&["devices"], context);
+                commands::performance::cmd_performance_devices(&["devices"], context);
             }
             b'6' => {
-                commands::week4_simple::cmd_week4_thermal(&["thermal"], context);
+                commands::performance::cmd_performance_thermal(&["thermal"], context);
             }
             b'h' | b'H' => {
-                commands::week4_simple::cmd_week4_help(&["help"], context);
+                commands::performance::cmd_performance_help(&["help"], context);
             }
             _ => {
                 context.uart.puts("Invalid option\n");
@@ -237,8 +237,8 @@ fn handle_week4_menu(context: &mut ShellContext) {
     }
 }
 
-/// Handle Week 4 power management submenu
-fn handle_week4_power_submenu(context: &mut ShellContext) {
+/// Handle performance power management submenu
+fn handle_performance_power_submenu(context: &mut ShellContext) {
     context.uart.puts("\n⚡ Power Management Options:\n");
     context.uart.puts("  1 - CPU frequency (min)\n");
     context.uart.puts("  2 - CPU frequency (medium)\n");
@@ -252,27 +252,27 @@ fn handle_week4_power_submenu(context: &mut ShellContext) {
         context.uart.puts("\n");
 
         match option {
-            b'1' => commands::week4_simple::cmd_week4_cpu_freq(&["cpu-freq", "min"], context),
-            b'2' => commands::week4_simple::cmd_week4_cpu_freq(&["cpu-freq", "medium"], context),
-            b'3' => commands::week4_simple::cmd_week4_cpu_freq(&["cpu-freq", "max"], context),
-            b'4' => commands::week4_simple::cmd_week4_gpu_power(&["gpu-power", "idle"], context),
-            b'5' => commands::week4_simple::cmd_week4_gpu_power(&["gpu-power", "full"], context),
+            b'1' => commands::performance::cmd_performance_cpu_freq(&["cpu-freq", "min"], context),
+            b'2' => commands::performance::cmd_performance_cpu_freq(&["cpu-freq", "medium"], context),
+            b'3' => commands::performance::cmd_performance_cpu_freq(&["cpu-freq", "max"], context),
+            b'4' => commands::performance::cmd_performance_gpu_power(&["gpu-power", "idle"], context),
+            b'5' => commands::performance::cmd_performance_gpu_power(&["gpu-power", "full"], context),
             _ => context.uart.puts("Invalid option\n"),
         }
     }
 }
 
-/// Handle week 5 network and advanced I/O menu
-fn handle_week5_menu(context: &mut ShellContext) {
-    context.uart.puts("\n🌐 WEEK 5 NETWORK & ADVANCED I/O\n");
-    context.uart.puts("==================================\n");
+/// Handle network and advanced I/O menu
+fn handle_network_menu(context: &mut ShellContext) {
+    context.uart.puts("\n🌐 NETWORK & HIGH-SPEED I/O\n");
+    context.uart.puts("============================\n");
     context.uart.puts("  1 - Network Overview\n");
     context.uart.puts("  2 - Network Status\n");
     context.uart.puts("  3 - I/O Performance\n");
     context.uart.puts("  4 - Comprehensive Benchmark\n");
     context.uart.puts("  5 - Network Interfaces\n");
     context.uart.puts("  6 - I/O Protocols\n");
-    context.uart.puts("  7 - Week 5 Capabilities\n");
+    context.uart.puts("  7 - Network Capabilities\n");
     context.uart.puts("  h - Help\n");
     context.uart.puts("Choose option: ");
 
@@ -282,28 +282,28 @@ fn handle_week5_menu(context: &mut ShellContext) {
         
         match option {
             b'1' => {
-                commands::week5::cmd_week5(&["overview"], context);
+                commands::network::cmd_network(&["overview"], context);
             }
             b'2' => {
-                commands::week5::cmd_week5_network(&["status"], context);
+                commands::network::cmd_network_network(&["status"], context);
             }
             b'3' => {
-                commands::week5::cmd_week5_io(&["performance"], context);
+                commands::network::cmd_network_io(&["performance"], context);
             }
             b'4' => {
-                commands::week5::cmd_week5(&["benchmark"], context);
+                commands::network::cmd_network(&["benchmark"], context);
             }
             b'5' => {
-                commands::week5::cmd_week5_network(&["interfaces"], context);
+                commands::network::cmd_network_network(&["interfaces"], context);
             }
             b'6' => {
-                commands::week5::cmd_week5_io(&["protocols"], context);
+                commands::network::cmd_network_io(&["protocols"], context);
             }
             b'7' => {
-                commands::week5::cmd_week5(&["capabilities"], context);
+                commands::network::cmd_network(&["capabilities"], context);
             }
             b'h' | b'H' => {
-                commands::week5::cmd_week5(&["help"], context);
+                commands::network::cmd_network(&["help"], context);
             }
             _ => {
                 context.uart.puts("Invalid option\n");
@@ -312,9 +312,9 @@ fn handle_week5_menu(context: &mut ShellContext) {
     }
 }
 
-/// Handle week 6 security and real-time menu
-fn handle_week6_menu(context: &mut ShellContext) {
-    context.uart.puts("\n🔒 WEEK 6 SECURITY & REAL-TIME\n");
+/// Handle security and real-time menu
+fn handle_security_menu(context: &mut ShellContext) {
+    context.uart.puts("\n🔒 SECURITY & REAL-TIME SYSTEMS\n");
     context.uart.puts("=================================\n");
     context.uart.puts("  1 - Security Overview\n");
     context.uart.puts("  2 - Security Status\n");
@@ -323,7 +323,7 @@ fn handle_week6_menu(context: &mut ShellContext) {
     context.uart.puts("  5 - Security Scan\n");
     context.uart.puts("  6 - RT Performance Test\n");
     context.uart.puts("  7 - Comprehensive Benchmark\n");
-    context.uart.puts("  8 - Week 6 Capabilities\n");
+    context.uart.puts("  8 - Security Capabilities\n");
     context.uart.puts("  h - Help\n");
     context.uart.puts("Choose option: ");
 
@@ -333,31 +333,31 @@ fn handle_week6_menu(context: &mut ShellContext) {
         
         match option {
             b'1' => {
-                commands::week6::cmd_week6(&["overview"], context);
+                commands::security::cmd_security(&["overview"], context);
             }
             b'2' => {
-                commands::week6::cmd_week6_security(&["status"], context);
+                commands::security::cmd_security_security(&["status"], context);
             }
             b'3' => {
-                commands::week6::cmd_week6_realtime(&["metrics"], context);
+                commands::security::cmd_security_realtime(&["metrics"], context);
             }
             b'4' => {
-                commands::week6::cmd_week6_hardening(&["status"], context);
+                commands::security::cmd_security_hardening(&["status"], context);
             }
             b'5' => {
-                commands::week6::cmd_week6_security(&["scan"], context);
+                commands::security::cmd_security_security(&["scan"], context);
             }
             b'6' => {
-                commands::week6::cmd_week6_realtime(&["latency"], context);
+                commands::security::cmd_security_realtime(&["latency"], context);
             }
             b'7' => {
-                commands::week6::cmd_week6(&["benchmark"], context);
+                commands::security::cmd_security(&["benchmark"], context);
             }
             b'8' => {
-                commands::week6::cmd_week6(&["capabilities"], context);
+                commands::security::cmd_security(&["capabilities"], context);
             }
             b'h' | b'H' => {
-                commands::week6::cmd_week6(&["help"], context);
+                commands::security::cmd_security(&["help"], context);
             }
             _ => {
                 context.uart.puts("Invalid option\n");

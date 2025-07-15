@@ -29,13 +29,8 @@ pub mod security;
 // Performance monitoring and benchmarking
 pub mod performance;
 
-// Legacy week-specific modules (deprecated - use new modular structure)
-#[deprecated(note = "Use drivers::network instead")]
-pub mod week5_network;
-#[deprecated(note = "Use drivers::security instead")]
-pub mod week6_security;
-#[deprecated(note = "Use drivers::performance instead")]
-pub mod week4_simple;
+// Legacy week-specific modules have been removed
+// Use drivers::performance, drivers::network, and drivers::security instead
 
 // Re-export commonly used types
 pub use mailbox::{Mailbox, GpuMemoryFlags, test_mailbox};
@@ -94,8 +89,32 @@ impl Default for RaspberryPi4Config {
 }
 
 /// Hardware version detection function
+/// Uses ARM CPU ID registers and memory layout to detect Raspberry Pi version
 pub fn detect_hardware_version() -> HardwareVersion {
-    // TODO: Implement actual hardware detection via device tree or CPU ID
-    // For now, default to Pi 4 as our primary target
-    HardwareVersion::RaspberryPi4
+    // Read ARM CPU ID register to detect hardware
+    let midr: u64;
+    unsafe {
+        core::arch::asm!("mrs {}, midr_el1", out(reg) midr);
+    }
+    
+    // Extract implementer and part number
+    let implementer = (midr >> 24) & 0xFF;
+    let part_number = (midr >> 4) & 0xFFF;
+    
+    // ARM implementer ID (0x41) with different part numbers
+    if implementer == 0x41 {
+        match part_number {
+            // Cortex-A53 (Pi 3)
+            0xD03 => HardwareVersion::RaspberryPi3,
+            // Cortex-A72 (Pi 4)
+            0xD08 => HardwareVersion::RaspberryPi4,
+            // Cortex-A76 (Pi 5)
+            0xD0B => HardwareVersion::RaspberryPi5,
+            // Default to Pi 4 for unknown ARM cores
+            _ => HardwareVersion::RaspberryPi4,
+        }
+    } else {
+        // Non-ARM or unknown implementer, default to Pi 4
+        HardwareVersion::RaspberryPi4
+    }
 }

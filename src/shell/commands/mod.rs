@@ -22,12 +22,7 @@ pub mod system;
 pub mod testing;
 pub mod user_space;
 
-// Week 4: Advanced hardware integration commands
-// pub mod week4_advanced; // Temporarily disabled until format! issues resolved
-
-// Week 4: Simple hardware integration commands
-pub mod week4_simple;
-
-// Week-based feature commands
-pub mod week5; // Week 5: Network and Advanced I/O
-pub mod week6; // Week 6: Advanced Security and Real-time
+// Modular feature commands (Project Baseline)
+pub mod performance; // Performance monitoring and power management
+pub mod network;     // Network and high-speed I/O
+pub mod security;    // Security, real-time, and system hardening
