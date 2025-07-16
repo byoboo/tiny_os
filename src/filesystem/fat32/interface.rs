@@ -336,15 +336,15 @@ impl Fat32FileSystem {
             }
         }
 
-        // Create directory entry (placeholder - needs implementation)
-        // self.directory_reader.create_directory_entry(
-        //     &mut self.sd_card,
-        //     &mut self.cluster_chain,
-        //     self.current_dir_cluster,
-        //     filename,
-        //     first_cluster,
-        //     content.len() as u32,
-        // )?;
+        // Create directory entry
+        self.directory_reader.create_directory_entry(
+            &mut self.sd_card,
+            &mut self.cluster_chain,
+            self.current_dir_cluster,
+            filename,
+            first_cluster,
+            content.len() as u32,
+        )?;
 
         // Flush FAT to disk
         self.cluster_chain.flush_fat(&mut self.sd_card)?;
@@ -375,13 +375,13 @@ impl Fat32FileSystem {
         // Free cluster chain
         self.cluster_chain.free_cluster_chain(&mut self.sd_card, file_info.first_cluster)?;
         
-        // Remove directory entry (placeholder - needs implementation)
-        // self.directory_reader.delete_directory_entry(
-        //     &mut self.sd_card,
-        //     &mut self.cluster_chain,
-        //     self.current_dir_cluster,
-        //     filename,
-        // )?;
+        // Remove directory entry
+        self.directory_reader.delete_directory_entry(
+            &mut self.sd_card,
+            &mut self.cluster_chain,
+            self.current_dir_cluster,
+            filename,
+        )?;
         
         // Flush FAT to disk
         self.cluster_chain.flush_fat(&mut self.sd_card)?;
