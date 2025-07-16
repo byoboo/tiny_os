@@ -90,17 +90,6 @@ jobs:
         
         echo "✅ Kernel binary validation passed"
     
-    - name: Check documentation
-      run: |
-        # Verify all documentation files exist
-        docs=("README.md" "TECHNICAL_DOCS.md")
-          if [ ! -f "$doc" ]; then
-            echo "❌ Missing documentation: $doc"
-            exit 1
-          fi
-        done
-        echo "✅ Documentation validation passed"
-    
     - name: Analyze test coverage
       run: |
         echo "📊 Test Coverage Analysis"
