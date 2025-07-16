@@ -77,6 +77,19 @@ impl TextEditor {
         Ok(())
     }
 
+    /// Load a file into the editor using external filesystem
+    pub fn load_file_with_fs(&mut self, filename: &str, fs: &mut crate::filesystem::fat32::interface::Fat32FileSystem) -> Result<(), &'static str> {
+        let mut content_buffer = [0u8; 64 * 1024]; // 64KB buffer
+        let content_size = self.file_ops.read_file_with_fs(filename, &mut content_buffer, fs)?;
+
+        // Convert bytes to string and load into buffer
+        let content_str =
+            unsafe { core::str::from_utf8_unchecked(&content_buffer[..content_size]) };
+        self.buffer.load_content(content_str);
+        self.set_current_file(filename);
+        Ok(())
+    }
+
     /// Save the current buffer to file
     pub fn save_file(&mut self) -> Result<(), &'static str> {
         if let Some(filename) = self.get_current_file() {
@@ -109,6 +122,38 @@ impl TextEditor {
         Ok(())
     }
 
+    /// Save the current buffer to file using external filesystem
+    pub fn save_file_with_fs(&mut self, fs: &mut crate::filesystem::fat32::interface::Fat32FileSystem) -> Result<(), &'static str> {
+        if let Some(filename) = self.get_current_file() {
+            // Create a copy of the filename to avoid borrowing issues
+            let mut filename_buffer = [0u8; 256];
+            let filename_len = filename.len().min(filename_buffer.len());
+            filename_buffer[..filename_len].copy_from_slice(filename.as_bytes());
+            let filename_str =
+                unsafe { core::str::from_utf8_unchecked(&filename_buffer[..filename_len]) };
+
+            let mut content_buffer = [0u8; 64 * 1024]; // 64KB buffer
+            let content_size = self.buffer.get_content_formatted(&mut content_buffer);
+            self.file_ops
+                .write_file_with_fs(filename_str, &content_buffer[..content_size], fs)?;
+            self.buffer.mark_saved();
+            Ok(())
+        } else {
+            Err("No file to save")
+        }
+    }
+
+    /// Save the current buffer to a new file using external filesystem
+    pub fn save_file_as_with_fs(&mut self, filename: &str, fs: &mut crate::filesystem::fat32::interface::Fat32FileSystem) -> Result<(), &'static str> {
+        let mut content_buffer = [0u8; 64 * 1024]; // 64KB buffer
+        let content_size = self.buffer.get_content_formatted(&mut content_buffer);
+        self.file_ops
+            .write_file_with_fs(filename, &content_buffer[..content_size], fs)?;
+        self.set_current_file(filename);
+        self.buffer.mark_saved();
+        Ok(())
+    }
+
     /// Run the editor with a shell context
     pub fn run_with_context(&mut self, context: &mut ShellContext) -> Result<(), &'static str> {
         self.running = true;
@@ -122,10 +167,19 @@ impl TextEditor {
             let filename_str =
                 unsafe { core::str::from_utf8_unchecked(&filename_buffer[..filename_len]) };
 
-            if let Err(e) = self.load_file(filename_str) {
-                context.uart.puts("Warning: Could not load file: ");
-                context.uart.puts(e);
-                context.uart.puts("\n");
+            // Try to load file with filesystem if available, otherwise use mock
+            if let Some(ref mut fs) = context.fat32_fs {
+                if let Err(e) = self.load_file_with_fs(filename_str, fs) {
+                    context.uart.puts("Warning: Could not load file: ");
+                    context.uart.puts(e);
+                    context.uart.puts("\n");
+                }
+            } else {
+                if let Err(e) = self.load_file(filename_str) {
+                    context.uart.puts("Warning: Could not load file: ");
+                    context.uart.puts(e);
+                    context.uart.puts("\n");
+                }
             }
         }
 
@@ -153,13 +207,92 @@ impl TextEditor {
                         self.buffer.move_cursor(dir);
                         self.ui.update_cursor_only(&self.buffer, context);
                     }
-                    input::InputAction::Save => match self.save_file() {
-                        Ok(_) => {
-                            self.ui.show_message("File saved", context);
-                            self.ui.update_status_only(&self.buffer, context);
-                        }
-                        Err(e) => {
-                            self.ui.show_message(e, context);
+                    input::InputAction::Save => {
+                        if self.get_current_file().is_none() {
+                            // No filename set, prompt for one
+                            self.ui.show_message("Enter filename: ", context);
+                            
+                            // Read filename from user
+                            let mut filename_buffer = [0u8; 256];
+                            let mut filename_len = 0;
+                            
+                            loop {
+                                if let Some(ch) = context.uart.getc() {
+                                    if ch == b'\r' || ch == b'\n' {
+                                        // Enter pressed
+                                        break;
+                                    } else if ch == 0x7F || ch == 0x08 {
+                                        // Backspace
+                                        if filename_len > 0 {
+                                            filename_len -= 1;
+                                            context.uart.puts("\x08 \x08"); // Erase character
+                                        }
+                                    } else if ch >= 0x20 && ch < 0x7F && filename_len < 255 {
+                                        // Regular character
+                                        filename_buffer[filename_len] = ch;
+                                        filename_len += 1;
+                                        context.uart.putc(ch);
+                                    }
+                                }
+                            }
+                            
+                            context.uart.puts("\r\n");
+                            
+                            if filename_len > 0 {
+                                let filename = unsafe {
+                                    core::str::from_utf8_unchecked(&filename_buffer[..filename_len])
+                                };
+                                // Try to save with filesystem if available, otherwise use mock
+                                if let Some(ref mut fs) = context.fat32_fs {
+                                    match self.save_file_as_with_fs(filename, fs) {
+                                        Ok(_) => {
+                                            self.ui.show_message("File saved", context);
+                                            self.ui.update_status_only(&self.buffer, context);
+                                        }
+                                        Err(e) => {
+                                            self.ui.show_message(e, context);
+                                        }
+                                    }
+                                } else {
+                                    match self.save_file_as(filename) {
+                                        Ok(_) => {
+                                            self.ui.show_message("File saved", context);
+                                            self.ui.update_status_only(&self.buffer, context);
+                                        }
+                                        Err(e) => {
+                                            self.ui.show_message(e, context);
+                                        }
+                                    }
+                                }
+                            } else {
+                                self.ui.show_message("Save cancelled", context);
+                            }
+                            
+                            // Refresh display
+                            self.ui.draw_editor(&self.buffer, context);
+                        } else {
+                            // Filename exists, save normally
+                            if let Some(ref mut fs) = context.fat32_fs {
+                                match self.save_file_with_fs(fs) {
+                                    Ok(_) => {
+                                        self.ui.show_message("File saved", context);
+                                        self.ui.update_status_only(&self.buffer, context);
+                                    }
+                                    Err(e) => {
+                                        self.ui.show_message(e, context);
+                                    }
+                                }
+                            } else {
+                                match self.save_file() {
+                                    Ok(_) => {
+                                        self.ui.show_message("File saved", context);
+                                        self.ui.update_status_only(&self.buffer, context);
+                                    }
+                                    Err(e) => {
+                                        self.ui.show_message(e, context);
+                                    }
+                                }
+                            }
                         }
                     },
                     input::InputAction::Quit => {

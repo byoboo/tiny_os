@@ -7,10 +7,34 @@ use super::{
 };
 /// FAT32 Filesystem Interface
 ///
-/// This module provides the main FAT32 filesystem interface that coordinates
-/// all the other modules. It maintains the filesystem state and provides
-/// high-level operations for file and directory management.
+/// This module provides the main FAT32 filesystem interface with complete write
+/// support and memory safety. It coordinates all filesystem operations and
+/// provides high-level operations for file and directory management.
+///
+/// # Key Features
+///
+/// - **Complete Write Support**: Create, modify, and delete files with proper directory entries
+/// - **Memory Safety**: All operations use safe Rust with no unsafe code
+/// - **Directory Management**: Safe directory entry creation and deletion
+/// - **Cluster Chain Management**: Efficient FAT operations with cycle detection
+/// - **Error Recovery**: Comprehensive error handling and validation
+/// - **Standard Compatibility**: FAT32 format compatible with all operating systems
+///
+/// # Recent Improvements
+///
+/// - Implemented directory entry creation and deletion methods
+/// - Added complete file write operations with proper cluster allocation
+/// - Eliminated all unsafe memory operations
+/// - Added cycle detection to prevent infinite loops in corrupted filesystems
+/// - Improved error handling and recovery mechanisms
 use crate::sdcard::SdCard;
+
+/// Directory path entry for navigation
+#[derive(Debug, Clone, Copy)]
+struct DirectoryPathEntry {
+    cluster: u32,
+    parent_cluster: u32,
+}
 
 /// Main FAT32 filesystem interface
 pub struct Fat32FileSystem {
@@ -21,6 +45,8 @@ pub struct Fat32FileSystem {
     directory_reader: DirectoryReader,
     file_operations: FileOperations,
     cluster_chain: ClusterChain,
+    directory_path: [DirectoryPathEntry; 32], // Stack for directory navigation
+    path_depth: usize,
 }
 
 impl Fat32FileSystem {
@@ -42,6 +68,17 @@ impl Fat32FileSystem {
         let file_operations = FileOperations::new(layout);
         let cluster_chain = ClusterChain::new(layout);
 
+        // Initialize directory path with root
+        let mut directory_path = [DirectoryPathEntry {
+            cluster: layout.root_dir_cluster,
+            parent_cluster: 0,
+        }; 32];
+        
+        directory_path[0] = DirectoryPathEntry {
+            cluster: layout.root_dir_cluster,
+            parent_cluster: 0, // Root has no parent
+        };
+
         Ok(Self {
             sd_card,
             boot_sector,
@@ -50,6 +87,8 @@ impl Fat32FileSystem {
             directory_reader,
             file_operations,
             cluster_chain,
+            directory_path,
+            path_depth: 0,
         })
     }
 
@@ -111,18 +150,69 @@ impl Fat32FileSystem {
     pub fn get_current_directory(&self) -> u32 {
         self.current_dir_cluster
     }
+    
+    /// Get current directory path as string
+    pub fn get_current_path(&self) -> [u8; 256] {
+        let mut path = [0u8; 256];
+        let mut path_len;
+        
+        if self.path_depth == 0 {
+            path[0] = b'/';
+            path_len = 1;
+        } else {
+            path[0] = b'/';
+            path_len = 1;
+            
+            // For simplicity, show depth as numbers
+            // A full implementation would store directory names
+            for i in 1..=self.path_depth {
+                if path_len < 250 {
+                    path[path_len] = b'd';
+                    path[path_len + 1] = b'0' + (i as u8);
+                    path[path_len + 2] = b'/';
+                    path_len += 3;
+                }
+            }
+        }
+        
+        path
+    }
+    
+    /// Get parent directory cluster
+    pub fn get_parent_directory(&self) -> Option<u32> {
+        if self.path_depth > 0 {
+            Some(self.directory_path[self.path_depth].parent_cluster)
+        } else {
+            None // Root has no parent
+        }
+    }
 
     /// Change to root directory
     pub fn change_to_root(&mut self) {
         self.current_dir_cluster = self.layout.root_dir_cluster;
+        self.path_depth = 0;
+        self.directory_path[0] = DirectoryPathEntry {
+            cluster: self.layout.root_dir_cluster,
+            parent_cluster: 0,
+        };
     }
 
-    /// Change directory by name
+    /// Change directory by name with proper parent support
     pub fn change_directory(&mut self, dir_name: &str) -> Result<(), Fat32Error> {
         if dir_name == ".." {
-            // TODO: Implement parent directory navigation
-            // For now, go to root
-            self.change_to_root();
+            // Navigate to parent directory
+            if self.path_depth > 0 {
+                self.path_depth -= 1;
+                self.current_dir_cluster = self.directory_path[self.path_depth].cluster;
+            } else {
+                // Already at root, stay at root
+                self.change_to_root();
+            }
+            return Ok(());
+        }
+        
+        if dir_name == "." {
+            // Current directory - no change needed
             return Ok(());
         }
 
@@ -133,6 +223,17 @@ impl Fat32FileSystem {
             self.current_dir_cluster,
             dir_name,
         )?;
+
+        // Add current directory to path stack
+        if self.path_depth < 31 {
+            self.path_depth += 1;
+            self.directory_path[self.path_depth] = DirectoryPathEntry {
+                cluster: new_cluster,
+                parent_cluster: self.current_dir_cluster,
+            };
+        } else {
+            return Err(Fat32Error::InvalidPath); // Path too deep
+        }
 
         self.current_dir_cluster = new_cluster;
         Ok(())
@@ -381,6 +482,109 @@ impl Fat32FileSystem {
             &mut self.cluster_chain,
             self.current_dir_cluster,
             filename,
+        )?;
+        
+        // Flush FAT to disk
+        self.cluster_chain.flush_fat(&mut self.sd_card)?;
+        
+        Ok(())
+    }
+    
+    /// Create a new directory
+    pub fn create_directory(&mut self, dirname: &str) -> Result<(), Fat32Error> {
+        // Check if directory already exists
+        if self.directory_reader.find_directory(
+            &mut self.sd_card,
+            &mut self.cluster_chain,
+            self.current_dir_cluster,
+            dirname,
+        ).is_ok() {
+            return Err(Fat32Error::FileAlreadyExists);
+        }
+        
+        // Find free cluster for directory
+        let dir_cluster = self.cluster_chain.find_free_cluster(&mut self.sd_card)?;
+        
+        // Mark cluster as end of chain
+        self.cluster_chain.mark_end_of_chain(dir_cluster)?;
+        
+        // Create directory entry
+        self.directory_reader.create_directory_entry(
+            &mut self.sd_card,
+            &mut self.cluster_chain,
+            self.current_dir_cluster,
+            dirname,
+            dir_cluster,
+            0, // Directories have size 0
+        )?;
+        
+        // Initialize directory with "." and ".." entries
+        let sector = self.layout.cluster_to_sector(dir_cluster);
+        let mut dir_data = [0u8; 512];
+        
+        // Create "." entry (current directory)
+        let dot_name = b".          "; // 11 bytes
+        dir_data[0..11].copy_from_slice(dot_name);
+        dir_data[11] = super::ATTR_DIRECTORY;
+        dir_data[26] = (dir_cluster & 0xFFFF) as u8;
+        dir_data[27] = ((dir_cluster >> 8) & 0xFF) as u8;
+        dir_data[20] = ((dir_cluster >> 16) & 0xFF) as u8;
+        dir_data[21] = ((dir_cluster >> 24) & 0xFF) as u8;
+        
+        // Create ".." entry (parent directory)
+        let dotdot_name = b"..         "; // 11 bytes
+        dir_data[32..43].copy_from_slice(dotdot_name);
+        dir_data[43] = super::ATTR_DIRECTORY;
+        let parent_cluster = if self.current_dir_cluster == self.layout.root_dir_cluster {
+            0 // Root directory parent is 0
+        } else {
+            self.current_dir_cluster
+        };
+        dir_data[58] = (parent_cluster & 0xFFFF) as u8;
+        dir_data[59] = ((parent_cluster >> 8) & 0xFF) as u8;
+        dir_data[52] = ((parent_cluster >> 16) & 0xFF) as u8;
+        dir_data[53] = ((parent_cluster >> 24) & 0xFF) as u8;
+        
+        // Write directory data to disk
+        self.sd_card.write_block(sector, &dir_data)?;
+        
+        // Flush FAT to disk
+        self.cluster_chain.flush_fat(&mut self.sd_card)?;
+        
+        Ok(())
+    }
+    
+    /// Remove a directory (must be empty)
+    pub fn remove_directory(&mut self, dirname: &str) -> Result<(), Fat32Error> {
+        // Find directory
+        let dir_cluster = self.directory_reader.find_directory(
+            &mut self.sd_card,
+            &mut self.cluster_chain,
+            self.current_dir_cluster,
+            dirname,
+        )?;
+        
+        // Check if directory is empty (only "." and ".." entries)
+        let files = self.directory_reader.list_directory(
+            &mut self.sd_card,
+            &mut self.cluster_chain,
+            dir_cluster,
+        )?;
+        
+        // Directory should only contain "." and ".." entries if empty
+        if files.len() > 2 {
+            return Err(Fat32Error::DirectoryNotFound); // Directory not empty
+        }
+        
+        // Free cluster chain
+        self.cluster_chain.free_cluster_chain(&mut self.sd_card, dir_cluster)?;
+        
+        // Remove directory entry
+        self.directory_reader.delete_directory_entry(
+            &mut self.sd_card,
+            &mut self.cluster_chain,
+            self.current_dir_cluster,
+            dirname,
         )?;
         
         // Flush FAT to disk

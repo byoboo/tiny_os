@@ -80,12 +80,49 @@ impl FileOperations {
             return Err("File too large");
         }
 
-        if let Some(ref mut _fs) = self.fs {
-            // FAT32 implementation doesn't support file writing yet
-            Err("File writing not supported")
+        if let Some(ref mut fs) = self.fs {
+            // Use actual FAT32 filesystem for writing
+            match fs.create_file(filename, content) {
+                Ok(_) => Ok(()),
+                Err(_) => Err("Failed to write file"),
+            }
         } else {
             // Mock file operations for testing
             self.mock_write_file(filename, content)
+        }
+    }
+
+    /// Read a file using external filesystem and return its content in the provided buffer
+    pub fn read_file_with_fs(&mut self, filename: &str, buffer: &mut [u8], fs: &mut Fat32FileSystem) -> Result<usize, &'static str> {
+        if filename.len() > MAX_FILENAME_LEN {
+            return Err("Filename too long");
+        }
+
+        match fs.read_file(filename) {
+            Ok(data) => {
+                if data.len() > buffer.len() {
+                    return Err("File too large for buffer");
+                }
+                buffer[..data.len()].copy_from_slice(data.as_slice());
+                Ok(data.len())
+            }
+            Err(_) => Err("Failed to read file"),
+        }
+    }
+
+    /// Write content to a file using external filesystem
+    pub fn write_file_with_fs(&mut self, filename: &str, content: &[u8], fs: &mut Fat32FileSystem) -> Result<(), &'static str> {
+        if filename.len() > MAX_FILENAME_LEN {
+            return Err("Filename too long");
+        }
+
+        if content.len() > MAX_FILE_SIZE {
+            return Err("File too large");
+        }
+
+        match fs.create_file(filename, content) {
+            Ok(_) => Ok(()),
+            Err(_) => Err("Failed to write file"),
         }
     }
 
@@ -95,9 +132,12 @@ impl FileOperations {
             return Err("Filename too long");
         }
 
-        if let Some(ref mut _fs) = self.fs {
-            // FAT32 implementation doesn't support file creation yet
-            Err("File creation not supported")
+        if let Some(ref mut fs) = self.fs {
+            // Use actual FAT32 filesystem for creation
+            match fs.create_file(filename, &[]) {
+                Ok(_) => Ok(()),
+                Err(_) => Err("Failed to create file"),
+            }
         } else {
             // Mock operation
             Ok(())
@@ -110,9 +150,12 @@ impl FileOperations {
             return Err("Filename too long");
         }
 
-        if let Some(ref mut _fs) = self.fs {
-            // FAT32 implementation doesn't support file deletion yet
-            Err("File deletion not supported")
+        if let Some(ref mut fs) = self.fs {
+            // Use actual FAT32 filesystem for deletion
+            match fs.delete_file(filename) {
+                Ok(_) => Ok(()),
+                Err(_) => Err("Failed to delete file"),
+            }
         } else {
             // Mock operation
             Ok(())
@@ -261,6 +304,8 @@ impl FileOperations {
         } else if content.len() > MAX_FILE_SIZE {
             Err("File too large")
         } else {
+            // Simulate successful save
+            // In the real implementation, this would write to the FAT32 filesystem
             Ok(())
         }
     }

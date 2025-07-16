@@ -208,16 +208,45 @@ pub extern "C" fn kernel_main() {
     // Initialize SD Card (defer FAT32 mounting to avoid stack overflow)
     uart.puts("About to initialize SD Card...\r\n");
 
-    // Create a stub SD card to avoid hardware initialization in QEMU
-    let sdcard = SdCard::new();
+    // Initialize SD card with QEMU compatibility
+    let mut sdcard = SdCard::new();
     uart.puts("SD Card object created\r\n");
 
-    let fat32_fs: Option<Fat32FileSystem> = None;
+    let mut fat32_fs: Option<Fat32FileSystem> = None;
 
-    // For now, skip SD card initialization in QEMU to prevent hanging
-    // This can be re-enabled when proper QEMU emulation is available
-    let _sd_init_success = false;
-    uart.puts("SD Card initialization skipped (QEMU compatibility)\r\n");
+    // Try to initialize SD card (works in QEMU with -drive option)
+    match sdcard.init() {
+        Ok(()) => {
+            uart.puts("✓ SD Card initialized successfully\r\n");
+            // Try to mount FAT32 filesystem
+            match Fat32FileSystem::new(sdcard) {
+                Ok(mut fs) => {
+                    match fs.mount() {
+                        Ok(()) => {
+                            uart.puts("✓ FAT32 filesystem mounted successfully\r\n");
+                            fat32_fs = Some(fs);
+                            // Create a new SD card instance for shell since filesystem took ownership
+                            sdcard = SdCard::new();
+                        }
+                        Err(_) => {
+                            uart.puts("⚠ FAT32 filesystem mount failed\r\n");
+                            // Create a new SD card instance for shell
+                            sdcard = SdCard::new();
+                        }
+                    }
+                }
+                Err(_) => {
+                    uart.puts("⚠ No FAT32 filesystem found\r\n");
+                    // Create a new SD card instance for shell
+                    sdcard = SdCard::new();
+                }
+            }
+        }
+        Err(_) => {
+            uart.puts("⚠ SD Card initialization failed (normal in QEMU without -drive)\r\n");
+            uart.puts("  Use 'make run-local' for full filesystem support\r\n");
+        }
+    }
 
     // System ready
     uart.puts("================================\r\n");

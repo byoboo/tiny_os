@@ -10,3 +10,6 @@ scratch
 tiny_os_raspi3
 tiny_os_raspi3.img
 ./tiny_os_raspi3
+fat32_test.img
+./sd_mount
+/sd_mount

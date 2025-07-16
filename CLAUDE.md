@@ -49,7 +49,7 @@ TinyOS is a sophisticated bare-metal ARM64 operating system with a modular, laye
 3. **Advanced Memory Management** (`src/memory/`) - MMU, COW, page tables, protection
 4. **Exception & Interrupt System** (`src/exceptions/`, `src/interrupts.rs`) - Comprehensive ARM64 exception handling
 5. **Hardware Abstraction** (`src/drivers/`) - Modular driver architecture
-6. **Filesystem Support** (`src/filesystem/`) - FAT32 implementation
+6. **Filesystem Support** (`src/filesystem/`) - Full-featured FAT32 implementation with write support
 
 ### Key Technical Components
 
@@ -71,12 +71,21 @@ TinyOS is a sophisticated bare-metal ARM64 operating system with a modular, laye
 - **Context Management**: Save/restore operations, EL0/EL1 switching
 - **Privilege Control**: Secure user/kernel mode transitions
 
+#### Filesystem Support (`src/filesystem/fat32/`)
+Full-featured FAT32 implementation with complete write support:
+- **Boot Sector (`boot_sector.rs`)**: Safe boot sector parsing and validation
+- **Directory (`directory.rs`)**: Entry creation/deletion, safe memory operations
+- **File Operations (`file_operations.rs`)**: Read/write with cluster chain management
+- **Cluster Chain (`cluster_chain.rs`)**: FAT management with cycle detection
+- **Interface (`interface.rs`)**: High-level filesystem API with write operations
+- **Filename (`filename.rs`)**: 8.3 name conversion and validation
+
 #### Hardware Drivers (`src/drivers/`)
 All drivers follow a modular architecture with hardware abstraction:
 - **GPIO (`gpio/`)**: BCM2835 register access, LED control
 - **UART (`uart/`)**: PL011 hardware support
 - **Timer (`timer/`)**: Microsecond precision timing
-- **SD Card (`sdcard/`)**: EMMC interface
+- **SD Card (`sdcard/`)**: EMMC interface with FAT32 integration
 
 #### Advanced Driver Modules (Week 4-6 Refactored)
 Professional modular architecture achieved through Project Baseline Initiative:
@@ -105,7 +114,7 @@ Professional modular architecture achieved through Project Baseline Initiative:
 ### Testing Strategy
 - **External Integration Tests**: `tests/scripts/` - Shell script automation
 - **Internal Kernel Tests**: `src/testing/` - No-std testing framework
-- **Test Categories**: Boot, memory, interrupts, hardware, filesystem
+- **Test Categories**: Boot, memory, interrupts, hardware, filesystem (with write operations)
 - **Unified Test Runner**: `./test_tinyos.sh` with feature selection
 
 ## Shell Command Organization
@@ -115,7 +124,7 @@ The interactive shell provides organized command groups:
 - **Exception Testing**: `7`-`9`, `!` (Synchronous), `#`-`%` (IRQ)
 - **Process Control**: `[`, `\\`, `]`, `&` (Process management)
 - **System Control**: `(`, `)`, `{`, `}` (MMU), `<`, `>`, `?` (Virtual memory)
-- **Hardware Testing**: `a`-`f` (Filesystem), `g`-`o` (Drivers)
+- **Hardware Testing**: `a`-`f` (Filesystem with write support), `g`-`o` (Drivers)
 - **Advanced Features**: `4` (Performance), `5` (Network), `6` (Security)
 
 ## Project Structure Notes
@@ -175,6 +184,16 @@ src/drivers/
 - ARM64 exception vectors with comprehensive ESR decoding
 - Nested interrupt support with priority management
 - Deferred processing for performance optimization
+
+### FAT32 Filesystem Implementation
+- **Memory Safety**: All operations use safe Rust with no unsafe transmute
+- **Write Operations**: Complete file creation, modification, and deletion
+- **Directory Management**: Proper directory entry creation and deletion
+- **Cluster Chain Management**: Safe FAT manipulation with cycle detection
+- **Filename Support**: 8.3 name conversion with validation
+- **Error Handling**: Comprehensive error propagation for filesystem operations
+- **Performance**: Direct sector-level I/O with minimal overhead
+- **Compatibility**: Standard FAT32 format compatible with all operating systems
 
 ### Performance Characteristics
 - Boot time: ~2 seconds in QEMU, ~5 seconds on hardware
@@ -252,10 +271,15 @@ benchmark comparison         # Linux vs TinyOS comparison
 
 # System capabilities  
 help                        # Unix-like command interface
-edit filename.txt           # Built-in text editor
-ls / cd / pwd / cat        # File system navigation
-test memory / test filesystem # System testing
+edit filename.txt           # Built-in text editor with file creation
+ls / cd / pwd / cat        # File system navigation with write support
+test memory / test filesystem # System testing including write operations
 free / ps / uptime / date  # System information
+
+# File system operations
+touch newfile.txt          # Create new files
+echo "content" > file.txt  # Write to files
+rm oldfile.txt             # Delete files
 
 # Hardware testing
 test memory                 # Memory allocation testing

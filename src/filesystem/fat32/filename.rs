@@ -180,6 +180,188 @@ pub fn calculate_lfn_checksum(short_name: &[u8; 11]) -> u8 {
     checksum
 }
 
+/// Check if filename needs LFN entries (longer than 8.3 format)
+pub fn needs_lfn(filename: &str) -> bool {
+    // Check if filename is longer than 8.3 format allows
+    if filename.len() > 12 { // "filename.ext" = 12 chars max
+        return true;
+    }
+    
+    // Check for invalid 8.3 characters
+    for ch in filename.chars() {
+        if ch == ' ' || ch.is_lowercase() {
+            return true;
+        }
+    }
+    
+    // Check name and extension lengths
+    if let Some(dot_pos) = filename.find('.') {
+        if dot_pos > 8 || filename.len() - dot_pos - 1 > 3 {
+            return true;
+        }
+    } else if filename.len() > 8 {
+        return true;
+    }
+    
+    false
+}
+
+/// Create LFN entries for a long filename
+pub fn create_lfn_entries(filename: &str, short_name: &[u8; 11]) -> Result<([super::directory::Fat32LfnEntry; 4], usize), super::Fat32Error> {
+    let checksum = calculate_lfn_checksum(short_name);
+    let mut lfn_entries = [super::directory::Fat32LfnEntry {
+        ord: 0,
+        name1: [0; 5],
+        attr: super::ATTR_LONG_NAME,
+        entry_type: 0,
+        checksum,
+        name2: [0; 6],
+        first_cluster_low: 0,
+        name3: [0; 2],
+    }; 4];
+    
+    // Convert filename to UTF-16
+    let mut utf16_name = [0u16; 255];
+    let mut utf16_len = 0;
+    
+    for ch in filename.chars() {
+        if utf16_len >= 255 {
+            break;
+        }
+        utf16_name[utf16_len] = ch as u16;
+        utf16_len += 1;
+    }
+    
+    // Pad with 0x0000 and 0xFFFF
+    if utf16_len < 255 {
+        utf16_name[utf16_len] = 0x0000; // Null terminator
+        utf16_len += 1;
+    }
+    
+    // Fill remaining with 0xFFFF
+    while utf16_len < 255 && utf16_len % 13 != 0 {
+        utf16_name[utf16_len] = 0xFFFF;
+        utf16_len += 1;
+    }
+    
+    // Calculate number of LFN entries needed
+    let num_entries = (utf16_len + 12) / 13; // 13 chars per LFN entry
+    if num_entries > 4 {
+        return Err(super::Fat32Error::FileTooLarge);
+    }
+    
+    // Create LFN entries
+    for i in 0..num_entries {
+        let entry_idx = num_entries - 1 - i; // Entries are in reverse order
+        let char_start = i * 13;
+        
+        lfn_entries[entry_idx].ord = (i + 1) as u8;
+        if i == num_entries - 1 {
+            lfn_entries[entry_idx].ord |= 0x40; // Last entry marker
+        }
+        
+        // Copy 13 characters to LFN entry
+        let mut char_idx = 0;
+        
+        // First 5 characters
+        for j in 0..5 {
+            if char_start + char_idx < utf16_len {
+                lfn_entries[entry_idx].name1[j] = utf16_name[char_start + char_idx];
+            } else {
+                lfn_entries[entry_idx].name1[j] = 0xFFFF;
+            }
+            char_idx += 1;
+        }
+        
+        // Next 6 characters
+        for j in 0..6 {
+            if char_start + char_idx < utf16_len {
+                lfn_entries[entry_idx].name2[j] = utf16_name[char_start + char_idx];
+            } else {
+                lfn_entries[entry_idx].name2[j] = 0xFFFF;
+            }
+            char_idx += 1;
+        }
+        
+        // Last 2 characters
+        for j in 0..2 {
+            if char_start + char_idx < utf16_len {
+                lfn_entries[entry_idx].name3[j] = utf16_name[char_start + char_idx];
+            } else {
+                lfn_entries[entry_idx].name3[j] = 0xFFFF;
+            }
+            char_idx += 1;
+        }
+    }
+    
+    Ok((lfn_entries, num_entries))
+}
+
+/// Extract long filename from LFN entries
+pub fn extract_lfn_name(lfn_entries: &[super::directory::Fat32LfnEntry], num_entries: usize) -> Result<[u8; 256], super::Fat32Error> {
+    let mut name = [0u8; 256];
+    let mut name_len = 0;
+    
+    // Process LFN entries in correct order
+    for i in 0..num_entries {
+        let entry = &lfn_entries[num_entries - 1 - i];
+        
+        // Extract characters from name1 - copy to avoid alignment issues
+        let name1_copy = entry.name1;
+        for ch in name1_copy {
+            if ch == 0x0000 {
+                break; // Null terminator
+            }
+            if ch != 0xFFFF && name_len < 255 {
+                if ch <= 0xFF {
+                    name[name_len] = ch as u8;
+                    name_len += 1;
+                } else {
+                    // For simplicity, replace non-ASCII with '?'
+                    name[name_len] = b'?';
+                    name_len += 1;
+                }
+            }
+        }
+        
+        // Extract characters from name2 - copy to avoid alignment issues
+        let name2_copy = entry.name2;
+        for ch in name2_copy {
+            if ch == 0x0000 {
+                break; // Null terminator
+            }
+            if ch != 0xFFFF && name_len < 255 {
+                if ch <= 0xFF {
+                    name[name_len] = ch as u8;
+                    name_len += 1;
+                } else {
+                    name[name_len] = b'?';
+                    name_len += 1;
+                }
+            }
+        }
+        
+        // Extract characters from name3 - copy to avoid alignment issues
+        let name3_copy = entry.name3;
+        for ch in name3_copy {
+            if ch == 0x0000 {
+                break; // Null terminator
+            }
+            if ch != 0xFFFF && name_len < 255 {
+                if ch <= 0xFF {
+                    name[name_len] = ch as u8;
+                    name_len += 1;
+                } else {
+                    name[name_len] = b'?';
+                    name_len += 1;
+                }
+            }
+        }
+    }
+    
+    Ok(name)
+}
+
 /// Parse filename into name and extension parts (no_std compatible)
 pub fn parse_filename(filename: &str) -> (usize, Option<usize>) {
     if let Some(dot_pos) = filename.rfind('.') {

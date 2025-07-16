@@ -23,7 +23,8 @@ help:
 	@echo "  validate-ci - Validate CI environment matches local"
 	@echo ""
 	@echo "Hardware Testing:"
-	@echo "  run-local   - Run TinyOS locally with QEMU"
+	@echo "  run-local   - Run TinyOS locally with QEMU (with SD card support)"
+	@echo "  run-without-sd - Run TinyOS without SD card support (minimal mode)"
 	@echo "  check-binary - Check if binary exists and show info"
 	@echo ""
 	@echo "Code Quality:"
@@ -112,17 +113,45 @@ build-pi:
 dev-cycle: build test
 	@echo "🚀 Development cycle complete!"
 
-# Run TinyOS locally with QEMU (requires binary)
+# Create SD card image for QEMU testing
+create-sd-image:
+	@echo "Creating FAT32 SD card image for QEMU testing..."
+	@if [ ! -f scripts/create_sd_image.sh ]; then \
+		echo "❌ SD image creation script not found"; \
+		exit 1; \
+	fi
+	docker-compose run --rm dev bash -c "cd /workspace && ./scripts/create_sd_image.sh"
+	@echo "✅ SD card image ready for QEMU testing"
+
+# Run TinyOS locally with QEMU (with SD card support by default)
 run-local:
+	@if [ ! -f fat32_test.img ]; then \
+		echo "⚠️  SD card image not found - creating one..."; \
+		make create-sd-image; \
+	fi
 	@if [ -f tiny_os_raspi3 ]; then \
-		echo "🚀 Running TinyOS (raspi3) in QEMU..."; \
+		echo "🚀 Running TinyOS (raspi3) in QEMU with SD card..."; \
 		echo "Press Ctrl+A then X to exit QEMU"; \
+		echo "Filesystem commands (ls, cat, etc.) should now work!"; \
+		echo "----------------------------------------"; \
+		docker-compose run --rm dev bash -c "qemu-system-aarch64 -M raspi3b -kernel /workspace/tiny_os_raspi3 -serial stdio -display none -no-reboot -d guest_errors -drive file=/workspace/fat32_test.img,if=sd,format=raw"; \
+	else \
+		echo "❌ TinyOS raspi3 binary not found"; \
+		echo "   Run 'make build-qemu' first"; \
+	fi
+
+# Run TinyOS without SD card support (minimal mode)
+run-without-sd:
+	@if [ -f tiny_os_raspi3 ]; then \
+		echo "🚀 Running TinyOS (raspi3) in QEMU without SD card..."; \
+		echo "Press Ctrl+A then X to exit QEMU"; \
+		echo "Note: Filesystem commands will show 'SD card not available' messages"; \
 		echo "----------------------------------------"; \
 		docker-compose run --rm dev bash -c "qemu-system-aarch64 -M raspi3b -kernel /workspace/tiny_os_raspi3 -serial stdio -display none -no-reboot -d guest_errors"; \
 	elif [ -f tiny_os ]; then \
 		echo "⚠️  Using Pi4 binary with raspi3b - may have hardware address issues"; \
 		echo "   Consider running 'make build-qemu' for proper raspi3 support"; \
-		echo "🚀 Running TinyOS in QEMU..."; \
+		echo "🚀 Running TinyOS in QEMU without SD card..."; \
 		echo "Press Ctrl+A then X to exit QEMU"; \
 		echo "----------------------------------------"; \
 		docker-compose run --rm dev bash -c "qemu-system-aarch64 -M raspi3b -kernel /workspace/tiny_os -serial stdio -display none -no-reboot -d guest_errors"; \
