@@ -73,6 +73,8 @@ pub enum Fat32Error {
     ReadOnly,
     InvalidFilename,
     FileTooLarge,
+    FileAlreadyExists,
+    WriteProtected,
 }
 
 impl From<crate::sdcard::SdError> for Fat32Error {

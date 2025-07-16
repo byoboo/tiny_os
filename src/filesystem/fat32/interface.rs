@@ -268,6 +268,127 @@ impl Fat32FileSystem {
         &mut self.sd_card
     }
 
+    /// Create a new file
+    pub fn create_file(&mut self, filename: &str, content: &[u8]) -> Result<(), Fat32Error> {
+        // Check if file already exists
+        if self.find_file(filename).is_ok() {
+            return Err(Fat32Error::FileAlreadyExists);
+        }
+
+        // Find free cluster for file data
+        let first_cluster = self.cluster_chain.find_free_cluster(&mut self.sd_card)?;
+        
+        // Allocate cluster chain for file
+        let clusters_needed = (content.len() + self.layout.bytes_per_cluster as usize - 1) / self.layout.bytes_per_cluster as usize;
+        let mut allocated_clusters = [0u32; 256]; // Fixed size array for no_std
+        let mut cluster_count = 0;
+        
+        for i in 0..clusters_needed {
+            if cluster_count >= 256 {
+                return Err(Fat32Error::FileTooLarge);
+            }
+            
+            let cluster = if i == 0 {
+                first_cluster
+            } else {
+                self.cluster_chain.find_free_cluster(&mut self.sd_card)?
+            };
+            
+            allocated_clusters[cluster_count] = cluster;
+            cluster_count += 1;
+            
+            // Link to next cluster or mark as end of chain
+            if i < clusters_needed - 1 {
+                // Will be linked to next cluster
+            } else {
+                self.cluster_chain.mark_end_of_chain(cluster)?;
+            }
+        }
+
+        // Link cluster chain
+        for i in 0..cluster_count - 1 {
+            self.cluster_chain.set_next_cluster(allocated_clusters[i], allocated_clusters[i + 1])?;
+        }
+
+        // Write file data to clusters
+        let mut written = 0;
+        for i in 0..cluster_count {
+            let cluster = allocated_clusters[i];
+            let sector = self.layout.cluster_to_sector(cluster);
+            let mut cluster_data = [0u8; 512];
+            
+            for sector_in_cluster in 0..self.layout.sectors_per_cluster {
+                cluster_data.fill(0);
+                let data_start = written;
+                let data_end = (written + 512).min(content.len());
+                
+                if data_start < content.len() {
+                    let copy_len = data_end - data_start;
+                    cluster_data[..copy_len].copy_from_slice(&content[data_start..data_end]);
+                }
+                
+                self.sd_card.write_block(sector + sector_in_cluster, &cluster_data)?;
+                written += 512;
+                
+                if written >= content.len() {
+                    break;
+                }
+            }
+        }
+
+        // Create directory entry (placeholder - needs implementation)
+        // self.directory_reader.create_directory_entry(
+        //     &mut self.sd_card,
+        //     &mut self.cluster_chain,
+        //     self.current_dir_cluster,
+        //     filename,
+        //     first_cluster,
+        //     content.len() as u32,
+        // )?;
+
+        // Flush FAT to disk
+        self.cluster_chain.flush_fat(&mut self.sd_card)?;
+
+        Ok(())
+    }
+
+    /// Write data to existing file (overwrites content)
+    pub fn write_file(&mut self, filename: &str, content: &[u8]) -> Result<(), Fat32Error> {
+        // Find existing file
+        let file_info = self.find_file(filename)?;
+        
+        // Free existing cluster chain
+        self.cluster_chain.free_cluster_chain(&mut self.sd_card, file_info.first_cluster)?;
+        
+        // Create new content (reuse create_file logic)
+        self.delete_file(filename)?;
+        self.create_file(filename, content)?;
+        
+        Ok(())
+    }
+
+    /// Delete a file
+    pub fn delete_file(&mut self, filename: &str) -> Result<(), Fat32Error> {
+        // Find file
+        let file_info = self.find_file(filename)?;
+        
+        // Free cluster chain
+        self.cluster_chain.free_cluster_chain(&mut self.sd_card, file_info.first_cluster)?;
+        
+        // Remove directory entry (placeholder - needs implementation)
+        // self.directory_reader.delete_directory_entry(
+        //     &mut self.sd_card,
+        //     &mut self.cluster_chain,
+        //     self.current_dir_cluster,
+        //     filename,
+        // )?;
+        
+        // Flush FAT to disk
+        self.cluster_chain.flush_fat(&mut self.sd_card)?;
+        
+        Ok(())
+    }
+
     /// Test filesystem operations
     pub fn test_filesystem(&mut self) -> Result<(), Fat32Error> {
         let uart = crate::uart::Uart::new();

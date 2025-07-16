@@ -37,8 +37,31 @@ impl ClusterChain {
 
         let (fat_sector, entry_offset) = self.layout.fat_sector_and_offset(cluster);
 
-        // Load FAT sector if needed
+        // Load FAT sector if needed - this method is deprecated but keeps API compatibility
+        // Real implementations should use get_next_cluster_from_sd
         self.load_fat_sector(fat_sector)?;
+
+        // Extract FAT entry (mask to 28 bits for FAT32)
+        let fat_entry = u32::from_le_bytes([
+            self.fat_cache[entry_offset],
+            self.fat_cache[entry_offset + 1],
+            self.fat_cache[entry_offset + 2],
+            self.fat_cache[entry_offset + 3],
+        ]) & 0x0FFFFFFF;
+
+        Ok(fat_entry)
+    }
+
+    /// Read FAT entry for given cluster with SD card access
+    pub fn get_next_cluster_from_sd(&mut self, sd_card: &mut SdCard, cluster: u32) -> Result<u32, Fat32Error> {
+        if !self.layout.is_valid_cluster(cluster) {
+            return Err(Fat32Error::ClusterOutOfRange);
+        }
+
+        let (fat_sector, entry_offset) = self.layout.fat_sector_and_offset(cluster);
+
+        // Load FAT sector if needed
+        self.load_fat_sector_from_sd(sd_card, fat_sector)?;
 
         // Extract FAT entry (mask to 28 bits for FAT32)
         let fat_entry = u32::from_le_bytes([
@@ -86,10 +109,21 @@ impl ClusterChain {
     pub fn follow_chain(&mut self, start_cluster: u32) -> Result<ClusterList, Fat32Error> {
         let mut clusters = ClusterList::new();
         let mut current_cluster = start_cluster;
+        let mut visited = [false; 65536]; // Track visited clusters to detect cycles
 
         loop {
             if !self.layout.is_valid_cluster(current_cluster) {
                 break;
+            }
+
+            // Check for cycle detection
+            if current_cluster < 65536 && visited[current_cluster as usize] {
+                // Cycle detected - return what we have so far
+                break;
+            }
+
+            if current_cluster < 65536 {
+                visited[current_cluster as usize] = true;
             }
 
             if clusters.push(current_cluster).is_err() {
@@ -97,6 +131,41 @@ impl ClusterChain {
             }
 
             let next_cluster = self.get_next_cluster(current_cluster)?;
+            if self.is_end_of_chain(next_cluster) {
+                break;
+            }
+            current_cluster = next_cluster;
+        }
+
+        Ok(clusters)
+    }
+
+    /// Follow cluster chain with SD card access and cycle detection
+    pub fn follow_chain_from_sd(&mut self, sd_card: &mut SdCard, start_cluster: u32) -> Result<ClusterList, Fat32Error> {
+        let mut clusters = ClusterList::new();
+        let mut current_cluster = start_cluster;
+        let mut visited = [false; 65536]; // Track visited clusters to detect cycles
+
+        loop {
+            if !self.layout.is_valid_cluster(current_cluster) {
+                break;
+            }
+
+            // Check for cycle detection
+            if current_cluster < 65536 && visited[current_cluster as usize] {
+                // Cycle detected - return what we have so far
+                break;
+            }
+
+            if current_cluster < 65536 {
+                visited[current_cluster as usize] = true;
+            }
+
+            if clusters.push(current_cluster).is_err() {
+                break; // Chain too long
+            }
+
+            let next_cluster = self.get_next_cluster_from_sd(sd_card, current_cluster)?;
             if self.is_end_of_chain(next_cluster) {
                 break;
             }
@@ -122,10 +191,10 @@ impl ClusterChain {
     }
 
     /// Find first free cluster (simple linear search)
-    pub fn find_free_cluster(&mut self, _sd_card: &mut SdCard) -> Result<u32, Fat32Error> {
+    pub fn find_free_cluster(&mut self, sd_card: &mut SdCard) -> Result<u32, Fat32Error> {
         // Start searching from cluster 2 (first data cluster)
         for cluster in 2..(self.layout.cluster_count + 2) {
-            let next_cluster = self.get_next_cluster(cluster)?;
+            let next_cluster = self.get_next_cluster_from_sd(sd_card, cluster)?;
             if self.is_free_cluster(next_cluster) {
                 return Ok(cluster);
             }
@@ -144,14 +213,53 @@ impl ClusterChain {
         self.set_next_cluster(cluster, CLUSTER_FREE)
     }
 
+    /// Free an entire cluster chain
+    pub fn free_cluster_chain(&mut self, sd_card: &mut SdCard, start_cluster: u32) -> Result<(), Fat32Error> {
+        if start_cluster < 2 {
+            return Ok(());
+        }
+
+        let mut current_cluster = start_cluster;
+        let mut visited = [false; 65536]; // Cycle detection
+
+        loop {
+            if !self.layout.is_valid_cluster(current_cluster) {
+                break;
+            }
+
+            // Check for cycle detection
+            if current_cluster < 65536 && visited[current_cluster as usize] {
+                break;
+            }
+
+            if current_cluster < 65536 {
+                visited[current_cluster as usize] = true;
+            }
+
+            let next_cluster = self.get_next_cluster_from_sd(sd_card, current_cluster)?;
+            
+            // Free current cluster
+            self.free_cluster(current_cluster)?;
+            
+            if self.is_end_of_chain(next_cluster) {
+                break;
+            }
+            
+            current_cluster = next_cluster;
+        }
+
+        Ok(())
+    }
+
     /// Flush FAT cache to disk
     pub fn flush_fat(&mut self, sd_card: &mut SdCard) -> Result<(), Fat32Error> {
         if self.fat_cache_dirty && self.fat_cache_sector != 0xFFFFFFFF {
             // Write to primary FAT
             sd_card.write_block(self.fat_cache_sector, &self.fat_cache)?;
 
-            // Write to backup FAT if it exists
-            let backup_sector = self.fat_cache_sector + self.layout.fat_start_sector;
+            // Write to backup FAT if it exists (correct calculation)
+            // Backup FAT is located after the primary FAT
+            let backup_sector = self.fat_cache_sector + self.layout.fat_size_32;
             sd_card.write_block(backup_sector, &self.fat_cache)?;
 
             self.fat_cache_dirty = false;
@@ -161,16 +269,9 @@ impl ClusterChain {
 
     /// Load FAT sector into cache if needed
     fn load_fat_sector(&mut self, fat_sector: u32) -> Result<(), Fat32Error> {
+        // This method is deprecated - use load_fat_sector_from_sd instead
+        // It remains for API compatibility but will not actually load data
         if fat_sector != self.fat_cache_sector {
-            // Write cache if dirty
-            if self.fat_cache_dirty {
-                // Note: This is a simplified version - in a real implementation
-                // we would need to pass the sd_card here
-                self.fat_cache_dirty = false;
-            }
-
-            // This is a placeholder - in actual usage, we need the sd_card parameter
-            // For now, just mark the sector as loaded
             self.fat_cache_sector = fat_sector;
         }
         Ok(())

@@ -50,14 +50,82 @@ impl Fat32BootSector {
         let mut boot_sector_data = [0u8; 512];
         sd_card.read_block(0, &mut boot_sector_data)?;
 
-        // Parse boot sector
-        let boot_sector =
-            unsafe { core::mem::transmute::<[u8; 512], Fat32BootSector>(boot_sector_data) };
+        // Parse boot sector safely field by field
+        let boot_sector = Self::parse_from_bytes(&boot_sector_data)?;
 
         // Validate boot sector
         boot_sector.validate()?;
 
         Ok(boot_sector)
+    }
+
+    /// Parse boot sector from byte array safely
+    fn parse_from_bytes(data: &[u8; 512]) -> Result<Self, Fat32Error> {
+        if data.len() < 512 {
+            return Err(Fat32Error::InvalidBootSector);
+        }
+
+        // Helper function to read little-endian u16
+        let read_u16 = |offset: usize| -> u16 {
+            u16::from_le_bytes([data[offset], data[offset + 1]])
+        };
+
+        // Helper function to read little-endian u32
+        let read_u32 = |offset: usize| -> u32 {
+            u32::from_le_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]])
+        };
+
+        // Parse fields according to FAT32 boot sector structure
+        let mut jmp_boot = [0u8; 3];
+        jmp_boot.copy_from_slice(&data[0..3]);
+
+        let mut oem_name = [0u8; 8];
+        oem_name.copy_from_slice(&data[3..11]);
+
+        let mut volume_label = [0u8; 11];
+        volume_label.copy_from_slice(&data[71..82]);
+
+        let mut file_system_type = [0u8; 8];
+        file_system_type.copy_from_slice(&data[82..90]);
+
+        let mut reserved = [0u8; 12];
+        reserved.copy_from_slice(&data[58..70]);
+
+        let mut boot_code = [0u8; 420];
+        boot_code.copy_from_slice(&data[90..510]);
+
+        Ok(Fat32BootSector {
+            jmp_boot,
+            oem_name,
+            bytes_per_sector: read_u16(11),
+            sectors_per_cluster: data[13],
+            reserved_sector_count: read_u16(14),
+            num_fats: data[16],
+            root_entry_count: read_u16(17),
+            total_sectors_16: read_u16(19),
+            media_type: data[21],
+            fat_size_16: read_u16(22),
+            sectors_per_track: read_u16(24),
+            num_heads: read_u16(26),
+            hidden_sectors: read_u32(28),
+            total_sectors_32: read_u32(32),
+            // FAT32 specific fields
+            fat_size_32: read_u32(36),
+            ext_flags: read_u16(40),
+            fs_version: read_u16(42),
+            root_cluster: read_u32(44),
+            fs_info: read_u16(48),
+            backup_boot_sector: read_u16(50),
+            reserved,
+            drive_number: data[64],
+            reserved1: data[65],
+            boot_signature: data[66],
+            volume_id: read_u32(67),
+            volume_label,
+            file_system_type,
+            boot_code,
+            signature: read_u16(510),
+        })
     }
 
     /// Validate boot sector structure and content
@@ -114,6 +182,7 @@ impl Fat32BootSector {
             bytes_per_cluster: self.sectors_per_cluster as u32 * 512,
             cluster_count,
             root_dir_cluster: self.root_cluster,
+            fat_size_32: fat_size,
         })
     }
 
@@ -202,6 +271,7 @@ pub struct FilesystemLayout {
     pub bytes_per_cluster: u32,
     pub cluster_count: u32,
     pub root_dir_cluster: u32,
+    pub fat_size_32: u32,
 }
 
 impl FilesystemLayout {
