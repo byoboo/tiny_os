@@ -3,9 +3,13 @@
 //! This module implements the core Virtual Memory Manager (VMM) that handles
 //! memory mapping, unmapping, address translation, and MMU control operations.
 
-use crate::memory::layout::{HEAP_END, HEAP_START, KERNEL_END, KERNEL_START};
-use crate::memory::mmu::types::{MemoryAttribute, PageType, RegionType};
-use crate::memory::mmu::tables::{PageTableEntry, TranslationTable};
+use crate::memory::{
+    layout::{HEAP_END, HEAP_START, KERNEL_END, KERNEL_START},
+    mmu::{
+        tables::{PageTableEntry, TranslationTable},
+        types::{MemoryAttribute, PageType, RegionType},
+    },
+};
 
 /// Size of L1 translation table (4KB)
 const L1_TABLE_SIZE: usize = 4096;

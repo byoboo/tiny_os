@@ -1,10 +1,11 @@
 //! Ethernet Controller Driver
-//! 
+//!
 //! Gigabit Ethernet support for Raspberry Pi 4/5
 //! Extracted from week5_network.rs
 
-use super::{NetworkError, NetworkMetrics};
 use core::ptr::{read_volatile, write_volatile};
+
+use super::{NetworkError, NetworkMetrics};
 
 /// Ethernet Controller Base Address (Pi 4/5)
 const GENET_BASE: usize = 0xFD580000;
@@ -54,11 +55,11 @@ impl EthernetController {
             // Enable Ethernet controller
             let ctrl_reg = self.base_address + 0x00;
             write_volatile(ctrl_reg as *mut u32, 0x8000_0001);
-            
+
             // Configure for Gigabit speeds
             let speed_reg = self.base_address + 0x14;
             write_volatile(speed_reg as *mut u32, 0x0000_0003); // 1000 Mbps
-            
+
             self.status = EthernetStatus::Initialized;
             self.metrics.link_speed_mbps = 1000;
         }
@@ -80,14 +81,14 @@ impl EthernetController {
         unsafe {
             let status_reg = self.base_address + 0x10;
             let status = read_volatile(status_reg as *const u32);
-            
+
             let link_up = (status & 0x1) != 0;
             self.status = if link_up {
                 EthernetStatus::LinkUp
             } else {
                 EthernetStatus::LinkDown
             };
-            
+
             link_up
         }
     }
@@ -97,7 +98,7 @@ impl EthernetController {
         if self.status != EthernetStatus::LinkUp {
             return Err(NetworkError::NoDevice);
         }
-        
+
         // Placeholder for actual packet transmission
         self.metrics.packets_transmitted += 1;
         Ok(())
@@ -108,7 +109,7 @@ impl EthernetController {
         if self.status != EthernetStatus::LinkUp {
             return Err(NetworkError::NoDevice);
         }
-        
+
         // Placeholder for actual packet reception
         self.metrics.packets_received += 1;
         Ok(0)

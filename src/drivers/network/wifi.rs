@@ -1,5 +1,5 @@
 //! WiFi Controller Driver
-//! 
+//!
 //! WiFi 6 support for Raspberry Pi 4/5
 //! Extracted from week5_network.rs
 
@@ -86,9 +86,9 @@ impl WiFiController {
         if self.status == WiFiStatus::Uninitialized {
             return Err(NetworkError::NotInitialized);
         }
-        
+
         self.status = WiFiStatus::Scanning;
-        
+
         // Placeholder for actual network scanning
         // Would return available networks
         Ok(&[])
@@ -99,7 +99,7 @@ impl WiFiController {
         if self.status == WiFiStatus::Uninitialized {
             return Err(NetworkError::NotInitialized);
         }
-        
+
         // Placeholder for actual connection
         self.status = WiFiStatus::Connected;
         Ok(())

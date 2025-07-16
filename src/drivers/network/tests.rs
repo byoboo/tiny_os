@@ -1,14 +1,16 @@
 //! No-std Tests for Network Module
-//! 
+//!
 //! Tests that work in the embedded no_std environment
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::network::{NetworkError, NetworkMetrics, NetworkInterface};
-    use crate::drivers::network::ethernet::{EthernetController, EthernetStatus};
-    use crate::drivers::network::wifi::{WiFiController, WiFiStatus};
-    use crate::drivers::network::protocols::{ProtocolManager, IoProtocol};
+    use crate::drivers::network::{
+        ethernet::{EthernetController, EthernetStatus},
+        protocols::{IoProtocol, ProtocolManager},
+        wifi::{WiFiController, WiFiStatus},
+        NetworkError, NetworkInterface, NetworkMetrics,
+    };
 
     #[test]
     fn test_ethernet_controller_creation() {
@@ -77,7 +79,7 @@ mod tests {
     fn test_ethernet_initialization() {
         let mut controller = EthernetController::new();
         assert_eq!(controller.get_status(), EthernetStatus::Uninitialized);
-        
+
         // Test initialization
         let result = controller.init();
         assert!(result.is_ok());
@@ -88,7 +90,7 @@ mod tests {
     fn test_wifi_initialization() {
         let mut controller = WiFiController::new();
         assert_eq!(controller.get_status(), WiFiStatus::Uninitialized);
-        
+
         // Test initialization
         let result = controller.init();
         assert!(result.is_ok());
@@ -98,15 +100,15 @@ mod tests {
     #[test]
     fn test_protocol_manager_initialization() {
         let mut manager = ProtocolManager::new();
-        
+
         // Test USB3 initialization
         let result = manager.init_usb3();
         assert!(result.is_ok());
-        
+
         // Test SPI initialization
         let result = manager.init_spi();
         assert!(result.is_ok());
-        
+
         // Test I2C initialization
         let result = manager.init_i2c_fast();
         assert!(result.is_ok());
@@ -124,11 +126,11 @@ mod tests {
     #[test]
     fn test_protocol_performance_testing() {
         let mut manager = ProtocolManager::new();
-        
+
         // Test performance testing for available protocols
         let result = manager.test_protocol_performance(IoProtocol::PciExpress2);
         assert!(result.is_ok());
-        
+
         let metrics = result.unwrap();
         assert!(metrics.average_speed_mbps > 0);
     }

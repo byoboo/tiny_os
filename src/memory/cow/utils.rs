@@ -1,7 +1,8 @@
 //! COW Utilities Module
 //!
 //! This module provides utility data structures and functions for Copy-on-Write
-//! memory management, including no_std compatible containers and helper functions.
+//! memory management, including no_std compatible containers and helper
+//! functions.
 
 /// Maximum number of virtual addresses per COW page
 pub const MAX_VIRT_ADDRS_PER_PAGE: usize = 8;

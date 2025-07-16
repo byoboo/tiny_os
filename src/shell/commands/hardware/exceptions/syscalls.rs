@@ -3,8 +3,8 @@
 //! This module provides system call testing and analysis functionality
 //! for shell commands, including interface validation and statistics.
 
-use crate::shell::ShellContext;
 use super::utils::print_number;
+use crate::shell::ShellContext;
 
 /// Handle system call testing command (8)
 pub fn handle_syscall_test(context: &ShellContext) {

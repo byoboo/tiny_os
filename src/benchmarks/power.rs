@@ -1,7 +1,8 @@
 //! Power Measurement Interface for Raspberry Pi
 //!
-//! This module provides power monitoring capabilities for efficiency measurement.
-//! Focuses on Pi 4/5 advanced power states while maintaining Pi 3B compatibility.
+//! This module provides power monitoring capabilities for efficiency
+//! measurement. Focuses on Pi 4/5 advanced power states while maintaining Pi 3B
+//! compatibility.
 
 use crate::benchmarks::timing;
 
@@ -41,7 +42,7 @@ impl PowerMonitor {
     /// Initialize power monitoring
     pub fn initialize(&mut self) {
         self.calibrated = true;
-        
+
         // Set initial power state for optimal benchmarking
         self.set_power_state(PowerState::HighPerformance);
     }
@@ -49,7 +50,7 @@ impl PowerMonitor {
     /// Set power state (Pi 4/5 optimized)
     pub fn set_power_state(&mut self, state: PowerState) {
         self.power_state = state;
-        
+
         match state {
             PowerState::HighPerformance => {
                 // Pi 4: Up to 1.5GHz, Pi 5: Up to 2.4GHz
@@ -83,13 +84,13 @@ impl PowerMonitor {
         F: FnOnce(),
     {
         let start_time = timing::get_cycles();
-        
+
         // Execute operation
         operation();
-        
+
         let end_time = timing::get_cycles();
         let cycles = end_time.saturating_sub(start_time);
-        
+
         PowerMeasurement {
             cycles,
             frequency: self.frequency,
@@ -107,10 +108,10 @@ impl PowerMonitor {
             PowerState::PowerSave => 2000,       // ~2W power save
             PowerState::DeepSleep => 500,        // ~0.5W deep sleep
         };
-        
+
         // Convert cycles to time (microseconds)
         let time_us = (cycles * 1_000_000) / self.frequency;
-        
+
         // Energy = Power × Time (microjoules)
         (base_power_mw * time_us) / 1000
     }
@@ -140,7 +141,7 @@ impl PowerMonitor {
             PowerState::PowerSave,
         ] {
             self.set_power_state(state);
-            
+
             let measurement = self.measure_power_efficiency(|| {
                 // Standard test workload
                 let mut total = 0u64;
@@ -200,12 +201,15 @@ pub struct PowerTestResults {
 impl PowerTestResults {
     pub fn new() -> Self {
         Self {
-            measurements: [(PowerState::Balanced, PowerMeasurement {
-                cycles: 0,
-                frequency: 0,
-                power_state: PowerState::Balanced,
-                estimated_energy: 0,
-            }); 8],
+            measurements: [(
+                PowerState::Balanced,
+                PowerMeasurement {
+                    cycles: 0,
+                    frequency: 0,
+                    power_state: PowerState::Balanced,
+                    estimated_energy: 0,
+                },
+            ); 8],
             count: 0,
         }
     }

@@ -1,5 +1,5 @@
 //! Performance Metrics Collection
-//! 
+//!
 //! System performance monitoring and metrics
 //! Consolidated from Week 4-6 implementations
 
@@ -52,7 +52,7 @@ impl MetricsCollector {
     pub fn collect(&mut self) -> Result<(), PerformanceError> {
         // Placeholder for actual metrics collection
         // Would collect from various system components
-        
+
         // Mock data for demonstration
         self.metrics.performance.cpu_usage_percent = 45;
         self.metrics.performance.memory_usage_percent = 60;
@@ -62,7 +62,7 @@ impl MetricsCollector {
         self.metrics.temperature_celsius = 50;
         self.metrics.security_score = 85;
         self.metrics.realtime_latency_us = 50;
-        
+
         Ok(())
     }
 
@@ -81,7 +81,7 @@ impl MetricsCollector {
         if interval_ms < 100 || interval_ms > 60000 {
             return Err(PerformanceError::InvalidConfiguration);
         }
-        
+
         self.collection_interval_ms = interval_ms;
         Ok(())
     }
@@ -149,9 +149,13 @@ impl MetricsCollector {
     fn calculate_overall_score(&self) -> u8 {
         let cpu_score = 100 - self.metrics.performance.cpu_usage_percent;
         let memory_score = 100 - self.metrics.performance.memory_usage_percent;
-        let thermal_score = if self.metrics.temperature_celsius < 70 { 100 } else { 50 };
+        let thermal_score = if self.metrics.temperature_celsius < 70 {
+            100
+        } else {
+            50
+        };
         let security_score = self.metrics.security_score;
-        
+
         ((cpu_score as u32 + memory_score as u32 + thermal_score + security_score as u32) / 4) as u8
     }
 }

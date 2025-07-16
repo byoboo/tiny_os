@@ -73,7 +73,7 @@ impl PiMmuConfig {
             page_size: PageSize::Size64K, // Pi benefits from larger pages
         }
     }
-    
+
     /// Create maximum performance configuration
     pub fn max_performance() -> Self {
         Self {
@@ -90,111 +90,112 @@ pub fn measure_memory_performance() -> (u64, u64, u64) {
     let mut uart = Uart::new();
     uart.puts("🧠 MMU Performance Measurement\r\n");
     uart.puts("==============================\r\n");
-    
+
     // Test 1: Sequential memory access
     let sequential_cycles = measure_sequential_access();
     uart.puts("📊 Sequential access: ");
     print_number(&mut uart, sequential_cycles);
     uart.puts(" cycles\r\n");
-    
+
     // Test 2: Random memory access
     let random_cycles = measure_random_access();
     uart.puts("📊 Random access: ");
     print_number(&mut uart, random_cycles);
     uart.puts(" cycles\r\n");
-    
+
     // Test 3: Cache performance
     let cache_cycles = measure_cache_performance();
     uart.puts("📊 Cache efficiency: ");
     print_number(&mut uart, cache_cycles);
     uart.puts(" cycles\r\n");
-    
+
     (sequential_cycles, random_cycles, cache_cycles)
 }
 
 /// Measure sequential memory access performance
 fn measure_sequential_access() -> u64 {
     let start_cycles = read_cycle_counter();
-    
+
     // Sequential memory access pattern
     let mut buffer = [0u32; 256];
     for i in 0..buffer.len() {
         buffer[i] = i as u32;
     }
-    
+
     // Read sequentially
     let mut sum = 0u32;
     for i in 0..buffer.len() {
         sum = sum.wrapping_add(buffer[i]);
     }
-    
+
     let end_cycles = read_cycle_counter();
-    
+
     // Prevent optimization
     unsafe {
         core::ptr::write_volatile(&mut buffer[0], sum);
     }
-    
+
     end_cycles.saturating_sub(start_cycles)
 }
 
 /// Measure random memory access performance
 fn measure_random_access() -> u64 {
     let start_cycles = read_cycle_counter();
-    
+
     // Random access pattern using simple PRNG
     let mut buffer = [0u32; 256];
     for i in 0..buffer.len() {
         buffer[i] = i as u32;
     }
-    
+
     let mut sum = 0u32;
     let mut index = 1u32;
-    
+
     // Simple linear congruential generator for random indices
     for _ in 0..256 {
         index = index.wrapping_mul(1664525).wrapping_add(1013904223);
         let idx = (index as usize) % buffer.len();
         sum = sum.wrapping_add(buffer[idx]);
     }
-    
+
     let end_cycles = read_cycle_counter();
-    
+
     // Prevent optimization
     unsafe {
         core::ptr::write_volatile(&mut buffer[0], sum);
     }
-    
+
     end_cycles.saturating_sub(start_cycles)
 }
 
 /// Measure cache performance
 fn measure_cache_performance() -> u64 {
     let start_cycles = read_cycle_counter();
-    
+
     // Create larger buffer to test cache behavior
     let mut buffer = [0u32; 1024];
-    
+
     // Initialize buffer
     for i in 0..buffer.len() {
         buffer[i] = i as u32;
     }
-    
+
     // Access pattern that should stress cache
     let mut sum = 0u32;
     for _ in 0..4 {
-        for i in (0..buffer.len()).step_by(64) { // Cache line stride
+        for i in (0..buffer.len()).step_by(64) {
+            // Cache line stride
             sum = sum.wrapping_add(buffer[i]);
         }
     }
-    
+
     let end_cycles = read_cycle_counter();
-    
+
     // Prevent optimization
     unsafe {
         core::ptr::write_volatile(&mut buffer[0], sum);
     }
-    
+
     end_cycles.saturating_sub(start_cycles)
 }
 
@@ -228,7 +229,8 @@ pub fn apply_pi_mmu_optimizations(config: &PiMmuConfig) -> Result<(), &'static s
 /// Configure cache policy for Pi optimization
 fn configure_pi_cache_policy(policy: CachePolicy) -> Result<(), &'static str> {
     // Note: This is a placeholder for actual MMU configuration
-    // In a real implementation, this would configure MAIR_EL1 and page table entries
+    // In a real implementation, this would configure MAIR_EL1 and page table
+    // entries
     match policy {
         CachePolicy::WriteBack => {
             // Configure write-back cacheable memory
@@ -292,16 +294,16 @@ fn print_number(uart: &mut Uart, mut num: u64) {
         uart.puts("0");
         return;
     }
-    
+
     let mut buffer = [0u8; 20];
     let mut i = 0;
-    
+
     while num > 0 {
         buffer[i] = (num % 10) as u8 + b'0';
         num /= 10;
         i += 1;
     }
-    
+
     // Print in reverse order
     while i > 0 {
         i -= 1;
@@ -312,14 +314,14 @@ fn print_number(uart: &mut Uart, mut num: u64) {
 /// Test MMU optimization effectiveness
 pub fn test_mmu_optimizations() {
     let mut uart = Uart::new();
-    
+
     uart.puts("🚀 Pi MMU Optimization Test\r\n");
     uart.puts("===========================\r\n");
-    
+
     // Test baseline performance
     uart.puts("📊 Baseline Performance:\r\n");
     let (seq_base, rand_base, cache_base) = measure_memory_performance();
-    
+
     // Apply Pi optimizations
     let pi_config = PiMmuConfig::pi_optimized();
     match apply_pi_mmu_optimizations(&pi_config) {
@@ -330,10 +332,10 @@ pub fn test_mmu_optimizations() {
             uart.puts("\r\n");
         }
     }
-    
+
     uart.puts("📊 Optimized Performance:\r\n");
     let (seq_opt, rand_opt, cache_opt) = measure_memory_performance();
-    
+
     // Calculate improvements
     uart.puts("📈 Performance Improvements:\r\n");
     uart.puts("  Sequential: ");
@@ -344,7 +346,7 @@ pub fn test_mmu_optimizations() {
     } else {
         uart.puts("No improvement\r\n");
     }
-    
+
     uart.puts("  Random: ");
     if rand_opt < rand_base {
         let improvement = ((rand_base - rand_opt) * 100) / rand_base;
@@ -353,7 +355,7 @@ pub fn test_mmu_optimizations() {
     } else {
         uart.puts("No improvement\r\n");
     }
-    
+
     uart.puts("✅ MMU optimization test complete\r\n");
 }
 

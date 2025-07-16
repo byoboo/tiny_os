@@ -65,15 +65,15 @@ pub fn calibrate_timing() {
     // Perform timing calibration by measuring known delays
     let iterations = 1000;
     let start = get_cycles();
-    
+
     // Perform some known work
     for _ in 0..iterations {
         core::hint::black_box(42u32.wrapping_add(1));
     }
-    
+
     let end = get_cycles();
     let cycles_per_iteration = (end - start) / iterations;
-    
+
     unsafe {
         // Rough calibration - this would need proper hardware measurement
         CYCLES_PER_MICROSECOND = cycles_per_iteration * 100; // Rough estimate

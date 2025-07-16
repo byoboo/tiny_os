@@ -1,7 +1,8 @@
 //! Command Line Parser
 //!
-//! This module provides command line parsing functionality for the TinyOS shell,
-//! converting traditional command-line input into structured commands and arguments.
+//! This module provides command line parsing functionality for the TinyOS
+//! shell, converting traditional command-line input into structured commands
+//! and arguments.
 
 use crate::shell::ShellContext;
 
@@ -40,8 +41,8 @@ impl Command {
     /// Get an argument as a string slice
     pub fn arg(&self, index: usize) -> Option<&str> {
         if index < self.arg_count {
-            Some(unsafe { 
-                core::str::from_utf8_unchecked(&self.args[index][..self.arg_lens[index]]) 
+            Some(unsafe {
+                core::str::from_utf8_unchecked(&self.args[index][..self.arg_lens[index]])
             })
         } else {
             None
@@ -50,8 +51,8 @@ impl Command {
 
     /// Get all arguments as string slices
     pub fn args(&self) -> impl Iterator<Item = &str> {
-        (0..self.arg_count).map(move |i| unsafe { 
-            core::str::from_utf8_unchecked(&self.args[i][..self.arg_lens[i]]) 
+        (0..self.arg_count).map(move |i| unsafe {
+            core::str::from_utf8_unchecked(&self.args[i][..self.arg_lens[i]])
         })
     }
 
@@ -97,22 +98,21 @@ impl CommandInput {
             b'\n' | b'\r' => {
                 // End of line - process command
                 if self.position > 0 {
-                    let command_str = unsafe { 
-                        core::str::from_utf8_unchecked(&self.buffer[..self.position]) 
-                    };
-                    
+                    let command_str =
+                        unsafe { core::str::from_utf8_unchecked(&self.buffer[..self.position]) };
+
                     // Parse command first
                     let command = self.parse_command(command_str);
-                    
+
                     // Add to history
                     self.add_to_history();
-                    
+
                     // Clear buffer
                     self.clear_buffer();
-                    
+
                     // Echo newline
                     context.uart.puts("\r\n");
-                    
+
                     Some(command)
                 } else {
                     // Empty line
@@ -125,7 +125,8 @@ impl CommandInput {
                 if self.position > 0 {
                     self.position -= 1;
                     self.buffer[self.position] = 0;
-                    context.uart.puts("\x08 \x08"); // Backspace, space, backspace
+                    context.uart.puts("\x08 \x08"); // Backspace, space,
+                                                    // backspace
                 }
                 None
             }
@@ -165,7 +166,8 @@ impl CommandInput {
     fn add_to_history(&mut self) {
         if self.position > 0 {
             let hist_index = self.history_pos % self.history.len();
-            self.history[hist_index][..self.position].copy_from_slice(&self.buffer[..self.position]);
+            self.history[hist_index][..self.position]
+                .copy_from_slice(&self.buffer[..self.position]);
             self.history_lens[hist_index] = self.position;
             self.history_pos = (self.history_pos + 1) % self.history.len();
             if self.history_count < self.history.len() {
@@ -178,24 +180,24 @@ impl CommandInput {
     fn parse_command(&self, input: &str) -> Command {
         let mut command = Command::new();
         let mut tokens = input.trim().split_whitespace();
-        
+
         // First token is the command name
         if let Some(name) = tokens.next() {
             command.name_len = name.len().min(command.name.len());
             command.name[..command.name_len].copy_from_slice(name.as_bytes());
-            
+
             // Remaining tokens are arguments
             for (i, arg) in tokens.enumerate() {
                 if i >= MAX_ARGS {
                     break;
                 }
-                
+
                 command.arg_lens[i] = arg.len().min(command.args[i].len());
                 command.args[i][..command.arg_lens[i]].copy_from_slice(arg.as_bytes());
                 command.arg_count += 1;
             }
         }
-        
+
         command
     }
 
@@ -220,7 +222,7 @@ impl CommandCompletion {
             commands: [""; 32],
             command_count: 0,
         };
-        
+
         // Add standard commands
         completion.add_command("help");
         completion.add_command("ls");
@@ -247,7 +249,7 @@ impl CommandCompletion {
         completion.add_command("benchmark");
         completion.add_command("reboot");
         completion.add_command("halt");
-        
+
         completion
     }
 

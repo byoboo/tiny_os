@@ -3,8 +3,7 @@
 //! This module provides comprehensive memory allocation and management
 //! performance testing for TinyOS efficiency validation.
 
-use crate::benchmarks::timing;
-use crate::memory::MemoryManager;
+use crate::{benchmarks::timing, memory::MemoryManager};
 
 /// Memory benchmark suite for allocation performance testing
 pub struct MemoryBenchmarks {
@@ -26,7 +25,7 @@ impl MemoryBenchmarks {
     /// Benchmark sequential allocation performance
     pub fn benchmark_sequential_allocation(&mut self, manager: &mut MemoryManager) -> u64 {
         let start = timing::get_cycles();
-        
+
         // Perform sequential allocations
         for _i in 0..10 {
             if let Some(_ptr) = manager.allocate_block() {
@@ -34,7 +33,7 @@ impl MemoryBenchmarks {
                 self.bytes_allocated += 4096; // Assuming 4KB blocks
             }
         }
-        
+
         let end = timing::get_cycles();
         end.saturating_sub(start)
     }
@@ -42,7 +41,7 @@ impl MemoryBenchmarks {
     /// Benchmark fragmentation patterns
     pub fn benchmark_fragmentation(&mut self, manager: &mut MemoryManager) -> u64 {
         let start = timing::get_cycles();
-        
+
         // Allocate varying sizes to create fragmentation
         let sizes = [1, 2, 4, 8];
         for &size in &sizes {
@@ -53,7 +52,7 @@ impl MemoryBenchmarks {
                 }
             }
         }
-        
+
         let end = timing::get_cycles();
         end.saturating_sub(start)
     }
@@ -61,9 +60,9 @@ impl MemoryBenchmarks {
     /// Benchmark mixed allocation/deallocation workload
     pub fn benchmark_mixed_workload(&mut self, manager: &mut MemoryManager) -> u64 {
         let start = timing::get_cycles();
-        
+
         let mut allocated_blocks = [None; 10];
-        
+
         // Mixed allocation/deallocation pattern
         for _round in 0..3 {
             // Allocation phase
@@ -74,7 +73,7 @@ impl MemoryBenchmarks {
                     self.bytes_allocated += 4096;
                 }
             }
-            
+
             // Deallocation phase
             for i in 0..3 {
                 if let Some(ptr) = allocated_blocks[i] {
@@ -83,14 +82,14 @@ impl MemoryBenchmarks {
                 }
             }
         }
-        
+
         // Clean up remaining allocations
         for i in 0..10 {
             if let Some(ptr) = allocated_blocks[i] {
                 manager.free_block(ptr);
             }
         }
-        
+
         let end = timing::get_cycles();
         end.saturating_sub(start)
     }
@@ -105,11 +104,11 @@ impl MemoryBenchmarks {
 /// Run comprehensive memory performance test suite
 pub fn run_memory_benchmarks(manager: &mut MemoryManager) -> MemoryBenchmarkResults {
     let mut benchmarks = MemoryBenchmarks::new();
-    
+
     let sequential_cycles = benchmarks.benchmark_sequential_allocation(manager);
     let fragmentation_cycles = benchmarks.benchmark_fragmentation(manager);
     let mixed_cycles = benchmarks.benchmark_mixed_workload(manager);
-    
+
     MemoryBenchmarkResults {
         sequential_allocation_cycles: sequential_cycles,
         fragmentation_cycles,
@@ -134,13 +133,14 @@ impl MemoryBenchmarkResults {
         if self.sequential_allocation_cycles == 0 {
             return 0;
         }
-        
+
         // Approximate calculation assuming 1GHz clock
         let seconds = self.sequential_allocation_cycles / 1_000_000_000;
         if seconds == 0 {
-            return self.total_allocations * 1000; // Estimate based on milliseconds
+            return self.total_allocations * 1000; // Estimate based on
+                                                  // milliseconds
         }
-        
+
         (self.total_allocations as u64 / seconds) as u32
     }
 }

@@ -17,6 +17,6 @@ pub mod testing;
 pub mod user_space;
 
 // Modular feature commands (Project Baseline)
+pub mod network; // Network and high-speed I/O
 pub mod performance; // Performance monitoring and power management
-pub mod network;     // Network and high-speed I/O
-pub mod security;    // Security, real-time, and system hardening
+pub mod security; // Security, real-time, and system hardening

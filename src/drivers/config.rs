@@ -23,16 +23,16 @@ impl Default for HardwareVersionEnum {
 pub trait HardwareVersion {
     /// Get the hardware version
     fn version() -> HardwareVersionEnum;
-    
+
     /// GPIO base address
     const GPIO_BASE: u32;
-    
+
     /// EMMC base address  
     const EMMC_BASE: u32;
-    
+
     /// Timer base address
     const TIMER_BASE: u32;
-    
+
     /// UART base address
     const UART_BASE: u32;
 }
@@ -59,23 +59,23 @@ impl HardwareVersion for DefaultHardware {
     fn version() -> HardwareVersionEnum {
         Self::detect_version()
     }
-    
+
     // Hardware addresses - Pi 3 vs Pi 4/5
     #[cfg(feature = "raspi3")]
     const GPIO_BASE: u32 = 0x3F200000;
     #[cfg(not(feature = "raspi3"))]
     const GPIO_BASE: u32 = 0xFE200000;
-    
+
     #[cfg(feature = "raspi3")]
     const EMMC_BASE: u32 = 0x3F300000;
     #[cfg(not(feature = "raspi3"))]
     const EMMC_BASE: u32 = 0xFE300000;
-    
+
     #[cfg(feature = "raspi3")]
     const TIMER_BASE: u32 = 0x3F003000;
     #[cfg(not(feature = "raspi3"))]
     const TIMER_BASE: u32 = 0xFE003000;
-    
+
     #[cfg(feature = "raspi3")]
     const UART_BASE: u32 = 0x3F201000;
     #[cfg(not(feature = "raspi3"))]

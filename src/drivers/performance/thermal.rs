@@ -1,5 +1,5 @@
 //! Thermal Management Controller
-//! 
+//!
 //! Thermal monitoring and control
 //! Extracted from Week 4 implementation
 
@@ -25,8 +25,8 @@ pub struct ThermalController {
 impl ThermalController {
     pub fn new() -> Self {
         Self {
-            current_temp_celsius: 45, // Default Pi temperature
-            max_temp_celsius: 85,     // Pi thermal limit
+            current_temp_celsius: 45,  // Default Pi temperature
+            max_temp_celsius: 85,      // Pi thermal limit
             throttle_temp_celsius: 70, // Start throttling
             status: ThermalStatus::Normal,
         }
@@ -76,7 +76,7 @@ impl ThermalController {
         if temp_celsius > self.max_temp_celsius {
             return Err(PerformanceError::InvalidConfiguration);
         }
-        
+
         self.throttle_temp_celsius = temp_celsius;
         Ok(())
     }

@@ -1,12 +1,14 @@
 //! Security Controller Integration
-//! 
+//!
 //! Main security controller that manages all security subsystems
 //! Refactored from week6_security.rs
 
-use super::{SecurityError, SecurityMetrics, RealTimeMetrics};
-use super::trustzone::{TrustZoneController, SecurityLevel};
-use super::realtime::{RealTimeScheduler, RtTask};
-use super::hardening::{HardeningController, HardeningLevel};
+use super::{
+    hardening::{HardeningController, HardeningLevel},
+    realtime::{RealTimeScheduler, RtTask},
+    trustzone::{SecurityLevel, TrustZoneController},
+    RealTimeMetrics, SecurityError, SecurityMetrics,
+};
 
 /// Main security controller for Pi 4/5
 pub struct SecurityController {
@@ -38,13 +40,13 @@ impl SecurityController {
             }
             Err(e) => return Err(e),
         }
-        
+
         // Initialize real-time scheduler
         self.realtime.init()?;
-        
+
         // Initialize system hardening
         self.hardening.init()?;
-        
+
         self.initialized = true;
         Ok(())
     }
@@ -68,7 +70,7 @@ impl SecurityController {
     pub fn set_security_level(&mut self, level: SecurityLevel) -> Result<(), SecurityError> {
         // Update TrustZone security level
         self.trustzone.set_security_level(level)?;
-        
+
         // Update hardening level based on security level
         let hardening_level = match level {
             SecurityLevel::Development => HardeningLevel::Basic,
@@ -76,7 +78,7 @@ impl SecurityController {
             SecurityLevel::Critical => HardeningLevel::Enhanced,
             SecurityLevel::Maximum => HardeningLevel::Maximum,
         };
-        
+
         self.hardening.set_hardening_level(hardening_level)?;
         Ok(())
     }
@@ -85,13 +87,16 @@ impl SecurityController {
     pub fn get_security_metrics(&self) -> SecurityMetrics {
         let trustzone_metrics = self.trustzone.get_metrics();
         let hardening_metrics = self.hardening.get_metrics();
-        
+
         SecurityMetrics {
-            threat_detections: trustzone_metrics.threat_detections + hardening_metrics.threat_detections,
-            security_violations: trustzone_metrics.security_violations + hardening_metrics.security_violations,
+            threat_detections: trustzone_metrics.threat_detections
+                + hardening_metrics.threat_detections,
+            security_violations: trustzone_metrics.security_violations
+                + hardening_metrics.security_violations,
             trustzone_switches: trustzone_metrics.trustzone_switches,
             failed_authentications: trustzone_metrics.failed_authentications,
-            security_score: (trustzone_metrics.security_score + hardening_metrics.security_score) / 2,
+            security_score: (trustzone_metrics.security_score + hardening_metrics.security_score)
+                / 2,
         }
     }
 
@@ -105,10 +110,10 @@ impl SecurityController {
         if !self.initialized {
             return Err(SecurityError::NotInitialized);
         }
-        
+
         let trustzone_score = self.trustzone.run_security_scan()?;
         let hardening_score = self.hardening.assess_hardening()?;
-        
+
         // Calculate overall security score
         let overall_score = (trustzone_score + hardening_score) / 2;
         Ok(overall_score)

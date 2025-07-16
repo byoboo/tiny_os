@@ -1,7 +1,7 @@
 //! Text Buffer Management
 //!
-//! Efficient text buffer implementation optimized for Raspberry Pi 4/5 performance.
-//! Uses static memory allocation for no_std embedded environment.
+//! Efficient text buffer implementation optimized for Raspberry Pi 4/5
+//! performance. Uses static memory allocation for no_std embedded environment.
 
 /// Maximum number of lines in the text buffer (reduced for embedded systems)
 const MAX_LINES: usize = 500;
@@ -36,103 +36,104 @@ impl LineBuffer {
             length: 0,
         }
     }
-    
+
     /// Create a line buffer from a string slice
     pub fn from_str(s: &str) -> Self {
         let mut buffer = Self::new();
         buffer.set_content(s);
         buffer
     }
-    
+
     /// Set the content of the line buffer
     pub fn set_content(&mut self, s: &str) {
         self.length = s.len().min(MAX_LINE_LENGTH);
         self.data[..self.length].copy_from_slice(s.as_bytes());
     }
-    
+
     /// Get the content as a string slice
     pub fn as_str(&self) -> &str {
         unsafe { core::str::from_utf8_unchecked(&self.data[..self.length]) }
     }
-    
+
     /// Get the length of the line
     pub fn len(&self) -> usize {
         self.length
     }
-    
+
     /// Check if the line is empty
     pub fn is_empty(&self) -> bool {
         self.length == 0
     }
-    
+
     /// Insert a character at the specified position
     pub fn insert(&mut self, pos: usize, ch: char) -> bool {
         if pos > self.length || self.length >= MAX_LINE_LENGTH {
             return false;
         }
-        
+
         // Encode character to UTF-8 bytes
         let mut ch_bytes = [0u8; 4];
         let ch_str = ch.encode_utf8(&mut ch_bytes);
         let ch_len = ch_str.len();
-        
+
         if ch_len + self.length > MAX_LINE_LENGTH {
             return false;
         }
-        
+
         // Shift bytes to the right
         for i in (pos..self.length).rev() {
             self.data[i + ch_len] = self.data[i];
         }
-        
+
         // Insert the character
         self.data[pos..pos + ch_len].copy_from_slice(ch_str.as_bytes());
         self.length += ch_len;
-        
+
         true
     }
-    
+
     /// Remove a character at the specified position
     pub fn remove(&mut self, pos: usize) -> bool {
         if pos >= self.length {
             return false;
         }
-        
+
         // Shift bytes to the left
         for i in pos..self.length - 1 {
             self.data[i] = self.data[i + 1];
         }
-        
+
         self.length -= 1;
         true
     }
-    
+
     /// Clear the line
     pub fn clear(&mut self) {
         self.length = 0;
     }
-    
+
     /// Split the line at the specified position
     pub fn split_at(&mut self, pos: usize) -> LineBuffer {
         if pos >= self.length {
             return LineBuffer::new();
         }
-        
+
         let mut new_line = LineBuffer::new();
         new_line.length = self.length - pos;
         new_line.data[..new_line.length].copy_from_slice(&self.data[pos..self.length]);
-        
+
         self.length = pos;
         new_line
     }
-    
+
     /// Append another line to this one
     pub fn append(&mut self, other: &LineBuffer) -> bool {
         if self.length + other.length > MAX_LINE_LENGTH {
             return false;
         }
-        
-        self.data[self.length..self.length + other.length].copy_from_slice(&other.data[..other.length]);
+
+        self.data[self.length..self.length + other.length]
+            .copy_from_slice(&other.data[..other.length]);
         self.length += other.length;
         true
     }
@@ -166,7 +167,7 @@ impl TextBuffer {
             viewport_height: 20,
         }
     }
-    
+
     /// Initialize the buffer
     pub fn init(&mut self) {
         self.line_count = 1;
@@ -175,11 +176,11 @@ impl TextBuffer {
         self.modified = false;
         self.scroll_offset = 0;
     }
-    
+
     /// Load content into the buffer
     pub fn load_content(&mut self, content: &str) {
         self.line_count = 0;
-        
+
         for line in content.lines() {
             if self.line_count >= MAX_LINES {
                 break;
@@ -187,25 +188,25 @@ impl TextBuffer {
             self.lines[self.line_count] = LineBuffer::from_str(line);
             self.line_count += 1;
         }
-        
+
         // Ensure we have at least one line
         if self.line_count == 0 {
             self.line_count = 1;
             self.lines[0] = LineBuffer::new();
         }
-        
+
         self.cursor = (0, 0);
         self.modified = false;
         self.scroll_offset = 0;
     }
-    
+
     /// Get the current content as a formatted string
     pub fn get_content_formatted(&self, output: &mut [u8]) -> usize {
         let mut pos = 0;
-        
+
         for i in 0..self.line_count {
             let line = self.lines[i].as_str();
-            
+
             // Copy line content
             for &byte in line.as_bytes() {
                 if pos < output.len() {
@@ -213,17 +214,17 @@ impl TextBuffer {
                     pos += 1;
                 }
             }
-            
+
             // Add newline (except for last line)
             if i < self.line_count - 1 && pos < output.len() {
                 output[pos] = b'\n';
                 pos += 1;
             }
         }
-        
+
         pos
     }
-    
+
     /// Clear the buffer
     pub fn clear(&mut self) {
         self.line_count = 1;
@@ -232,21 +233,21 @@ impl TextBuffer {
         self.modified = false;
         self.scroll_offset = 0;
     }
-    
+
     /// Insert a character at the current cursor position
     pub fn insert_char(&mut self, ch: char) {
         let (row, col) = self.cursor;
-        
+
         if ch == '\n' {
             // Split line at cursor position
             if self.line_count < MAX_LINES {
                 let new_line = self.lines[row].split_at(col);
-                
+
                 // Shift lines down
                 for i in (row + 1..self.line_count).rev() {
                     self.lines[i + 1] = self.lines[i].clone();
                 }
-                
+
                 self.lines[row + 1] = new_line;
                 self.line_count += 1;
                 self.cursor = (row + 1, 0);
@@ -257,15 +258,15 @@ impl TextBuffer {
                 self.cursor.1 += 1;
             }
         }
-        
+
         self.modified = true;
         self.adjust_viewport();
     }
-    
+
     /// Delete character at cursor (backspace)
     pub fn backspace(&mut self) {
         let (row, col) = self.cursor;
-        
+
         if col > 0 {
             // Delete character in current line
             self.lines[row].remove(col - 1);
@@ -285,14 +286,14 @@ impl TextBuffer {
                 self.modified = true;
             }
         }
-        
+
         self.adjust_viewport();
     }
-    
+
     /// Delete character at cursor (delete key)
     pub fn delete(&mut self) {
         let (row, col) = self.cursor;
-        
+
         if col < self.lines[row].len() {
             // Delete character in current line
             self.lines[row].remove(col);
@@ -310,11 +311,11 @@ impl TextBuffer {
             }
         }
     }
-    
+
     /// Move cursor in the specified direction
     pub fn move_cursor(&mut self, direction: CursorDirection) {
         let (row, col) = self.cursor;
-        
+
         match direction {
             CursorDirection::Up => {
                 if row > 0 {
@@ -361,14 +362,14 @@ impl TextBuffer {
                 self.cursor = (new_row, new_col);
             }
         }
-        
+
         self.adjust_viewport();
     }
-    
+
     /// Adjust viewport to ensure cursor is visible
     fn adjust_viewport(&mut self) {
         let cursor_row = self.cursor.0;
-        
+
         // Adjust scroll offset to keep cursor visible
         if cursor_row < self.scroll_offset {
             self.scroll_offset = cursor_row;
@@ -376,12 +377,12 @@ impl TextBuffer {
             self.scroll_offset = cursor_row - self.viewport_height + 1;
         }
     }
-    
+
     /// Get the current cursor position
     pub fn get_cursor(&self) -> (usize, usize) {
         self.cursor
     }
-    
+
     /// Get a specific line
     pub fn get_line(&self, index: usize) -> Option<&str> {
         if index < self.line_count {
@@ -390,40 +391,40 @@ impl TextBuffer {
             None
         }
     }
-    
+
     /// Get the total number of lines
     pub fn line_count(&self) -> usize {
         self.line_count
     }
-    
+
     /// Check if the buffer has been modified
     pub fn is_modified(&self) -> bool {
         self.modified
     }
-    
+
     /// Mark the buffer as saved
     pub fn mark_saved(&mut self) {
         self.modified = false;
     }
-    
+
     /// Get the scroll offset
     pub fn get_scroll_offset(&self) -> usize {
         self.scroll_offset
     }
-    
+
     /// Set the viewport height
     pub fn set_viewport_height(&mut self, height: usize) {
         self.viewport_height = height;
         self.adjust_viewport();
     }
-    
+
     /// Get visible lines for the current viewport
     pub fn get_visible_lines(&self) -> &[LineBuffer] {
         let start = self.scroll_offset;
         let end = (start + self.viewport_height).min(self.line_count);
         &self.lines[start..end]
     }
-    
+
     /// Check if buffer is empty
     pub fn is_empty(&self) -> bool {
         self.line_count == 1 && self.lines[0].is_empty()

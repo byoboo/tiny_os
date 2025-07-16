@@ -11,17 +11,20 @@
 //! - `syscalls`: System call testing and analysis
 //! - `memory_faults`: Memory fault testing and analysis
 
-pub mod utils;
-pub mod stats;
-pub mod testing;
 pub mod esr;
-pub mod syscalls;
 pub mod memory_faults;
+pub mod stats;
+pub mod syscalls;
+pub mod testing;
+pub mod utils;
 
 // Re-export main command handlers for backwards compatibility
-pub use stats::{handle_exception_stats, display_detailed_stats};
-pub use testing::{handle_exception_test, handle_exception_test_advanced, test_exception_handlers, test_esr_decoder};
 pub use esr::handle_esr_test;
-pub use syscalls::handle_syscall_test;
 pub use memory_faults::handle_memory_fault_test;
+pub use stats::{display_detailed_stats, handle_exception_stats};
+pub use syscalls::handle_syscall_test;
+pub use testing::{
+    handle_exception_test, handle_exception_test_advanced, test_esr_decoder,
+    test_exception_handlers,
+};
 pub use utils::print_number;

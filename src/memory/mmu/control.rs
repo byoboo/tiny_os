@@ -3,8 +3,10 @@
 //! This module provides global MMU control functions including initialization,
 //! enable/disable operations, and address translation services.
 
-use crate::memory::layout::HEAP_END;
-use crate::memory::mmu::vmm::{VirtualMemoryManager, VirtualMemoryStats};
+use crate::memory::{
+    layout::HEAP_END,
+    mmu::vmm::{VirtualMemoryManager, VirtualMemoryStats},
+};
 
 /// Global virtual memory manager instance
 static mut VIRTUAL_MEMORY_MANAGER: Option<VirtualMemoryManager> = None;

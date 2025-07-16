@@ -122,7 +122,7 @@ pub extern "C" fn kernel_main() {
 
     // Week 3: Initialize VideoCore GPU integration
     uart.puts("Initializing Week 3 VideoCore GPU integration...\r\n");
-    
+
     // Initialize mailbox communication
     use tiny_os_lib::drivers::mailbox;
     match mailbox::init() {
@@ -133,7 +133,7 @@ pub extern "C" fn kernel_main() {
             uart.puts("\r\n");
         }
     }
-    
+
     // Initialize VideoCore GPU
     use tiny_os_lib::drivers::videocore;
     match videocore::init() {
@@ -150,7 +150,7 @@ pub extern "C" fn kernel_main() {
             uart.puts("\r\n");
         }
     }
-    
+
     // Initialize DMA controller
     use tiny_os_lib::drivers::dma;
     let mailbox = mailbox::get_mailbox();
@@ -173,7 +173,7 @@ pub extern "C" fn kernel_main() {
             uart.puts("\r\n");
         }
     }
-    
+
     // Initialize cache controller
     use tiny_os_lib::drivers::cache;
     cache::init(is_pi4_or_5);
@@ -182,7 +182,7 @@ pub extern "C" fn kernel_main() {
     uart.puts("📝 Cortex-A53 cache compatibility mode\r\n");
     #[cfg(not(feature = "raspi3"))]
     uart.puts("🚀 Cortex-A72/A76 cache optimizations enabled\r\n");
-    
+
     // Initialize optimization framework
     use tiny_os_lib::optimization;
     match optimization::init() {
@@ -193,7 +193,7 @@ pub extern "C" fn kernel_main() {
             uart.puts("\r\n");
         }
     }
-    
+
     // Initialize GPU benchmarks
     use tiny_os_lib::benchmarks::gpu_performance;
     match gpu_performance::init() {

@@ -1,6 +1,7 @@
 //! Input Processing
 //!
-//! Keyboard input handling for the text editor, optimized for responsive editing.
+//! Keyboard input handling for the text editor, optimized for responsive
+//! editing.
 
 use crate::apps::editor::buffer::CursorDirection;
 
@@ -53,7 +54,7 @@ impl InputHandler {
             sequence_pos: 0,
         }
     }
-    
+
     /// Process a single input byte and return the corresponding action
     pub fn process_input(&mut self, byte: u8) -> InputAction {
         match self.escape_state {
@@ -63,7 +64,7 @@ impl InputHandler {
             EscapeState::Sequence => self.process_sequence_input(byte),
         }
     }
-    
+
     /// Process normal character input
     fn process_normal_input(&mut self, byte: u8) -> InputAction {
         match byte {
@@ -115,16 +116,14 @@ impl InputHandler {
                 InputAction::None
             }
             // Regular printable characters
-            0x20..=0x7E => {
-                InputAction::Insert(byte as char)
-            }
+            0x20..=0x7E => InputAction::Insert(byte as char),
             _ => {
                 // Other control characters or invalid bytes
                 InputAction::None
             }
         }
     }
-    
+
     /// Process escape sequence start
     fn process_escape_input(&mut self, byte: u8) -> InputAction {
         match byte {
@@ -150,14 +149,14 @@ impl InputHandler {
             }
         }
     }
-    
+
     /// Process CSI sequence
     fn process_csi_input(&mut self, byte: u8) -> InputAction {
         if self.sequence_pos < self.sequence_buffer.len() - 1 {
             self.sequence_buffer[self.sequence_pos] = byte;
             self.sequence_pos += 1;
         }
-        
+
         // Check if this is the final byte of the sequence
         if byte >= 0x40 && byte <= 0x7E {
             let action = self.parse_csi_sequence();
@@ -168,28 +167,28 @@ impl InputHandler {
             InputAction::None
         }
     }
-    
+
     /// Process SS3 sequence
     fn process_sequence_input(&mut self, byte: u8) -> InputAction {
         if self.sequence_pos < self.sequence_buffer.len() - 1 {
             self.sequence_buffer[self.sequence_pos] = byte;
             self.sequence_pos += 1;
         }
-        
+
         let action = self.parse_ss3_sequence(byte);
         self.escape_state = EscapeState::Normal;
         self.sequence_pos = 0;
         action
     }
-    
+
     /// Parse CSI sequence and return appropriate action
     fn parse_csi_sequence(&self) -> InputAction {
         if self.sequence_pos < 2 {
             return InputAction::None;
         }
-        
+
         let final_byte = self.sequence_buffer[self.sequence_pos - 1];
-        
+
         match final_byte {
             b'A' => InputAction::MoveCursor(CursorDirection::Up),
             b'B' => InputAction::MoveCursor(CursorDirection::Down),
@@ -204,7 +203,7 @@ impl InputHandler {
             _ => InputAction::None,
         }
     }
-    
+
     /// Parse SS3 sequence (function keys)
     fn parse_ss3_sequence(&self, byte: u8) -> InputAction {
         match byte {
@@ -213,13 +212,13 @@ impl InputHandler {
             _ => InputAction::None,
         }
     }
-    
+
     /// Parse extended sequences (those ending with ~)
     fn parse_extended_sequence(&self) -> InputAction {
         if self.sequence_pos < 3 {
             return InputAction::None;
         }
-        
+
         // Look for numeric parameter
         let mut param = 0u8;
         for i in 1..self.sequence_pos - 1 {
@@ -230,7 +229,7 @@ impl InputHandler {
                 break;
             }
         }
-        
+
         match param {
             1 => InputAction::MoveCursor(CursorDirection::Home),
             2 => InputAction::None, // Insert key
@@ -241,7 +240,7 @@ impl InputHandler {
             _ => InputAction::None,
         }
     }
-    
+
     /// Reset the input handler state
     pub fn reset(&mut self) {
         self.escape_state = EscapeState::Normal;
@@ -250,7 +249,7 @@ impl InputHandler {
             self.sequence_buffer[i] = 0;
         }
     }
-    
+
     /// Check if currently processing an escape sequence
     pub fn is_in_sequence(&self) -> bool {
         self.escape_state != EscapeState::Normal
@@ -262,27 +261,27 @@ impl InputHandler {
     /// Process a string of input bytes
     pub fn process_string(&mut self, bytes: &[u8], actions: &mut [InputAction]) -> usize {
         let mut count = 0;
-        
+
         for &byte in bytes {
             if count >= actions.len() {
                 break;
             }
-            
+
             let action = self.process_input(byte);
             if !matches!(action, InputAction::None) {
                 actions[count] = action;
                 count += 1;
             }
         }
-        
+
         count
     }
-    
+
     /// Check if a byte is a printable ASCII character
     pub fn is_printable(byte: u8) -> bool {
         byte >= 0x20 && byte <= 0x7E
     }
-    
+
     /// Check if a byte is a control character
     pub fn is_control(byte: u8) -> bool {
         byte < 0x20 || byte == 0x7F
@@ -318,7 +317,7 @@ pub mod keys {
     pub const CTRL_X: u8 = 0x18;
     pub const CTRL_Y: u8 = 0x19;
     pub const CTRL_Z: u8 = 0x1A;
-    
+
     pub const ESC: u8 = 0x1B;
     pub const BACKSPACE: u8 = 0x08;
     pub const DELETE: u8 = 0x7F;

@@ -1,10 +1,9 @@
 //! Soft IRQ Module
 //!
-//! This module implements soft IRQ management for deferred interrupt processing,
-//! providing prioritized handling of interrupt bottom-halves.
+//! This module implements soft IRQ management for deferred interrupt
+//! processing, providing prioritized handling of interrupt bottom-halves.
 
-use super::work_item::WorkFunction;
-use super::work_queue::WorkQueue;
+use super::{work_item::WorkFunction, work_queue::WorkQueue};
 
 /// Soft IRQ types
 #[repr(u32)]

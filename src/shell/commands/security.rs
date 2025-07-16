@@ -28,7 +28,9 @@ pub fn cmd_security(args: &[&str], context: &mut ShellContext) {
         "benchmark" => run_security_comprehensive_benchmark(context),
         "help" => show_security_commands_help(context),
         _ => {
-            context.uart.puts("Unknown security command. Use 'security help' for options.\n");
+            context
+                .uart
+                .puts("Unknown security command. Use 'security help' for options.\n");
         }
     }
 }
@@ -47,7 +49,9 @@ pub fn cmd_security_security(args: &[&str], context: &mut ShellContext) {
         "threats" => show_threat_analysis(context),
         "help" => show_security_commands_help(context),
         _ => {
-            context.uart.puts("Unknown security command. Use 'security help' for options.\n");
+            context
+                .uart
+                .puts("Unknown security command. Use 'security help' for options.\n");
         }
     }
 }
@@ -66,7 +70,9 @@ pub fn cmd_security_realtime(args: &[&str], context: &mut ShellContext) {
         "latency" => test_latency(context),
         "help" => show_realtime_help(context),
         _ => {
-            context.uart.puts("Unknown real-time command. Use 'realtime help' for options.\n");
+            context
+                .uart
+                .puts("Unknown real-time command. Use 'realtime help' for options.\n");
         }
     }
 }
@@ -85,14 +91,18 @@ pub fn cmd_security_hardening(args: &[&str], context: &mut ShellContext) {
         "score" => show_security_score(context),
         "help" => show_hardening_help(context),
         _ => {
-            context.uart.puts("Unknown hardening command. Use 'hardening help' for options.\n");
+            context
+                .uart
+                .puts("Unknown hardening command. Use 'hardening help' for options.\n");
         }
     }
 }
 
 /// Show security overview
 fn show_security_overview(context: &mut ShellContext) {
-    context.uart.puts("\n=== Advanced Security & Real-time Overview ===\n");
+    context
+        .uart
+        .puts("\n=== Advanced Security & Real-time Overview ===\n");
     context.uart.puts("🔒 Security Features:\n");
     context.uart.puts("  • ARM TrustZone Integration\n");
     context.uart.puts("  • Secure Boot & Attestation\n");
@@ -105,7 +115,9 @@ fn show_security_overview(context: &mut ShellContext) {
     context.uart.puts("  • Low-latency Interrupt Handling\n");
     context.uart.puts("\n🛡️ System Hardening:\n");
     context.uart.puts("  • Stack Protection\n");
-    context.uart.puts("  • ASLR (Address Space Layout Randomization)\n");
+    context
+        .uart
+        .puts("  • ASLR (Address Space Layout Randomization)\n");
     context.uart.puts("  • Control Flow Integrity\n");
     context.uart.puts("  • Exploit Mitigation\n");
     context.uart.puts("\n📊 Overall Security Score: 95%\n");
@@ -114,7 +126,9 @@ fn show_security_overview(context: &mut ShellContext) {
 
 /// Show detailed capabilities
 fn show_security_capabilities_detailed(context: &mut ShellContext) {
-    context.uart.puts("\n=== Security Detailed Capabilities ===\n");
+    context
+        .uart
+        .puts("\n=== Security Detailed Capabilities ===\n");
     context.uart.puts("Security Features Available: 12\n");
     context.uart.puts("• TrustZone Support: ✅ Available\n");
     context.uart.puts("• Secure Boot: ✅ Available\n");
@@ -134,7 +148,9 @@ fn show_security_status(context: &mut ShellContext) {
 
 /// Show real-time metrics
 fn show_realtime_metrics(context: &mut ShellContext) {
-    context.uart.puts("\n=== Real-time Performance Metrics ===\n");
+    context
+        .uart
+        .puts("\n=== Real-time Performance Metrics ===\n");
     context.uart.puts("Average Latency: 12 μs\n");
     context.uart.puts("Maximum Latency: 18 μs\n");
     context.uart.puts("Context Switch Time: 8 μs\n");
@@ -155,38 +171,60 @@ fn show_hardening_status(context: &mut ShellContext) {
 
 /// Run comprehensive benchmark
 fn run_security_comprehensive_benchmark(context: &mut ShellContext) {
-    context.uart.puts("\n=== Security & RT Comprehensive Benchmark ===\n");
-    
+    context
+        .uart
+        .puts("\n=== Security & RT Comprehensive Benchmark ===\n");
+
     context.uart.puts("🔒 Security Performance Tests:\n");
     context.uart.puts("  TrustZone Context Switch: 15 μs ✅\n");
-    context.uart.puts("  Security Scan Speed: 850 checks/sec ✅\n");
-    context.uart.puts("  Cryptographic Operations: 120 ops/sec ✅\n");
-    
+    context
+        .uart
+        .puts("  Security Scan Speed: 850 checks/sec ✅\n");
+    context
+        .uart
+        .puts("  Cryptographic Operations: 120 ops/sec ✅\n");
+
     context.uart.puts("\n⚡ Real-time Performance Tests:\n");
     context.uart.puts("  Interrupt Latency: 12 μs ✅\n");
     context.uart.puts("  Task Switch Time: 8 μs ✅\n");
     context.uart.puts("  Deadline Miss Rate: 0.001% ✅\n");
-    
+
     context.uart.puts("\n🛡️ Hardening Effectiveness:\n");
     context.uart.puts("  Buffer Overflow Protection: 100% ✅\n");
     context.uart.puts("  ROP/JOP Mitigation: 98% ✅\n");
     context.uart.puts("  Address Space Randomization: 99% ✅\n");
-    
+
     context.uart.puts("\n📊 Integration Assessment:\n");
-    context.uart.puts("  System Security Posture: Enterprise Grade ✅\n");
-    context.uart.puts("  Real-time Guarantees: Mission Critical ✅\n");
+    context
+        .uart
+        .puts("  System Security Posture: Enterprise Grade ✅\n");
+    context
+        .uart
+        .puts("  Real-time Guarantees: Mission Critical ✅\n");
     context.uart.puts("  Production Readiness: ✅ CERTIFIED\n");
 }
 
 // Help functions
 fn show_security_help(context: &mut ShellContext) {
     context.uart.puts("\nSecurity & Real-time Commands:\n");
-    context.uart.puts("  overview     - Show feature overview\n");
-    context.uart.puts("  security     - Security management commands\n");
-    context.uart.puts("  realtime/rt  - Real-time scheduling commands\n");
-    context.uart.puts("  hardening    - System hardening commands\n");
-    context.uart.puts("  capabilities - Show detailed capabilities\n");
-    context.uart.puts("  benchmark    - Run comprehensive benchmark\n");
+    context
+        .uart
+        .puts("  overview     - Show feature overview\n");
+    context
+        .uart
+        .puts("  security     - Security management commands\n");
+    context
+        .uart
+        .puts("  realtime/rt  - Real-time scheduling commands\n");
+    context
+        .uart
+        .puts("  hardening    - System hardening commands\n");
+    context
+        .uart
+        .puts("  capabilities - Show detailed capabilities\n");
+    context
+        .uart
+        .puts("  benchmark    - Run comprehensive benchmark\n");
     context.uart.puts("  help         - Show this help\n");
 }
 
@@ -202,7 +240,9 @@ fn show_security_commands_help(context: &mut ShellContext) {
 fn show_realtime_help(context: &mut ShellContext) {
     context.uart.puts("\nReal-time Commands:\n");
     context.uart.puts("  status     - Show scheduler status\n");
-    context.uart.puts("  metrics    - Show performance metrics\n");
+    context
+        .uart
+        .puts("  metrics    - Show performance metrics\n");
     context.uart.puts("  schedule   - Schedule RT task\n");
     context.uart.puts("  latency    - Test interrupt latency\n");
     context.uart.puts("  help       - Show this help\n");
@@ -211,15 +251,21 @@ fn show_realtime_help(context: &mut ShellContext) {
 fn show_hardening_help(context: &mut ShellContext) {
     context.uart.puts("\nHardening Commands:\n");
     context.uart.puts("  status     - Show hardening status\n");
-    context.uart.puts("  enable     - Enable hardening features\n");
-    context.uart.puts("  test       - Test exploit mitigation\n");
+    context
+        .uart
+        .puts("  enable     - Enable hardening features\n");
+    context
+        .uart
+        .puts("  test       - Test exploit mitigation\n");
     context.uart.puts("  score      - Show security score\n");
     context.uart.puts("  help       - Show this help\n");
 }
 
 // Simple implementations
 fn run_security_scan(context: &mut ShellContext) {
-    context.uart.puts("Running comprehensive security scan...\n");
+    context
+        .uart
+        .puts("Running comprehensive security scan...\n");
     context.uart.puts("Vulnerabilities found: 0 ✅\n");
     context.uart.puts("Security score: 95% ✅\n");
     context.uart.puts("Recommendations: System secure\n");

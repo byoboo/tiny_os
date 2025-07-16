@@ -1,5 +1,5 @@
 //! Power Management Controller
-//! 
+//!
 //! Power management and optimization
 //! Extracted from Week 4 implementation
 
@@ -37,8 +37,8 @@ impl PowerController {
     pub fn new() -> Self {
         Self {
             config: PowerConfig::default(),
-            cpu_frequency_mhz: 1500, // Default Pi 4 frequency
-            gpu_power_state: 100,    // Full power
+            cpu_frequency_mhz: 1500,    // Default Pi 4 frequency
+            gpu_power_state: 100,       // Full power
             power_consumption_mw: 5000, // ~5W baseline
         }
     }
@@ -54,7 +54,7 @@ impl PowerController {
         if frequency_mhz > 2000 {
             return Err(PerformanceError::InvalidConfiguration);
         }
-        
+
         self.cpu_frequency_mhz = frequency_mhz;
         Ok(())
     }
@@ -64,7 +64,7 @@ impl PowerController {
         if power_percent > 100 {
             return Err(PerformanceError::InvalidConfiguration);
         }
-        
+
         self.gpu_power_state = power_percent;
         Ok(())
     }

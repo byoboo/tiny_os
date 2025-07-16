@@ -1,14 +1,16 @@
 //! No-std Tests for Security Module
-//! 
+//!
 //! Tests that work in the embedded no_std environment
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::security::{SecurityError, SecurityMetrics, RealTimeMetrics};
-    use crate::drivers::security::trustzone::{TrustZoneController, SecurityLevel};
-    use crate::drivers::security::realtime::{RealTimeScheduler, RtPriority, RtTask};
-    use crate::drivers::security::hardening::{HardeningController, HardeningLevel};
+    use crate::drivers::security::{
+        hardening::{HardeningController, HardeningLevel},
+        realtime::{RealTimeScheduler, RtPriority, RtTask},
+        trustzone::{SecurityLevel, TrustZoneController},
+        RealTimeMetrics, SecurityError, SecurityMetrics,
+    };
 
     #[test]
     fn test_trustzone_controller_creation() {
@@ -19,12 +21,20 @@ mod tests {
     #[test]
     fn test_security_level_transitions() {
         let mut controller = TrustZoneController::new();
-        
+
         // Test upgrading from Development
-        controller.set_security_level(SecurityLevel::Development).unwrap();
-        assert!(controller.set_security_level(SecurityLevel::Production).is_ok());
-        assert!(controller.set_security_level(SecurityLevel::Critical).is_ok());
-        assert!(controller.set_security_level(SecurityLevel::Maximum).is_ok());
+        controller
+            .set_security_level(SecurityLevel::Development)
+            .unwrap();
+        assert!(controller
+            .set_security_level(SecurityLevel::Production)
+            .is_ok());
+        assert!(controller
+            .set_security_level(SecurityLevel::Critical)
+            .is_ok());
+        assert!(controller
+            .set_security_level(SecurityLevel::Maximum)
+            .is_ok());
     }
 
     #[test]
@@ -61,22 +71,28 @@ mod tests {
     #[test]
     fn test_hardening_level_settings() {
         let mut controller = HardeningController::new();
-        
+
         // Test setting different hardening levels
-        assert!(controller.set_hardening_level(HardeningLevel::Basic).is_ok());
+        assert!(controller
+            .set_hardening_level(HardeningLevel::Basic)
+            .is_ok());
         assert_eq!(controller.get_hardening_level(), HardeningLevel::Basic);
-        
-        assert!(controller.set_hardening_level(HardeningLevel::Enhanced).is_ok());
+
+        assert!(controller
+            .set_hardening_level(HardeningLevel::Enhanced)
+            .is_ok());
         assert_eq!(controller.get_hardening_level(), HardeningLevel::Enhanced);
-        
-        assert!(controller.set_hardening_level(HardeningLevel::Maximum).is_ok());
+
+        assert!(controller
+            .set_hardening_level(HardeningLevel::Maximum)
+            .is_ok());
         assert_eq!(controller.get_hardening_level(), HardeningLevel::Maximum);
     }
 
     #[test]
     fn test_hardening_mitigations() {
         let mut controller = HardeningController::new();
-        
+
         // Test default mitigations
         let mitigations = controller.get_mitigations();
         assert!(mitigations.stack_protection);
@@ -89,17 +105,17 @@ mod tests {
     #[test]
     fn test_stack_overflow_detection() {
         let mut controller = HardeningController::new();
-        
+
         // Test normal stack usage
         let stack_base = 0x1000;
         let stack_size = 0x1000;
         let normal_sp = stack_base + 0x500;
         assert!(!controller.check_stack_overflow(normal_sp, stack_base, stack_size));
-        
+
         // Test stack overflow
         let overflow_sp = stack_base - 1;
         assert!(controller.check_stack_overflow(overflow_sp, stack_base, stack_size));
-        
+
         // Test stack underflow
         let underflow_sp = stack_base + stack_size + 1;
         assert!(controller.check_stack_overflow(underflow_sp, stack_base, stack_size));
@@ -108,12 +124,12 @@ mod tests {
     #[test]
     fn test_control_flow_integrity() {
         let mut controller = HardeningController::new();
-        
+
         // Test valid control flow
         let return_addr = 0x8000;
         let expected_addr = 0x8000;
         assert!(controller.validate_control_flow(return_addr, expected_addr));
-        
+
         // Test invalid control flow
         let invalid_addr = 0x9000;
         assert!(!controller.validate_control_flow(invalid_addr, expected_addr));
@@ -122,11 +138,11 @@ mod tests {
     #[test]
     fn test_stack_canary_validation() {
         let mut controller = HardeningController::new();
-        
+
         // Test valid canary
         let canary = 0xDEADBEEF;
         assert!(controller.check_stack_canary(canary, canary));
-        
+
         // Test corrupted canary
         let corrupted = 0xCAFEBABE;
         assert!(!controller.check_stack_canary(corrupted, canary));
@@ -155,7 +171,7 @@ mod tests {
     #[test]
     fn test_hardening_assessment() {
         let mut controller = HardeningController::new();
-        
+
         // Test assessment scoring
         let score = controller.assess_hardening().unwrap();
         assert!(score > 0);
@@ -165,19 +181,19 @@ mod tests {
     #[test]
     fn test_realtime_task_management() {
         let mut scheduler = RealTimeScheduler::new();
-        
+
         // Test adding tasks
         let task1 = RtTask::new(1, RtPriority::RealTime, 1000, 2000);
         let task2 = RtTask::new(2, RtPriority::HighPriority, 2000, 4000);
-        
+
         assert!(scheduler.add_task(task1).is_ok());
         assert!(scheduler.add_task(task2).is_ok());
-        
+
         // Test task retrieval
         assert!(scheduler.get_task(1).is_some());
         assert!(scheduler.get_task(2).is_some());
         assert!(scheduler.get_task(999).is_none());
-        
+
         // Test task removal
         assert!(scheduler.remove_task(1).is_ok());
         assert!(scheduler.get_task(1).is_none());
@@ -186,14 +202,14 @@ mod tests {
     #[test]
     fn test_schedulability_analysis() {
         let mut scheduler = RealTimeScheduler::new();
-        
+
         // Add schedulable tasks (total utilization < 1.0)
         let task1 = RtTask::new(1, RtPriority::RealTime, 100, 1000); // 10% utilization
         let task2 = RtTask::new(2, RtPriority::HighPriority, 200, 2000); // 10% utilization
-        
+
         scheduler.add_task(task1).unwrap();
         scheduler.add_task(task2).unwrap();
-        
+
         // System should be schedulable
         assert!(scheduler.analyze_schedulability().unwrap());
     }

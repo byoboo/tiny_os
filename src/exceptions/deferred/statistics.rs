@@ -1,7 +1,7 @@
 //! Statistics Module
 //!
-//! This module provides comprehensive statistics tracking for deferred processing,
-//! including performance metrics and processing counts.
+//! This module provides comprehensive statistics tracking for deferred
+//! processing, including performance metrics and processing counts.
 
 /// Deferred processing statistics
 #[derive(Debug, Clone, Copy)]

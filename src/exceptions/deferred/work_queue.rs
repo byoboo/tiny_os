@@ -1,9 +1,9 @@
 //! Work Queue Module
 //!
-//! This module implements work queue management for deferred interrupt processing,
-//! providing efficient queuing and processing of work items.
+//! This module implements work queue management for deferred interrupt
+//! processing, providing efficient queuing and processing of work items.
 
-use super::work_item::{WorkItem, WorkFunction, MAX_WORK_ITEMS};
+use super::work_item::{WorkFunction, WorkItem, MAX_WORK_ITEMS};
 
 /// Work queue statistics
 #[derive(Debug, Clone, Copy)]

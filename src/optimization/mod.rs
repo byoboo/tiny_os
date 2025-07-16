@@ -1,12 +1,12 @@
 //! Hardware Optimization Framework
-//! 
+//!
 //! Coordination layer for Pi-specific hardware optimizations including
 //! GPU offload, memory pattern optimization, and cache tuning.
 
 pub mod gpu_offload;
 pub mod memory_patterns;
 
-use crate::drivers::{videocore, dma, mailbox};
+use crate::drivers::{dma, mailbox, videocore};
 
 /// Optimization context for hardware-specific tuning
 pub struct OptimizationContext {
@@ -27,7 +27,7 @@ impl OptimizationContext {
     pub fn from_hardware() -> Self {
         let gpu = videocore::get_gpu();
         let dma = dma::get_dma_controller();
-        
+
         if let Some(caps) = gpu.get_capabilities() {
             Self {
                 pi_model: caps.pi_model,
@@ -46,7 +46,7 @@ impl OptimizationContext {
             }
         }
     }
-    
+
     /// Get recommended memory transfer method
     pub fn get_memory_transfer_method(&self, size: u32) -> MemoryTransferMethod {
         if self.dma_available && size >= self.get_dma_threshold() {
@@ -57,7 +57,7 @@ impl OptimizationContext {
             MemoryTransferMethod::Cpu
         }
     }
-    
+
     /// Get DMA threshold based on Pi model
     fn get_dma_threshold(&self) -> u32 {
         if self.has_advanced_features {
@@ -66,13 +66,13 @@ impl OptimizationContext {
             4096 // Pi 3: Higher threshold
         }
     }
-    
+
     /// Check if GPU memory operations are beneficial
     fn should_use_gpu_memory(&self, size: u32) -> bool {
         if !self.gpu_available {
             return false;
         }
-        
+
         if self.has_advanced_features {
             size > 2048 // Pi 4/5: More aggressive GPU usage
         } else {
@@ -93,12 +93,12 @@ pub enum MemoryTransferMethod {
 pub fn init() -> Result<(), &'static str> {
     // Initialize GPU and DMA systems
     videocore::init()?;
-    
+
     // Detect Pi model for DMA initialization
     let mailbox = mailbox::get_mailbox();
     let is_pi4_or_5 = mailbox.is_pi4_or_5();
     dma::init(is_pi4_or_5)?;
-    
+
     Ok(())
 }
 

@@ -1,10 +1,11 @@
 //! ARM TrustZone Security Controller
-//! 
+//!
 //! TrustZone management for secure/non-secure world isolation
 //! Extracted from week6_security.rs
 
-use super::{SecurityError, SecurityMetrics};
 use core::ptr::{read_volatile, write_volatile};
+
+use super::{SecurityError, SecurityMetrics};
 
 /// ARM TrustZone Base Address
 const TRUSTZONE_BASE: usize = 0xFF800000;
@@ -60,22 +61,22 @@ impl TrustZoneController {
             // Check if TrustZone is available
             let tz_control = self.trustzone_base + 0x00;
             let tz_status = read_volatile(tz_control as *const u32);
-            
+
             if tz_status & 0x1 != 0 {
                 // TrustZone available, configure secure/non-secure world
                 write_volatile(tz_control as *mut u32, 0x0000_0003); // Enable secure monitor
-                
+
                 // Configure Non-Secure Controller Access
                 let ns_access = self.trustzone_base + 0x54;
                 write_volatile(ns_access as *mut u32, 0x0000_FFFF); // Allow NS access to most peripherals
-                
+
                 // Initialize secure world services
                 self.init_secure_services()?;
-                
+
                 return Ok(());
             }
         }
-        
+
         // TrustZone not available, continue with basic security
         Err(SecurityError::TrustZoneNotAvailable)
     }
@@ -92,16 +93,16 @@ impl TrustZoneController {
         if self.current_world == TrustZoneWorld::Secure {
             return Ok(());
         }
-        
+
         unsafe {
             // Issue SMC call to switch to secure world
             let smc_command = self.smc_base + 0x00;
             write_volatile(smc_command as *mut u32, 0x8000_0001); // SMC switch command
-            
+
             self.current_world = TrustZoneWorld::Secure;
             self.metrics.trustzone_switches += 1;
         }
-        
+
         Ok(())
     }
 
@@ -110,16 +111,16 @@ impl TrustZoneController {
         if self.current_world == TrustZoneWorld::NonSecure {
             return Ok(());
         }
-        
+
         unsafe {
             // Issue SMC call to switch to non-secure world
             let smc_command = self.smc_base + 0x00;
             write_volatile(smc_command as *mut u32, 0x8000_0002); // SMC switch command
-            
+
             self.current_world = TrustZoneWorld::NonSecure;
             self.metrics.trustzone_switches += 1;
         }
-        
+
         Ok(())
     }
 
@@ -160,14 +161,14 @@ impl TrustZoneController {
     pub fn run_security_scan(&mut self) -> Result<u8, SecurityError> {
         // Placeholder for security scanning
         // Would check for vulnerabilities, misconfigurations, etc.
-        
+
         let mut score = 100u8;
-        
+
         // Check TrustZone configuration
         if self.current_world == TrustZoneWorld::NonSecure {
             score -= 10;
         }
-        
+
         // Check security level
         match self.security_level {
             SecurityLevel::Development => score -= 30,
@@ -175,7 +176,7 @@ impl TrustZoneController {
             SecurityLevel::Critical => score -= 5,
             SecurityLevel::Maximum => {} // No deduction
         }
-        
+
         self.metrics.security_score = score;
         Ok(score)
     }
@@ -185,7 +186,7 @@ impl TrustZoneController {
         if self.current_world != TrustZoneWorld::Secure {
             return Err(SecurityError::PermissionDenied);
         }
-        
+
         // Placeholder for secure boot enablement
         self.secure_boot_enabled = true;
         Ok(())

@@ -4,6 +4,7 @@
 //! including page registration, fault handling, and memory allocation.
 
 use core::ptr::{read_volatile, write_volatile};
+
 use spin::Mutex;
 
 use crate::memory::{

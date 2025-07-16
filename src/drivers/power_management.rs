@@ -2,9 +2,9 @@
 // Week 4 Implementation: Intelligent power control with GPU integration
 // Building on Week 3 VideoCore and optimization infrastructure
 
-use crate::drivers::pcie::get_pcie_controller;
-use crate::benchmarks::timing::get_cycles;
 use core::ptr::{read_volatile, write_volatile};
+
+use crate::{benchmarks::timing::get_cycles, drivers::pcie::get_pcie_controller};
 
 /// ARM System Control Base Address
 const ARM_CONTROL_BASE: usize = 0xFF800000;
@@ -15,16 +15,16 @@ mod pm_registers {
     pub const PM_RSTS: usize = 0x20;
     pub const PM_WDOG: usize = 0x24;
     pub const PM_PADS: usize = 0x2C;
-    
+
     // CPU Frequency Control
     pub const ARM_FREQ_BASE: usize = 0xFD500000;
     pub const ARM_FREQ_CONTROL: usize = 0x1000;
     pub const ARM_FREQ_STATUS: usize = 0x1004;
-    
+
     // GPU Power Control
     pub const GPU_POWER_CONTROL: usize = 0x1008;
     pub const GPU_POWER_STATUS: usize = 0x100C;
-    
+
     // Peripheral Power Gates
     pub const PERIPHERAL_POWER_GATE: usize = 0x1010;
     pub const PERIPHERAL_POWER_STATUS: usize = 0x1014;
@@ -186,12 +186,13 @@ impl PowerController {
     /// Initialize power management with Week 3/4 integration
     pub fn init(&mut self, config: PowerConfig) -> Result<(), PowerError> {
         self.config = config;
-        
+
         // Check for Week 3 VideoCore integration
-        if true { // Placeholder - VideoCore integration available
+        if true {
+            // Placeholder - VideoCore integration available
             self.gpu_integration_enabled = true;
         }
-        
+
         // Check for Week 4 PCIe integration
         if get_pcie_controller().is_some() {
             self.pcie_integration_enabled = true;
@@ -199,15 +200,15 @@ impl PowerController {
 
         // Initialize power management hardware
         self.init_cpu_frequency_control()?;
-        
+
         if self.config.enable_gpu_power_control && self.gpu_integration_enabled {
             self.init_gpu_power_control()?;
         }
-        
+
         if self.config.enable_peripheral_gating {
             self.init_peripheral_power_control()?;
         }
-        
+
         if self.config.enable_thermal_management {
             self.init_thermal_monitoring()?;
         }
@@ -225,17 +226,17 @@ impl PowerController {
             // Enable CPU frequency control
             let freq_control = pm_registers::ARM_FREQ_BASE + pm_registers::ARM_FREQ_CONTROL;
             write_volatile(freq_control as *mut u32, 0x5A000001); // Magic + Enable
-            
+
             // Set initial frequency based on performance bias
             let initial_freq = match self.config.performance_bias {
                 PowerBias::PowerSaver => CpuFrequency::Low,
                 PowerBias::Balanced => CpuFrequency::Medium,
                 PowerBias::Performance => CpuFrequency::High,
             };
-            
+
             self.set_cpu_frequency(initial_freq)?;
         }
-        
+
         Ok(())
     }
 
@@ -249,17 +250,17 @@ impl PowerController {
             // Enable GPU power management
             let gpu_control = pm_registers::ARM_FREQ_BASE + pm_registers::GPU_POWER_CONTROL;
             write_volatile(gpu_control as *mut u32, 0x5A000001);
-            
+
             // Set initial GPU state
             let initial_state = match self.config.performance_bias {
                 PowerBias::PowerSaver => GpuPowerState::Idle,
                 PowerBias::Balanced => GpuPowerState::Reduced,
                 PowerBias::Performance => GpuPowerState::Full,
             };
-            
+
             self.set_gpu_power_state(initial_state)?;
         }
-        
+
         Ok(())
     }
 
@@ -269,18 +270,18 @@ impl PowerController {
             // Enable peripheral power gating
             let periph_control = pm_registers::ARM_FREQ_BASE + pm_registers::PERIPHERAL_POWER_GATE;
             write_volatile(periph_control as *mut u32, 0x5A000001);
-            
+
             // Start with essential peripherals only
-            let essential_peripherals = PeripheralPower::USB3Controller as u32 |
-                                       PeripheralPower::EthernetController as u32;
-            
+            let essential_peripherals =
+                PeripheralPower::USB3Controller as u32 | PeripheralPower::EthernetController as u32;
+
             if self.pcie_integration_enabled {
                 self.enable_peripheral(PeripheralPower::PcieController)?;
             }
-            
+
             self.metrics.active_peripherals = essential_peripherals;
         }
-        
+
         Ok(())
     }
 
@@ -296,34 +297,36 @@ impl PowerController {
     pub fn set_cpu_frequency(&mut self, frequency: CpuFrequency) -> Result<(), PowerError> {
         let freq_hz = frequency as u32;
         let timeout_cycles = get_cycles() + 100000; // 100k cycle timeout
-        
+
         unsafe {
             // Write frequency request
             let freq_control = pm_registers::ARM_FREQ_BASE + pm_registers::ARM_FREQ_CONTROL;
             let freq_value = 0x5A000000 | ((freq_hz / 1000000) & 0xFFFF); // Magic + MHz
             write_volatile(freq_control as *mut u32, freq_value);
-            
+
             // Wait for frequency change
             loop {
-                let status = read_volatile((pm_registers::ARM_FREQ_BASE + pm_registers::ARM_FREQ_STATUS) as *const u32);
+                let status = read_volatile(
+                    (pm_registers::ARM_FREQ_BASE + pm_registers::ARM_FREQ_STATUS) as *const u32,
+                );
                 if (status & 0xFFFF) == (freq_hz / 1000000) {
                     break;
                 }
-                
+
                 if get_cycles() > timeout_cycles {
                     return Err(PowerError::FrequencyChangeTimeout);
                 }
-                
+
                 core::hint::spin_loop();
             }
         }
-        
+
         self.metrics.current_cpu_freq_hz = freq_hz;
         self.metrics.frequency_changes += 1;
-        
+
         // Update power consumption estimate
         self.update_power_consumption();
-        
+
         Ok(())
     }
 
@@ -341,28 +344,30 @@ impl PowerController {
                 GpuPowerState::Reduced => 0x5A000002,
                 GpuPowerState::Full => 0x5A000003,
             };
-            
+
             write_volatile(gpu_control as *mut u32, power_value);
-            
+
             // Wait for state change
             let timeout_cycles = get_cycles() + 50000;
             loop {
-                let status = read_volatile((pm_registers::ARM_FREQ_BASE + pm_registers::GPU_POWER_STATUS) as *const u32);
+                let status = read_volatile(
+                    (pm_registers::ARM_FREQ_BASE + pm_registers::GPU_POWER_STATUS) as *const u32,
+                );
                 if (status & 0x0F) == (power_value & 0x0F) {
                     break;
                 }
-                
+
                 if get_cycles() > timeout_cycles {
                     return Err(PowerError::GpuPowerControlFailed);
                 }
-                
+
                 core::hint::spin_loop();
             }
         }
-        
+
         self.metrics.current_gpu_state = state;
         self.update_power_consumption();
-        
+
         Ok(())
     }
 
@@ -374,10 +379,10 @@ impl PowerController {
             let new_gates = current_gates | (peripheral as u32);
             write_volatile(periph_gate as *mut u32, 0x5A000000 | new_gates);
         }
-        
+
         self.metrics.active_peripherals |= peripheral as u32;
         self.update_power_consumption();
-        
+
         Ok(())
     }
 
@@ -389,10 +394,10 @@ impl PowerController {
             let new_gates = current_gates & !(peripheral as u32);
             write_volatile(periph_gate as *mut u32, 0x5A000000 | new_gates);
         }
-        
+
         self.metrics.active_peripherals &= !(peripheral as u32);
         self.update_power_consumption();
-        
+
         Ok(())
     }
 
@@ -400,7 +405,7 @@ impl PowerController {
     fn update_temperature(&mut self) -> Result<(), PowerError> {
         // Simplified temperature reading
         // In reality, this would read from the thermal sensor
-        
+
         // Estimate temperature based on CPU frequency and load
         let base_temp = 45;
         let freq_factor = (self.metrics.current_cpu_freq_hz / 100_000_000) as i32;
@@ -410,9 +415,9 @@ impl PowerController {
             GpuPowerState::Reduced => 5,
             GpuPowerState::Full => 10,
         };
-        
+
         self.metrics.temperature_celsius = base_temp + freq_factor + gpu_factor;
-        
+
         // Update thermal state
         self.metrics.thermal_state = match self.metrics.temperature_celsius {
             temp if temp < 60 => ThermalState::Normal,
@@ -420,7 +425,7 @@ impl PowerController {
             temp if temp < 80 => ThermalState::Hot,
             _ => ThermalState::Critical,
         };
-        
+
         Ok(())
     }
 
@@ -431,45 +436,51 @@ impl PowerController {
         }
 
         self.update_temperature()?;
-        
+
         match self.metrics.thermal_state {
             ThermalState::Normal => {
                 // No action needed
-            },
+            }
             ThermalState::Warm => {
                 // Slight frequency reduction
                 if self.metrics.current_cpu_freq_hz > CpuFrequency::Medium as u32 {
                     self.set_cpu_frequency(CpuFrequency::Medium)?;
                     self.metrics.throttling_events += 1;
                 }
-            },
+            }
             ThermalState::Hot => {
                 // Moderate throttling
                 if self.metrics.current_cpu_freq_hz > CpuFrequency::Low as u32 {
                     self.set_cpu_frequency(CpuFrequency::Low)?;
                     self.metrics.throttling_events += 1;
                 }
-                
-                if self.gpu_integration_enabled && self.metrics.current_gpu_state == GpuPowerState::Full {
+
+                if self.gpu_integration_enabled
+                    && self.metrics.current_gpu_state == GpuPowerState::Full
+                {
                     self.set_gpu_power_state(GpuPowerState::Reduced)?;
                 }
-            },
+            }
             ThermalState::Critical => {
                 // Aggressive throttling
                 self.set_cpu_frequency(CpuFrequency::Min)?;
                 self.metrics.throttling_events += 1;
-                
+
                 if self.gpu_integration_enabled {
                     self.set_gpu_power_state(GpuPowerState::Idle)?;
                 }
-            },
+            }
         }
-        
+
         Ok(())
     }
 
     /// Intelligent workload-based power scaling
-    pub fn intelligent_scaling(&mut self, cpu_load_percent: u32, gpu_active: bool) -> Result<(), PowerError> {
+    pub fn intelligent_scaling(
+        &mut self,
+        cpu_load_percent: u32,
+        gpu_active: bool,
+    ) -> Result<(), PowerError> {
         if !self.config.enable_cpu_scaling {
             return Ok(());
         }
@@ -480,12 +491,12 @@ impl PowerController {
             (load, PowerBias::PowerSaver) if load < 50 => CpuFrequency::Low,
             (load, PowerBias::PowerSaver) if load < 75 => CpuFrequency::Medium,
             (_, PowerBias::PowerSaver) => CpuFrequency::High,
-            
+
             (load, PowerBias::Balanced) if load < 20 => CpuFrequency::Low,
             (load, PowerBias::Balanced) if load < 40 => CpuFrequency::Medium,
             (load, PowerBias::Balanced) if load < 70 => CpuFrequency::High,
             (_, PowerBias::Balanced) => CpuFrequency::Max,
-            
+
             (load, PowerBias::Performance) if load < 30 => CpuFrequency::Medium,
             (load, PowerBias::Performance) if load < 60 => CpuFrequency::High,
             (_, PowerBias::Performance) => CpuFrequency::Max,
@@ -494,7 +505,7 @@ impl PowerController {
         // Only change frequency if significantly different
         let current_freq_mhz = self.metrics.current_cpu_freq_hz / 1_000_000;
         let target_freq_mhz = target_freq as u32 / 1_000_000;
-        
+
         if (current_freq_mhz as i32 - target_freq_mhz as i32).abs() > 200 {
             self.set_cpu_frequency(target_freq)?;
         }
@@ -510,7 +521,7 @@ impl PowerController {
             } else {
                 GpuPowerState::Idle
             };
-            
+
             if target_gpu_state != self.metrics.current_gpu_state {
                 self.set_gpu_power_state(target_gpu_state)?;
             }
@@ -522,7 +533,7 @@ impl PowerController {
     /// Update power consumption estimate
     fn update_power_consumption(&mut self) {
         let mut power_mw = 1000; // Base system power
-        
+
         // CPU power based on frequency
         let cpu_power = match self.metrics.current_cpu_freq_hz {
             freq if freq <= CpuFrequency::Min as u32 => 800,
@@ -532,7 +543,7 @@ impl PowerController {
             _ => 4000,
         };
         power_mw += cpu_power;
-        
+
         // GPU power
         let gpu_power = match self.metrics.current_gpu_state {
             GpuPowerState::Off => 0,
@@ -541,13 +552,13 @@ impl PowerController {
             GpuPowerState::Full => 1500,
         };
         power_mw += gpu_power;
-        
+
         // Peripheral power
         let peripheral_count = self.metrics.active_peripherals.count_ones();
         power_mw += peripheral_count * 300; // 300mW per active peripheral
-        
+
         self.metrics.power_consumption_mw = power_mw;
-        
+
         // Calculate power savings
         if self.baseline_power_mw > 0 {
             let savings = if power_mw < self.baseline_power_mw {

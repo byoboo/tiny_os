@@ -14,23 +14,23 @@ pub fn write_number_to_buffer(mut num: u64, buffer: &mut [u8]) -> usize {
 
     let mut digits = 0;
     let mut temp = num;
-    
+
     // Count digits
     while temp > 0 {
         digits += 1;
         temp /= 10;
     }
-    
+
     if digits > buffer.len() {
         return 0; // Buffer too small
     }
-    
+
     // Fill buffer from right to left
     for i in (0..digits).rev() {
         buffer[i] = b'0' + (num % 10) as u8;
         num /= 10;
     }
-    
+
     digits
 }
 
@@ -49,20 +49,20 @@ pub fn write_hex_to_buffer(mut num: u64, buffer: &mut [u8]) -> usize {
 
     let mut digits = 0;
     let mut temp = num;
-    
+
     // Count hex digits
     while temp > 0 {
         digits += 1;
         temp /= 16;
     }
-    
+
     if digits + 2 > buffer.len() {
         return 0; // Buffer too small
     }
-    
+
     buffer[0] = b'0';
     buffer[1] = b'x';
-    
+
     // Fill buffer from right to left
     for i in (2..digits + 2).rev() {
         let digit = (num % 16) as u8;
@@ -73,40 +73,55 @@ pub fn write_hex_to_buffer(mut num: u64, buffer: &mut [u8]) -> usize {
         };
         num /= 16;
     }
-    
+
     digits + 2
 }
 
 /// Helper to write a number and string to UART
-pub fn write_number_with_text(context: &mut crate::shell::ShellContext, prefix: &str, number: u64, suffix: &str) {
+pub fn write_number_with_text(
+    context: &mut crate::shell::ShellContext,
+    prefix: &str,
+    number: u64,
+    suffix: &str,
+) {
     context.uart.puts(prefix);
-    
+
     let mut buffer = [0u8; 32];
     let len = write_number_to_buffer(number, &mut buffer);
-    
+
     for i in 0..len {
         context.uart.putc(buffer[i]);
     }
-    
+
     context.uart.puts(suffix);
 }
 
 /// Helper to write a hex number and string to UART
-pub fn write_hex_with_text(context: &mut crate::shell::ShellContext, prefix: &str, number: u64, suffix: &str) {
+pub fn write_hex_with_text(
+    context: &mut crate::shell::ShellContext,
+    prefix: &str,
+    number: u64,
+    suffix: &str,
+) {
     context.uart.puts(prefix);
-    
+
     let mut buffer = [0u8; 32];
     let len = write_hex_to_buffer(number, &mut buffer);
-    
+
     for i in 0..len {
         context.uart.putc(buffer[i]);
     }
-    
+
     context.uart.puts(suffix);
 }
 
 /// Helper to write boolean as string
-pub fn write_bool_with_text(context: &mut crate::shell::ShellContext, prefix: &str, value: bool, suffix: &str) {
+pub fn write_bool_with_text(
+    context: &mut crate::shell::ShellContext,
+    prefix: &str,
+    value: bool,
+    suffix: &str,
+) {
     context.uart.puts(prefix);
     if value {
         context.uart.puts("Active");
@@ -117,7 +132,14 @@ pub fn write_bool_with_text(context: &mut crate::shell::ShellContext, prefix: &s
 }
 
 /// Helper to write status with conditional text
-pub fn write_status_with_text(context: &mut crate::shell::ShellContext, prefix: &str, condition: bool, true_text: &str, false_text: &str, suffix: &str) {
+pub fn write_status_with_text(
+    context: &mut crate::shell::ShellContext,
+    prefix: &str,
+    condition: bool,
+    true_text: &str,
+    false_text: &str,
+    suffix: &str,
+) {
     context.uart.puts(prefix);
     if condition {
         context.uart.puts(true_text);
@@ -127,8 +149,12 @@ pub fn write_status_with_text(context: &mut crate::shell::ShellContext, prefix: 
     context.uart.puts(suffix);
 }
 
-/// Helper to write error result 
-pub fn write_error_result(context: &mut crate::shell::ShellContext, prefix: &str, result: Result<(), crate::drivers::network::NetworkError>) {
+/// Helper to write error result
+pub fn write_error_result(
+    context: &mut crate::shell::ShellContext,
+    prefix: &str,
+    result: Result<(), crate::drivers::network::NetworkError>,
+) {
     context.uart.puts(prefix);
     match result {
         Ok(()) => context.uart.puts("Success"),

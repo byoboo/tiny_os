@@ -3,8 +3,8 @@
 //! This module provides memory fault testing and analysis functionality
 //! for shell commands, including fault classification and statistics.
 
-use crate::shell::ShellContext;
 use super::utils::print_number;
+use crate::shell::ShellContext;
 
 /// Handle memory fault testing command (9)
 pub fn handle_memory_fault_test(context: &ShellContext) {

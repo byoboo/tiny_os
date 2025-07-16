@@ -176,17 +176,17 @@ pub fn handle_system_info(context: &ShellContext) {
         .puts("  Platform: Raspberry Pi 4/5 (AArch64)\r\n");
     context.uart.puts("  Architecture: ARM64\r\n");
     context.uart.puts("  Timer Frequency: 1MHz\r\n");
-    
+
     #[cfg(feature = "raspi3")]
     context.uart.puts("  UART Base: 0x3F201000\r\n");
     #[cfg(not(feature = "raspi3"))]
     context.uart.puts("  UART Base: 0xFE201000\r\n");
-    
+
     #[cfg(feature = "raspi3")]
     context.uart.puts("  GPIO Base: 0x3F200000\r\n");
     #[cfg(not(feature = "raspi3"))]
     context.uart.puts("  GPIO Base: 0xFE200000\r\n");
-    
+
     #[cfg(feature = "raspi3")]
     context.uart.puts("  GIC Base: 0x3F841000\r\n");
     #[cfg(not(feature = "raspi3"))]

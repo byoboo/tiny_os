@@ -1,10 +1,11 @@
 //! High-Speed I/O Protocol Manager
-//! 
+//!
 //! USB 3.0, SPI, and I2C protocol support
 //! Extracted from week5_network.rs
 
-use super::NetworkError;
 use core::ptr::{read_volatile, write_volatile};
+
+use super::NetworkError;
 
 /// USB 3.0 Controller Base Address
 #[cfg(feature = "raspi3")]
@@ -85,11 +86,11 @@ impl ProtocolManager {
             // Enable USB 3.0 xHCI controller
             let command_reg = self.usb3_base + 0x20;
             write_volatile(command_reg as *mut u32, 0x0000_0001);
-            
+
             // Check if controller is operational
             let status_reg = self.usb3_base + 0x04;
             let status = read_volatile(status_reg as *const u32);
-            
+
             if status & 0x1 != 0 {
                 self.usb3_enabled = true;
                 Ok(())
@@ -105,11 +106,11 @@ impl ProtocolManager {
             // Initialize SPI0
             let spi0_cs = self.spi0_base + 0x00;
             write_volatile(spi0_cs as *mut u32, 0x0000_0000); // Clear CS
-            
+
             // Configure for high-speed mode
             let spi0_clk = self.spi0_base + 0x08;
             write_volatile(spi0_clk as *mut u32, 0x0000_0002); // 125MHz / 4 = 31.25MHz
-            
+
             self.spi_enabled = true;
         }
         Ok(())
@@ -140,14 +141,17 @@ impl ProtocolManager {
     }
 
     /// Test protocol performance (placeholder)
-    pub fn test_protocol_performance(&mut self, protocol: IoProtocol) -> Result<ProtocolMetrics, NetworkError> {
+    pub fn test_protocol_performance(
+        &mut self,
+        protocol: IoProtocol,
+    ) -> Result<ProtocolMetrics, NetworkError> {
         if !self.is_protocol_available(protocol) {
             return Err(NetworkError::NoDevice);
         }
-        
+
         // Placeholder for performance testing
         let mut metrics = ProtocolMetrics::default();
-        
+
         match protocol {
             IoProtocol::Usb3SuperSpeed => {
                 metrics.average_speed_mbps = 5000; // 5 Gbps theoretical
@@ -162,7 +166,7 @@ impl ProtocolManager {
                 metrics.average_speed_mbps = 2500; // 2.5 GT/s
             }
         }
-        
+
         Ok(metrics)
     }
 }

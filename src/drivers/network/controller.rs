@@ -1,12 +1,12 @@
 //! Network Controller Integration
-//! 
+//!
 //! Main network controller that manages all network interfaces
 //! Refactored from week5_network.rs
 
-use super::{NetworkError, NetworkInterface, NetworkMetrics};
-use super::ethernet::EthernetController;
-use super::wifi::WiFiController;
-use super::protocols::ProtocolManager;
+use super::{
+    ethernet::EthernetController, protocols::ProtocolManager, wifi::WiFiController, NetworkError,
+    NetworkInterface, NetworkMetrics,
+};
 
 /// Main network controller for Pi 4/5
 pub struct NetworkController {
@@ -33,20 +33,20 @@ impl NetworkController {
         // Initialize Ethernet
         self.ethernet.init()?;
         self.interface_status[0] = true;
-        
+
         // Initialize USB 3.0 for network adapters
         self.protocols.init_usb3()?;
-        
+
         // Initialize high-speed protocols
         self.protocols.init_spi()?;
         self.protocols.init_i2c_fast()?;
-        
+
         // Setup WiFi 6 if available
         if self.is_pi5 {
             self.wifi.init()?;
             self.interface_status[1] = true;
         }
-        
+
         Ok(())
     }
 
@@ -79,14 +79,17 @@ impl NetworkController {
     pub fn get_total_metrics(&self) -> NetworkMetrics {
         let ethernet_metrics = self.ethernet.get_metrics();
         let wifi_metrics = self.wifi.get_metrics();
-        
+
         NetworkMetrics {
             bytes_transmitted: ethernet_metrics.bytes_transmitted + wifi_metrics.bytes_transmitted,
             bytes_received: ethernet_metrics.bytes_received + wifi_metrics.bytes_received,
-            packets_transmitted: ethernet_metrics.packets_transmitted + wifi_metrics.packets_transmitted,
+            packets_transmitted: ethernet_metrics.packets_transmitted
+                + wifi_metrics.packets_transmitted,
             packets_received: ethernet_metrics.packets_received + wifi_metrics.packets_received,
             errors: ethernet_metrics.errors + wifi_metrics.errors,
-            link_speed_mbps: ethernet_metrics.link_speed_mbps.max(wifi_metrics.link_speed_mbps),
+            link_speed_mbps: ethernet_metrics
+                .link_speed_mbps
+                .max(wifi_metrics.link_speed_mbps),
         }
     }
 
@@ -94,10 +97,12 @@ impl NetworkController {
     pub fn run_diagnostics(&mut self) -> Result<(), NetworkError> {
         // Check ethernet link
         self.ethernet.check_link();
-        
+
         // Test protocol performance
-        let _ = self.protocols.test_protocol_performance(super::protocols::IoProtocol::Usb3SuperSpeed);
-        
+        let _ = self
+            .protocols
+            .test_protocol_performance(super::protocols::IoProtocol::Usb3SuperSpeed);
+
         Ok(())
     }
 }

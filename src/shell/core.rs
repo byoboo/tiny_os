@@ -3,13 +3,14 @@
 //! This module provides the core shell infrastructure including the context
 //! structure, initialization, and main shell loop with command-line interface.
 
+use super::{
+    executor::{CommandExecutor, CommandResult},
+    parser::{CommandCompletion, CommandInput},
+};
 use crate::{
     filesystem::Fat32FileSystem, gpio::Gpio, interrupts::InterruptController,
     memory::MemoryManager, sdcard::SdCard, timer::SystemTimer, uart::Uart,
 };
-
-use super::parser::{CommandInput, CommandCompletion};
-use super::executor::{CommandExecutor, CommandResult};
 
 /// Shell context containing system components
 pub struct ShellContext {
@@ -52,14 +53,14 @@ pub fn run_shell(mut context: ShellContext) -> ! {
     let mut input = CommandInput::new();
     let mut executor = CommandExecutor::new();
     let _completion = CommandCompletion::new();
-    
+
     // Show welcome message
     show_welcome(&mut context);
-    
+
     loop {
         // Show prompt
         show_prompt(&executor, &mut context);
-        
+
         // Process input until we get a complete command
         let mut command_ready = false;
         while !command_ready {
@@ -68,7 +69,7 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     if !command.is_empty() {
                         // Execute the command
                         let result = executor.execute(&command, &mut context);
-                        
+
                         // Handle result
                         match result {
                             CommandResult::Success => {
@@ -94,17 +95,17 @@ pub fn run_shell(mut context: ShellContext) -> ! {
                     command_ready = true;
                 }
             }
-            
+
             // Small delay to prevent busy waiting
             context.timer.delay_us(100);
         }
-        
+
         // Check if we should exit
         if executor.should_exit() {
             break;
         }
     }
-    
+
     // If we somehow get here, restart the shell
     run_shell(context);
 }
@@ -112,16 +113,30 @@ pub fn run_shell(mut context: ShellContext) -> ! {
 /// Show welcome message
 fn show_welcome(context: &mut ShellContext) {
     context.uart.puts("\r\n");
-    context.uart.puts("╔══════════════════════════════════════════════════════════════════════════════╗\r\n");
-    context.uart.puts("║                            TinyOS Shell v2.0                                ║\r\n");
-    context.uart.puts("║                      Enhanced Command Line Interface                        ║\r\n");
+    context.uart.puts(
+        "╔══════════════════════════════════════════════════════════════════════════════╗\r\n",
+    );
+    context.uart.puts(
+        "║                            TinyOS Shell v2.0                                ║\r\n",
+    );
+    context.uart.puts(
+        "║                      Enhanced Command Line Interface                        ║\r\n",
+    );
     #[cfg(feature = "raspi3")]
-    context.uart.puts("║                      Optimized for Raspberry Pi 3                          ║\r\n");
+    context
+        .uart
+        .puts("║                      Optimized for Raspberry Pi 3                          ║\r\n");
     #[cfg(not(feature = "raspi3"))]
-    context.uart.puts("║                      Optimized for Raspberry Pi 4/5                        ║\r\n");
-    context.uart.puts("╚══════════════════════════════════════════════════════════════════════════════╝\r\n");
+    context
+        .uart
+        .puts("║                      Optimized for Raspberry Pi 4/5                        ║\r\n");
+    context.uart.puts(
+        "╚══════════════════════════════════════════════════════════════════════════════╝\r\n",
+    );
     context.uart.puts("\r\n");
-    context.uart.puts("Welcome to TinyOS! Type 'help' for available commands.\r\n");
+    context
+        .uart
+        .puts("Welcome to TinyOS! Type 'help' for available commands.\r\n");
     context.uart.puts("\r\n");
 }
 

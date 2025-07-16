@@ -4,8 +4,8 @@
 //! including ESR decoder validation, handler testing, and comprehensive
 //! exception system validation.
 
-use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 use super::{stats::display_detailed_stats, utils::print_number};
+use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 
 /// Handle exception test command (w/W)
 pub fn handle_exception_test(context: &ShellContext) {

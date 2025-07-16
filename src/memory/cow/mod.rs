@@ -22,7 +22,9 @@ pub mod utils;
 pub use fault::{CowFault, CowFaultType, CowStatistics};
 pub use manager::{init_cow_manager, with_cow_manager, CowManager};
 pub use page::CowPage;
-pub use utils::{ProcessIdArray, SimpleVec, SimpleVecIter, MAX_PROCESS_IDS_PER_PAGE, MAX_VIRT_ADDRS_PER_PAGE};
+pub use utils::{
+    ProcessIdArray, SimpleVec, SimpleVecIter, MAX_PROCESS_IDS_PER_PAGE, MAX_VIRT_ADDRS_PER_PAGE,
+};
 
 /// Helper function to create COW fault from exception information
 pub fn create_cow_fault_from_exception(

@@ -1,17 +1,17 @@
 //! Performance Driver Module
-//! 
+//!
 //! Consolidated performance functionality from Week 4-6 implementations
 //! Provides benchmarking, monitoring, and optimization features
 
 pub mod benchmarks;
+pub mod metrics;
 pub mod power;
 pub mod thermal;
-pub mod metrics;
 
-pub use benchmarks::{BenchmarkSuite, BenchmarkResult};
+pub use benchmarks::{BenchmarkResult, BenchmarkSuite};
+pub use metrics::{PerformanceMetrics, SystemMetrics};
 pub use power::{PowerController, PowerManagement};
 pub use thermal::{ThermalController, ThermalStatus};
-pub use metrics::{PerformanceMetrics, SystemMetrics};
 
 /// Performance-related errors
 #[derive(Debug, Clone, Copy, PartialEq)]

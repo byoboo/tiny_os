@@ -1,20 +1,20 @@
 //! Security Driver Module
-//! 
+//!
 //! Consolidated security functionality from Week 6 implementation
 //! Provides TrustZone, real-time scheduling, and system hardening
 
-pub mod trustzone;
-pub mod realtime;
-pub mod hardening;
 pub mod controller;
+pub mod hardening;
+pub mod realtime;
+pub mod trustzone;
 
 #[cfg(test)]
 mod tests;
 
 pub use controller::SecurityController;
-pub use trustzone::{TrustZoneController, SecurityLevel};
-pub use realtime::{RealTimeScheduler, RtPriority, RtTask};
 pub use hardening::{HardeningController, HardeningLevel};
+pub use realtime::{RealTimeScheduler, RtPriority, RtTask};
+pub use trustzone::{SecurityLevel, TrustZoneController};
 
 /// Security-related errors
 #[derive(Debug, Clone, Copy, PartialEq)]

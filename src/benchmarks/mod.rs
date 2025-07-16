@@ -3,18 +3,19 @@
 //! This module provides comprehensive performance measurement capabilities
 //! to validate our Raspberry Pi efficiency optimization thesis.
 
-pub mod memory;
-pub mod timing;
-pub mod power;
 pub mod comparison;
 pub mod gpu_performance;
-// Legacy week4_advanced module has been removed - functionality moved to performance drivers
+pub mod memory;
+pub mod power;
+pub mod timing;
+// Legacy week4_advanced module has been removed - functionality moved to
+// performance drivers
 
 // Re-export key benchmarking functions
+pub use comparison::{run_linux_comparison, LinuxComparisonSuite};
 pub use memory::MemoryBenchmarks;
-pub use timing::{get_cycles, calibrate_timing, measure_cycles};
-pub use power::{PowerMonitor, PowerMeasurement, test_power_monitoring};
-pub use comparison::{LinuxComparisonSuite, run_linux_comparison};
+pub use power::{test_power_monitoring, PowerMeasurement, PowerMonitor};
+pub use timing::{calibrate_timing, get_cycles, measure_cycles};
 
 /// Central benchmarking coordinator
 pub struct BenchmarkSuite {
@@ -48,14 +49,14 @@ impl BenchmarkSuite {
 
         // Run power monitoring tests
         let _power_results = power::test_power_monitoring();
-        
+
         // Run Linux comparison tests
         let _linux_comparison = comparison::run_linux_comparison();
 
         // Calculate real benchmark results
         let context_switch_time = self.measure_context_switch();
         let interrupt_latency = self.measure_interrupt_latency();
-        
+
         // Simulate memory allocation test without MemoryManager dependency
         let memory_alloc_time = timing::measure_cycles(|| {
             // Simulate allocation work
@@ -64,8 +65,9 @@ impl BenchmarkSuite {
                 total = total.wrapping_add(i);
             }
             core::hint::black_box(total);
-        }).1;
-        
+        })
+        .1;
+
         BenchmarkResults {
             memory_allocation_time: memory_alloc_time,
             context_switch_time,
@@ -85,7 +87,8 @@ impl BenchmarkSuite {
                     options(preserves_flags)
                 );
             }
-        }).1
+        })
+        .1
     }
 
     /// Measure interrupt latency
@@ -97,7 +100,8 @@ impl BenchmarkSuite {
                 counter = counter.wrapping_add(1);
             }
             core::hint::black_box(counter);
-        }).1
+        })
+        .1
     }
 }
 

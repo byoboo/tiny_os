@@ -5,10 +5,12 @@
 
 use spin::Mutex;
 
-use super::work_item::{WorkItem, WorkFunction};
-use super::work_queue::WorkQueue;
-use super::softirq::{SoftIrqManager, SoftIrqType};
-use super::statistics::DeferredProcessingStats;
+use super::{
+    softirq::{SoftIrqManager, SoftIrqType},
+    statistics::DeferredProcessingStats,
+    work_item::{WorkFunction, WorkItem},
+    work_queue::WorkQueue,
+};
 
 /// Global deferred processing manager
 pub struct DeferredProcessingManager {

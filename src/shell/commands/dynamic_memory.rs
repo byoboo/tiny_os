@@ -16,5 +16,6 @@ mod dynamic_memory_pressure;
 #[path = "dynamic_memory_status.rs"]
 mod dynamic_memory_status;
 
-// Note: Re-exports removed as these functions are not used in the current command-line shell
-// They are kept as modules for future reference and automated testing
+// Note: Re-exports removed as these functions are not used in the current
+// command-line shell They are kept as modules for future reference and
+// automated testing

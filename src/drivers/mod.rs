@@ -11,10 +11,10 @@ pub mod timer;
 pub mod uart;
 
 // Week 3: VideoCore GPU Integration drivers
+pub mod cache;
+pub mod dma;
 pub mod mailbox;
 pub mod videocore;
-pub mod dma;
-pub mod cache;
 
 // Week 4: Advanced Hardware Features
 pub mod pcie; // Re-enabled
@@ -33,21 +33,19 @@ pub mod performance;
 // Use drivers::performance, drivers::network, and drivers::security instead
 
 // Re-export commonly used types
-pub use mailbox::{Mailbox, GpuMemoryFlags, test_mailbox};
-pub use videocore::{VideoCore, GpuTaskType, GpuStatus};
-pub use dma::DmaController;
 pub use cache::CacheController;
-
+pub use dma::DmaController;
 // Re-export core driver types
-pub use gpio::{Gpio, GpioPin, GpioFunction};
+pub use gpio::{Gpio, GpioFunction, GpioPin};
+pub use mailbox::{test_mailbox, GpuMemoryFlags, Mailbox};
+// Re-export Week 4-6 modular types
+pub use network::{NetworkController, NetworkError, NetworkInterface};
+pub use performance::{BenchmarkSuite, OptimizationLevel, PerformanceError};
 pub use sdcard::{SdCard, SdCardError};
+pub use security::{SecurityController, SecurityError, SecurityLevel};
 pub use timer::{SystemTimer, TimerChannel};
 pub use uart::{Uart, UartConfig};
-
-// Re-export Week 4-6 modular types
-pub use network::{NetworkController, NetworkInterface, NetworkError};
-pub use security::{SecurityController, SecurityLevel, SecurityError};
-pub use performance::{BenchmarkSuite, PerformanceError, OptimizationLevel};
+pub use videocore::{GpuStatus, GpuTaskType, VideoCore};
 
 /// Simple DriverError for compatibility
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -96,11 +94,11 @@ pub fn detect_hardware_version() -> HardwareVersion {
     unsafe {
         core::arch::asm!("mrs {}, midr_el1", out(reg) midr);
     }
-    
+
     // Extract implementer and part number
     let implementer = (midr >> 24) & 0xFF;
     let part_number = (midr >> 4) & 0xFFF;
-    
+
     // ARM implementer ID (0x41) with different part numbers
     if implementer == 0x41 {
         match part_number {

@@ -1,10 +1,11 @@
 //! Statistics Module
 //!
-//! This module provides exception statistics display and management functionality
-//! for shell commands, including detailed breakdowns and analysis.
+//! This module provides exception statistics display and management
+//! functionality for shell commands, including detailed breakdowns and
+//! analysis.
 
-use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 use super::utils::print_number;
+use crate::{exceptions::types::ExceptionStats, shell::ShellContext};
 
 /// Handle exception statistics command (v/V)
 pub fn handle_exception_stats(context: &ShellContext) {

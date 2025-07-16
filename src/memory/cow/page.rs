@@ -1,7 +1,7 @@
 //! COW Page Module  
 //!
-//! This module manages individual Copy-on-Write pages, including reference counting,
-//! virtual address mapping, and COW protection state management.
+//! This module manages individual Copy-on-Write pages, including reference
+//! counting, virtual address mapping, and COW protection state management.
 
 use crate::memory::{
     cow::utils::{ProcessIdArray, SimpleVec},

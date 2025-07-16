@@ -1,5 +1,5 @@
 //! System Hardening Controller
-//! 
+//!
 //! System hardening and exploit mitigation
 //! Extracted from week6_security.rs
 
@@ -113,12 +113,12 @@ impl HardeningController {
                     stack_canaries: true,
                     fortify_source: true,
                 };
-                
+
                 // Additional maximum security measures
                 self.enable_kernel_hardening()?;
             }
         }
-        
+
         Ok(())
     }
 
@@ -140,33 +140,42 @@ impl HardeningController {
     }
 
     /// Check for stack overflow
-    pub fn check_stack_overflow(&mut self, stack_pointer: usize, stack_base: usize, stack_size: usize) -> bool {
+    pub fn check_stack_overflow(
+        &mut self,
+        stack_pointer: usize,
+        stack_base: usize,
+        stack_size: usize,
+    ) -> bool {
         if !self.mitigations.stack_protection {
             return false;
         }
-        
+
         let stack_end = stack_base + stack_size;
         let overflow_detected = stack_pointer < stack_base || stack_pointer >= stack_end;
-        
+
         if overflow_detected {
             self.metrics.security_violations += 1;
         }
-        
+
         overflow_detected
     }
 
     /// Validate control flow integrity
-    pub fn validate_control_flow(&mut self, return_address: usize, expected_address: usize) -> bool {
+    pub fn validate_control_flow(
+        &mut self,
+        return_address: usize,
+        expected_address: usize,
+    ) -> bool {
         if !self.mitigations.control_flow_integrity {
             return true; // Pass if CFI is disabled
         }
-        
+
         let valid = return_address == expected_address;
-        
+
         if !valid {
             self.metrics.security_violations += 1;
         }
-        
+
         valid
     }
 
@@ -175,13 +184,13 @@ impl HardeningController {
         if !self.mitigations.stack_canaries {
             return true; // Pass if canaries are disabled
         }
-        
+
         let valid = canary_value == expected_canary;
-        
+
         if !valid {
             self.metrics.security_violations += 1;
         }
-        
+
         valid
     }
 
@@ -193,15 +202,27 @@ impl HardeningController {
     /// Run hardening assessment
     pub fn assess_hardening(&mut self) -> Result<u8, SecurityError> {
         let mut score = 0u8;
-        
+
         // Calculate score based on enabled mitigations
-        if self.mitigations.stack_protection { score += 20; }
-        if self.mitigations.aslr_enabled { score += 20; }
-        if self.mitigations.nx_bit_enabled { score += 20; }
-        if self.mitigations.control_flow_integrity { score += 20; }
-        if self.mitigations.stack_canaries { score += 10; }
-        if self.mitigations.fortify_source { score += 10; }
-        
+        if self.mitigations.stack_protection {
+            score += 20;
+        }
+        if self.mitigations.aslr_enabled {
+            score += 20;
+        }
+        if self.mitigations.nx_bit_enabled {
+            score += 20;
+        }
+        if self.mitigations.control_flow_integrity {
+            score += 20;
+        }
+        if self.mitigations.stack_canaries {
+            score += 10;
+        }
+        if self.mitigations.fortify_source {
+            score += 10;
+        }
+
         self.metrics.security_score = score;
         Ok(score)
     }

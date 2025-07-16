@@ -17,7 +17,9 @@ pub fn cmd_network_network(args: &[&str], context: &mut ShellContext) {
         "benchmark" => run_network_benchmark(context),
         "help" => show_network_commands_help(context),
         _ => {
-            context.uart.puts("Unknown network command. Use 'network help' for options.\n");
+            context
+                .uart
+                .puts("Unknown network command. Use 'network help' for options.\n");
         }
     }
 }
@@ -36,7 +38,9 @@ pub fn cmd_network_io(args: &[&str], context: &mut ShellContext) {
         "test" => test_io_performance(context),
         "help" => show_io_help(context),
         _ => {
-            context.uart.puts("Unknown I/O command. Use 'io help' for options.\n");
+            context
+                .uart
+                .puts("Unknown I/O command. Use 'io help' for options.\n");
         }
     }
 }
@@ -62,14 +66,18 @@ pub fn cmd_network(args: &[&str], context: &mut ShellContext) {
         "benchmark" => run_network_comprehensive_benchmark(context),
         "help" => show_network_commands_help(context),
         _ => {
-            context.uart.puts("Unknown network command. Use 'network help' for options.\n");
+            context
+                .uart
+                .puts("Unknown network command. Use 'network help' for options.\n");
         }
     }
 }
 
 /// Show network overview
 fn show_network_overview(context: &mut ShellContext) {
-    context.uart.puts("\n=== Network & Advanced I/O Overview ===\n");
+    context
+        .uart
+        .puts("\n=== Network & Advanced I/O Overview ===\n");
     context.uart.puts("🌐 Network Features:\n");
     context.uart.puts("  • Gigabit Ethernet (1000 Mbps)\n");
     context.uart.puts("  • WiFi 6 (802.11ax) - Pi 5\n");
@@ -85,7 +93,9 @@ fn show_network_overview(context: &mut ShellContext) {
 
 /// Show detailed capabilities
 fn show_network_capabilities_detailed(context: &mut ShellContext) {
-    context.uart.puts("\n=== Network Detailed Capabilities ===\n");
+    context
+        .uart
+        .puts("\n=== Network Detailed Capabilities ===\n");
     context.uart.puts("Network Interfaces: 4 available\n");
     context.uart.puts("• Gigabit Ethernet: ✅ Available\n");
     context.uart.puts("• WiFi 6 Support: ✅ Available\n");
@@ -114,45 +124,81 @@ fn show_io_performance(context: &mut ShellContext) {
 
 /// Run comprehensive benchmark
 fn run_network_comprehensive_benchmark(context: &mut ShellContext) {
-    context.uart.puts("\n=== Network Comprehensive Benchmark ===\n");
+    context
+        .uart
+        .puts("\n=== Network Comprehensive Benchmark ===\n");
     context.uart.puts("🌐 Network Performance Test...\n");
-    context.uart.puts("  Ethernet Throughput: 950 Mbps (95% efficiency)\n");
-    context.uart.puts("  WiFi 6 Performance: 580 Mbps (97% efficiency)\n");
-    context.uart.puts("  USB 3.0 Transfer: 4.8 Gbps (96% efficiency)\n");
-    
+    context
+        .uart
+        .puts("  Ethernet Throughput: 950 Mbps (95% efficiency)\n");
+    context
+        .uart
+        .puts("  WiFi 6 Performance: 580 Mbps (97% efficiency)\n");
+    context
+        .uart
+        .puts("  USB 3.0 Transfer: 4.8 Gbps (96% efficiency)\n");
+
     context.uart.puts("\n⚡ I/O Protocol Performance...\n");
-    context.uart.puts("  SPI Transfer Rate: 30.5 MHz (98% of max)\n");
-    context.uart.puts("  I2C Fast Mode+: 980 kHz (98% of max)\n");
+    context
+        .uart
+        .puts("  SPI Transfer Rate: 30.5 MHz (98% of max)\n");
+    context
+        .uart
+        .puts("  I2C Fast Mode+: 980 kHz (98% of max)\n");
     context.uart.puts("  Multi-protocol Efficiency: 94%\n");
-    
+
     context.uart.puts("\n📊 Integration Score: 97% ✅\n");
 }
 
 fn show_network_commands_help(context: &mut ShellContext) {
     context.uart.puts("\nNetwork Commands:\n");
-    context.uart.puts("  status     - Show network interface status\n");
-    context.uart.puts("  stats      - Display network statistics\n");
-    context.uart.puts("  interfaces - List available interfaces\n");
-    context.uart.puts("  benchmark  - Run network performance test\n");
+    context
+        .uart
+        .puts("  status     - Show network interface status\n");
+    context
+        .uart
+        .puts("  stats      - Display network statistics\n");
+    context
+        .uart
+        .puts("  interfaces - List available interfaces\n");
+    context
+        .uart
+        .puts("  benchmark  - Run network performance test\n");
     context.uart.puts("  help       - Show this help\n");
 }
 
 fn show_io_help(context: &mut ShellContext) {
     context.uart.puts("\nI/O Commands:\n");
-    context.uart.puts("  status     - Show I/O protocol status\n");
-    context.uart.puts("  performance- Display I/O performance metrics\n");
+    context
+        .uart
+        .puts("  status     - Show I/O protocol status\n");
+    context
+        .uart
+        .puts("  performance- Display I/O performance metrics\n");
     context.uart.puts("  protocols  - List active protocols\n");
-    context.uart.puts("  test       - Run I/O performance test\n");
+    context
+        .uart
+        .puts("  test       - Run I/O performance test\n");
     context.uart.puts("  help       - Show this help\n");
 }
 
 fn show_network_help(context: &mut ShellContext) {
     context.uart.puts("\nNetwork & I/O Commands:\n");
-    context.uart.puts("  overview     - Show feature overview\n");
-    context.uart.puts("  capabilities - Show detailed capabilities\n");
-    context.uart.puts("  network      - Network management commands\n");
-    context.uart.puts("  io           - I/O protocol commands\n");
-    context.uart.puts("  benchmark    - Run comprehensive benchmark\n");
+    context
+        .uart
+        .puts("  overview     - Show feature overview\n");
+    context
+        .uart
+        .puts("  capabilities - Show detailed capabilities\n");
+    context
+        .uart
+        .puts("  network      - Network management commands\n");
+    context
+        .uart
+        .puts("  io           - I/O protocol commands\n");
+    context
+        .uart
+        .puts("  benchmark    - Run comprehensive benchmark\n");
     context.uart.puts("  help         - Show this help\n");
 }
 
