@@ -58,7 +58,9 @@ RUN useradd -m -s /bin/bash -u 1000 dev && \
     echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Install development tools as root first
-RUN cargo install cargo-watch cargo-expand cargo-tree
+RUN echo "Installing development tools..." && \
+    cargo install cargo-watch cargo-expand cargo-tree && \
+    echo "✅ Development tools installed successfully"
 
 # Set up workspace
 WORKDIR /workspace
@@ -85,7 +87,10 @@ CMD ["bash"]
 FROM base as ci
 
 # Install CI tools (minimal - TinyOS has no external dependencies)
-RUN echo "No external Cargo tools needed for CI"
+RUN echo "✅ CI stage: No external Cargo tools needed (avoiding cargo-audit/cargo-outdated)" && \
+    echo "Installed tools:" && \
+    cargo --version && \
+    rustc --version
 
 # CI-specific setup
 WORKDIR /workspace

@@ -43,8 +43,8 @@ jobs:
     
     - name: Quick validation
       run: |
-        # Fast setup and basic checks only
-        make setup
+        # Fast setup and basic checks only (force rebuild to avoid cached tools)
+        docker-compose build --no-cache ci
         make format
         make validate-ci
 
@@ -93,8 +93,11 @@ jobs:
     
     - name: Setup Docker Environment
       run: |
-        # Build Docker development environment (cache busted via v2 key)
-        BUILDKIT_PROGRESS=plain DOCKER_BUILDKIT=1 make setup
+        # Force complete rebuild without cache to eliminate problematic tools
+        echo "Forcing complete Docker rebuild without cache..."
+        docker system prune -f
+        docker-compose build --no-cache --pull dev ci
+        echo "✅ Docker environment rebuilt from scratch"
     
     - name: Code Quality and Build
       run: |
