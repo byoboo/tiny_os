@@ -309,29 +309,32 @@ jobs:
           target/aarch64-unknown-none/release/tiny_os
         token: ${{ secrets.GITHUB_TOKEN }}
 
-  # Security and dependency scanning (only on Cargo.lock changes or master)
+  # Security validation (lightweight - TinyOS has no external dependencies)
   security-scan:
-    name: Security Scan
+    name: Security Validation
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || contains(github.event.head_commit.modified, 'Cargo.lock'))
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || contains(github.event.head_commit.modified, 'Cargo.toml'))
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Docker Environment
-      run: |
-        # Reuse Docker environment from build-and-test job cache
-        make setup
-    
     - name: Dependency Security Check
       run: |
         # TinyOS has no external dependencies, just verify Cargo.toml
-        echo "Checking Cargo.toml for dependency security..."
-        if grep -q "dependencies" Cargo.toml; then
-          echo "External dependencies found, manual review recommended"
-          grep -A 20 "dependencies" Cargo.toml || true
+        echo "🔍 Checking Cargo.toml for dependency security..."
+        if grep -q "\[dependencies\]" Cargo.toml && grep -A 5 "\[dependencies\]" Cargo.toml | grep -v "^$" | grep -v "\[dependencies\]" | grep -q "."; then
+          echo "⚠️ External dependencies found, manual review recommended:"
+          grep -A 20 "\[dependencies\]" Cargo.toml || true
+          exit 1
         else
-          echo "✅ No external dependencies - no security audit needed"
+          echo "✅ No external dependencies - no security vulnerabilities possible"
+        fi
+        
+        echo "🔍 Checking for unsafe code blocks..."
+        if find src -name "*.rs" -exec grep -l "unsafe" {} \; | head -5; then
+          echo "⚠️ Unsafe code found - ensure manual review for memory safety"
+        else
+          echo "✅ No unsafe code blocks found"
         fi
