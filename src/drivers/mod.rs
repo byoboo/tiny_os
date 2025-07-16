@@ -1,127 +1,118 @@
 //! Hardware Driver Abstraction Layer
-//!
-//! This module provides a clean, modular driver architecture for TinyOS.
-//! Each driver is organized into separate modules with the following structure:
-//! - Hardware register definitions and low-level access
-//! - High-level API with type-safe interfaces
-//! - Zero-cost abstractions using const generics where applicable
-//! - Embedded-friendly design with static allocation only
 
+// Common driver infrastructure
+pub mod config;
+pub mod traits;
+
+// Core driver modules (without config/traits dependencies)
 pub mod gpio;
 pub mod sdcard;
 pub mod timer;
 pub mod uart;
 
-// Re-export commonly used driver types for convenience
-pub use gpio::{Gpio, GpioFunction};
-pub use sdcard::SdCard;
-pub use timer::SystemTimer;
-pub use uart::Uart;
+// Week 3: VideoCore GPU Integration drivers
+pub mod cache;
+pub mod dma;
+pub mod mailbox;
+pub mod videocore;
 
-/// Common traits for hardware drivers
-pub mod traits {
-    /// Trait for drivers that can be initialized
-    pub trait Initialize {
-        /// Initialize the driver with default settings
-        fn init(&mut self) -> Result<(), DriverError>;
+// Week 4: Advanced Hardware Features
+pub mod pcie; // Re-enabled
+pub mod power_management; // Re-enabled with no_std formatting
 
-        /// Initialize the driver with custom configuration
-        fn init_with_config(&mut self, config: &Self::Config) -> Result<(), DriverError>
-        where
-            Self: Sized,
-            Self::Config: Sized;
+// Week 5: Network and Advanced I/O
+pub mod network;
 
-        /// Associated configuration type
-        type Config;
-    }
+// Week 6: Advanced Security and Real-time
+pub mod security;
 
-    /// Trait for drivers that support resetting
-    pub trait Reset {
-        /// Reset the driver to its initial state
-        fn reset(&mut self) -> Result<(), DriverError>;
-    }
+// Performance monitoring and benchmarking
+pub mod performance;
 
-    /// Trait for drivers that can report their status
-    pub trait Status {
-        /// Get the current driver status
-        fn status(&self) -> DriverStatus;
-    }
+// Legacy week-specific modules have been removed
+// Use drivers::performance, drivers::network, and drivers::security instead
 
-    /// Common driver error types
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub enum DriverError {
-        /// Hardware not present or not responding
-        HardwareNotFound,
-        /// Invalid configuration parameters
-        InvalidConfig,
-        /// Operation timeout
-        Timeout,
-        /// Hardware fault or error
-        HardwareFault,
-        /// Operation not supported
-        NotSupported,
-        /// Invalid input parameters
-        InvalidInput,
-    }
+// Re-export commonly used types
+pub use cache::CacheController;
+pub use dma::DmaController;
+// Re-export core driver types
+pub use gpio::{Gpio, GpioFunction, GpioPin};
+pub use mailbox::{test_mailbox, GpuMemoryFlags, Mailbox};
+// Re-export Week 4-6 modular types
+pub use network::{NetworkController, NetworkError, NetworkInterface};
+pub use performance::{BenchmarkSuite, OptimizationLevel, PerformanceError};
+pub use sdcard::{SdCard, SdCardError};
+pub use security::{SecurityController, SecurityError, SecurityLevel};
+pub use timer::{SystemTimer, TimerChannel};
+pub use uart::{Uart, UartConfig};
+pub use videocore::{GpuStatus, GpuTaskType, VideoCore};
 
-    /// Common driver status types
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub enum DriverStatus {
-        /// Driver is not initialized
-        Uninitialized,
-        /// Driver is ready for use
-        Ready,
-        /// Driver is busy with an operation
-        Busy,
-        /// Driver is in an error state
-        Error(DriverError),
+/// Simple DriverError for compatibility
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DriverError {
+    NotInitialized,
+    HardwareError,
+    InvalidConfig,
+    Timeout,
+    Busy,
+    Unsupported,
+}
+
+/// Hardware version detection for platform-specific optimizations
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HardwareVersion {
+    RaspberryPi3,
+    RaspberryPi4,
+    RaspberryPi5,
+    Unknown,
+}
+
+/// Raspberry Pi 4 specific configuration
+pub struct RaspberryPi4Config {
+    pub cortex_a72: bool,
+    pub enhanced_dma: bool,
+    pub usb3_support: bool,
+    pub pcie_available: bool,
+}
+
+impl Default for RaspberryPi4Config {
+    fn default() -> Self {
+        Self {
+            cortex_a72: true,
+            enhanced_dma: true,
+            usb3_support: true,
+            pcie_available: true,
+        }
     }
 }
 
-/// Hardware configuration constants using const generics
-pub mod config {
-    /// Raspberry Pi hardware version configuration
-    pub trait HardwareVersion {
-        const GPIO_BASE: u32;
-        const UART_BASE: u32;
-        const TIMER_BASE: u32;
-        const EMMC_BASE: u32;
+/// Hardware version detection function
+/// Uses ARM CPU ID registers and memory layout to detect Raspberry Pi version
+pub fn detect_hardware_version() -> HardwareVersion {
+    // Read ARM CPU ID register to detect hardware
+    let midr: u64;
+    unsafe {
+        core::arch::asm!("mrs {}, midr_el1", out(reg) midr);
     }
 
-    /// Raspberry Pi 3 configuration
-    pub struct RaspberryPi3;
+    // Extract implementer and part number
+    let implementer = (midr >> 24) & 0xFF;
+    let part_number = (midr >> 4) & 0xFFF;
 
-    impl HardwareVersion for RaspberryPi3 {
-        const GPIO_BASE: u32 = 0x3F200000;
-        const UART_BASE: u32 = 0x3F201000;
-        const TIMER_BASE: u32 = 0x3F003000;
-        const EMMC_BASE: u32 = 0x3F300000;
+    // ARM implementer ID (0x41) with different part numbers
+    if implementer == 0x41 {
+        match part_number {
+            // Cortex-A53 (Pi 3)
+            0xD03 => HardwareVersion::RaspberryPi3,
+            // Cortex-A72 (Pi 4)
+            0xD08 => HardwareVersion::RaspberryPi4,
+            // Cortex-A76 (Pi 5)
+            0xD0B => HardwareVersion::RaspberryPi5,
+            // Default to Pi 4 for unknown ARM cores
+            _ => HardwareVersion::RaspberryPi4,
+        }
+    } else {
+        // Non-ARM or unknown implementer, default to Pi 4
+        HardwareVersion::RaspberryPi4
     }
-
-    /// Raspberry Pi 4 configuration
-    pub struct RaspberryPi4;
-
-    impl HardwareVersion for RaspberryPi4 {
-        const GPIO_BASE: u32 = 0xFE200000;
-        const UART_BASE: u32 = 0xFE201000;
-        const TIMER_BASE: u32 = 0xFE003000;
-        const EMMC_BASE: u32 = 0xFE300000;
-    }
-
-    /// Raspberry Pi 5 configuration (same as Pi 4 for most peripherals)
-    pub struct RaspberryPi5;
-
-    impl HardwareVersion for RaspberryPi5 {
-        const GPIO_BASE: u32 = 0xFE200000;
-        const UART_BASE: u32 = 0xFE201000;
-        const TIMER_BASE: u32 = 0xFE003000;
-        const EMMC_BASE: u32 = 0xFE300000;
-    }
-
-    /// Default hardware version selection based on target
-    #[cfg(feature = "raspi3")]
-    pub type DefaultHardware = RaspberryPi3;
-
-    #[cfg(not(feature = "raspi3"))]
-    pub type DefaultHardware = RaspberryPi4;
 }

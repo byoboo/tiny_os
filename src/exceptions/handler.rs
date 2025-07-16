@@ -4,7 +4,7 @@
 //! exception vector table. It provides comprehensive exception handling
 //! with detailed ESR_EL1 decoding and reporting.
 
-// Allow various warnings for this low-level exception handling code
+// Allow various warnings for this low-level code
 #![allow(
     static_mut_refs,
     dead_code,
@@ -195,37 +195,36 @@ fn report_exception_details(uart: &Uart, esr_info: &EsrInfo) {
     // Print additional details based on exception class
     match &esr_info.details {
         EsrDetails::DataAbort {
-            fault_address_valid,
-            write_not_read,
-            sign_extend: _,
-            access_size,
-            fault_status,
-            cache_maintenance,
+            dfsc,
+            wnr,
+            s1ptw: _,
+            cm,
+            ea: _,
+            fnv,
+            set: _,
+            ar: _,
+            sf: _,
         } => {
             uart.puts("  Data Fault Status: ");
-            uart.puts(fault_status.description());
+            uart.puts(dfsc.description());
             uart.puts("\r\n  Write not Read: ");
-            uart.puts(if *write_not_read { "true" } else { "false" });
+            uart.puts(if *wnr { "true" } else { "false" });
             uart.puts("\r\n  Fault Address Valid: ");
-            uart.puts(if *fault_address_valid {
-                "true"
-            } else {
-                "false"
-            });
+            uart.puts(if !*fnv { "true" } else { "false" });
             uart.puts("\r\n  Access Size: ");
-            uart.put_hex(*access_size as u64);
+            uart.put_hex(0); // Access size not available in new structure
             uart.puts("\r\n  Cache Maintenance: ");
-            uart.puts(if *cache_maintenance { "true" } else { "false" });
+            uart.puts(if *cm { "true" } else { "false" });
             uart.puts("\r\n");
         }
-        EsrDetails::SystemCall { immediate } => {
+        EsrDetails::SystemCall { imm16 } => {
             uart.puts("  System Call Number: ");
-            uart.put_hex(*immediate as u64);
+            uart.put_hex(*imm16 as u64);
             uart.puts("\r\n");
         }
-        EsrDetails::InstructionAbort { fault_status } => {
+        EsrDetails::InstructionAbort { ifsc, .. } => {
             uart.puts("  Instruction Fault Status: ");
-            uart.puts(fault_status.description());
+            uart.put_hex(*ifsc as u64);
             uart.puts("\r\n");
         }
         EsrDetails::Unknown => {
@@ -241,9 +240,9 @@ fn report_exception_details(uart: &Uart, esr_info: &EsrInfo) {
 fn handle_system_call(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
 
-    if let EsrDetails::SystemCall { immediate } = &esr_info.details {
+    if let EsrDetails::SystemCall { imm16 } = &esr_info.details {
         uart.puts("System call number: ");
-        uart.put_hex(*immediate as u64);
+        uart.put_hex(*imm16 as u64);
         uart.puts("\r\n");
 
         // Extract system call arguments from general registers
@@ -258,7 +257,7 @@ fn handle_system_call(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
         ];
 
         // Call the system call handler
-        let result = handle_syscall(*immediate as u64, &args);
+        let result = handle_syscall(*imm16 as u64, &args);
 
         // Store the result in x0 (return value register)
         ctx.gpr[0] = result as i64 as u64;
@@ -274,21 +273,24 @@ fn handle_data_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
     let uart = Uart::new();
 
     if let EsrDetails::DataAbort {
-        fault_address_valid: _,
-        write_not_read,
-        sign_extend: _,
-        access_size: _,
-        fault_status,
-        cache_maintenance: _,
+        dfsc,
+        wnr,
+        s1ptw: _,
+        cm: _,
+        ea: _,
+        fnv: _,
+        set: _,
+        ar: _,
+        sf: _,
     } = &esr_info.details
     {
         uart.puts("Data abort analysis:\r\n");
         uart.puts("  Fault address: 0x");
         uart.put_hex(ctx.far);
         uart.puts("\r\n  Operation: ");
-        uart.puts(if *write_not_read { "Write" } else { "Read" });
+        uart.puts(if *wnr { "Write" } else { "Read" });
         uart.puts("\r\n  Fault type: ");
-        uart.puts(fault_status.description());
+        uart.puts(dfsc.description());
         uart.puts("\r\n");
 
         // Use memory fault analyzer for detailed analysis
@@ -337,9 +339,16 @@ fn handle_instruction_abort(ctx: &mut ExceptionContext, esr_info: &EsrInfo) {
 
     uart.puts("Instruction abort analysis:\r\n");
 
-    if let EsrDetails::InstructionAbort { fault_status } = &esr_info.details {
-        uart.puts("  Fault type: ");
-        uart.puts(fault_status.description());
+    if let EsrDetails::InstructionAbort {
+        ifsc,
+        s1ptw: _,
+        ea: _,
+        fnv: _,
+        set: _,
+    } = &esr_info.details
+    {
+        uart.puts("  Fault type: 0x");
+        uart.put_hex(*ifsc as u64);
         uart.puts("\r\n");
     }
 

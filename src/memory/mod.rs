@@ -44,6 +44,7 @@ pub mod hardware;
 pub mod layout;
 pub mod mmu;
 pub mod mmu_exceptions;
+pub mod mmu_optimization;
 pub mod protection;
 pub mod stack;
 pub mod statistics;
@@ -75,6 +76,7 @@ pub use mmu_exceptions::{
     is_mmu_exception_handling_enabled, set_mmu_exception_handling_enabled, AccessType,
     MmuExceptionHandler, MmuExceptionStats, MmuExceptionType, MmuFaultInfo, MmuRecoveryAction,
 };
+// MMU optimization functions are used directly from mmu_optimization module
 pub use protection::{CorruptionDetection, CorruptionReport, MemoryProtection};
 pub use stack::{
     get_stack_manager, init_stack_manager, StackError, StackInfo, StackManager, StackManagerStats,

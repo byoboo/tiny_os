@@ -109,7 +109,7 @@ if [ -f /tmp/boot_test.log ]; then
         echo "❌ TinyOS boot sequence missing"
     fi
     
-    if grep -q "Available commands (type 'h' for help)" /tmp/boot_test.log; then
+    if grep -q "Type 'help' for available commands\|TinyOS Shell v2.0\|Welcome to TinyOS!" /tmp/boot_test.log; then
         echo "✅ Interactive shell started"
         BOOT_SUCCESS=true
     else

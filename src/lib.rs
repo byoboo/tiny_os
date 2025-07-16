@@ -7,14 +7,19 @@
 #![no_std]
 
 // Core modules (available in no_std environments)
+pub mod apps; // Application framework with text editor
+pub mod benchmarks; // Performance measurement and optimization validation
+                    // (temporarily disabled)
 pub mod drivers; // New modular driver system
 pub mod exceptions;
 pub mod filesystem; // New modular filesystem system
 pub mod interrupts;
 pub mod memory;
+pub mod optimization; // Week 3: Hardware optimization framework
 pub mod process; // New process management system
 pub mod shell;
 pub mod testing; // Testing framework
+pub mod utils; // Utility functions for no_std environment
 
 // Legacy filesystem module (for backward compatibility)
 // This re-exports types from the new modular filesystem

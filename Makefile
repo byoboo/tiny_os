@@ -15,6 +15,7 @@ help:
 	@echo "Build & Test:"
 	@echo "  build       - Build TinyOS kernel (auto-extracts binary)"
 	@echo "  build-local - Build and extract binary for local use"
+	@echo "  build-qemu  - Build for QEMU raspi3b testing (raspi3 feature)"
 	@echo "  build-pi    - Build kernel8.img for Raspberry Pi hardware"
 	@echo "  extract-binary - Extract binary from container to host"
 	@echo "  test        - Run complete test suite"
@@ -65,6 +66,18 @@ build:
 		echo "⚠️  Binary extraction failed - check Docker container"; \
 	fi
 
+# Build for QEMU Raspberry Pi 3B testing (uses raspi3 feature)
+build-qemu:
+	@echo "Building TinyOS for QEMU raspi3b testing..."
+	docker-compose run --rm build cargo build --release --target aarch64-unknown-none --features raspi3
+	@echo "Extracting binary for QEMU testing..."
+	@docker-compose run --rm build cp /workspace/target/aarch64-unknown-none/release/tiny_os /workspace/tiny_os_raspi3 2>/dev/null || true
+	@if [ -f tiny_os_raspi3 ]; then \
+		echo "✅ QEMU binary extracted: ./tiny_os_raspi3 ($(shell ls -lh tiny_os_raspi3 2>/dev/null | cut -d' ' -f5))"; \
+	else \
+		echo "⚠️  QEMU binary extraction failed - check Docker container"; \
+	fi
+
 # Extract binary from container to host
 extract-binary:
 	@echo "Extracting binary from Docker container..."
@@ -101,13 +114,21 @@ dev-cycle: build test
 
 # Run TinyOS locally with QEMU (requires binary)
 run-local:
-	@if [ -f tiny_os ]; then \
+	@if [ -f tiny_os_raspi3 ]; then \
+		echo "🚀 Running TinyOS (raspi3) in QEMU..."; \
+		echo "Press Ctrl+A then X to exit QEMU"; \
+		echo "----------------------------------------"; \
+		docker-compose run --rm dev bash -c "qemu-system-aarch64 -M raspi3b -kernel /workspace/tiny_os_raspi3 -serial stdio -display none -no-reboot -d guest_errors"; \
+	elif [ -f tiny_os ]; then \
+		echo "⚠️  Using Pi4 binary with raspi3b - may have hardware address issues"; \
+		echo "   Consider running 'make build-qemu' for proper raspi3 support"; \
 		echo "🚀 Running TinyOS in QEMU..."; \
 		echo "Press Ctrl+A then X to exit QEMU"; \
 		echo "----------------------------------------"; \
 		docker-compose run --rm dev bash -c "qemu-system-aarch64 -M raspi3b -kernel /workspace/tiny_os -serial stdio -display none -no-reboot -d guest_errors"; \
 	else \
-		echo "❌ TinyOS binary not found - run 'make build' first"; \
+		echo "❌ TinyOS binary not found"; \
+		echo "   Run 'make build-qemu' for QEMU testing or 'make build' for Pi4 hardware"; \
 	fi
 
 # Check if binary exists and show info

@@ -11,7 +11,7 @@ echo "========================================"
 echo "  TinyOS External Integration Validation"
 echo "========================================"
 echo "This validates external integration only."
-echo "For comprehensive testing: cargo run -> 't'"
+echo "For comprehensive testing: make run-local -> 'test' command"
 echo "========================================"
 echo
 
