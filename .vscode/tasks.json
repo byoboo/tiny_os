@@ -1,0 +1,71 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "label": "build-debug",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--target",
+                "aarch64-unknown-none"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "isBackground": false
+        },
+        {
+            "label": "build-release",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--release",
+                "--target",
+                "aarch64-unknown-none"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "isBackground": false
+        },
+        {
+            "label": "run-qemu",
+            "type": "shell",
+            "command": "./run.sh",
+            "group": "build",
+            "dependsOn": "build-debug",
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "run-tests",
+            "type": "shell",
+            "command": "./test_tinyos.sh",
+            "group": "build",
+            "problemMatcher": [],
+            "isBackground": false
+        },
+        {
+            "label": "clippy",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "clippy",
+                "--target",
+                "aarch64-unknown-none",
+                "--",
+                "-W",
+                "clippy::all"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "isBackground": false
+        }
+    ]
+}

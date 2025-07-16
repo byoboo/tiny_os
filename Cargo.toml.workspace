@@ -1,0 +1,10 @@
+[workspace]
+members = ["."]
+exclude = []
+
+# Explicitly disable any test-related workspace features
+[workspace.metadata.rust-analyzer]
+# Force no_std target for all workspace analysis
+cargo-target = "aarch64-unknown-none"
+# Disable test compilation completely
+cargo-all-targets = false

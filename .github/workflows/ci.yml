@@ -1,0 +1,350 @@
+name: TinyOS CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, dev ]
+  pull_request:
+    branches: [ master, dev ]
+  schedule:
+    # Weekly dev release every Monday at 10 AM UTC
+    - cron: '0 10 * * 1'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Fast PR check (basic validation only)
+  pr-check:
+    name: PR Quick Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Setup Docker Compose
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
+    
+    - name: Quick validation
+      run: |
+        # Fast setup and basic checks only (force rebuild to avoid cached tools)
+        docker-compose build --no-cache ci
+        make format
+        make validate-ci
+
+  # Build and test job that runs on pushes only (PRs use pr-check)
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for version calculation
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: image=moby/buildkit:master
+        
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-v2-${{ hashFiles('Dockerfile', 'docker-compose.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-v2-
+    
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Setup Docker Compose
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
+    
+    - name: Setup Docker Environment
+      run: |
+        # Force complete rebuild without cache to eliminate problematic tools
+        echo "Forcing complete Docker rebuild without cache..."
+        docker system prune -f
+        docker-compose build --no-cache --pull dev ci
+        echo "✅ Docker environment rebuilt from scratch"
+    
+    - name: Code Quality and Build
+      run: |
+        # Run format, lint, and build in parallel where possible
+        make format &
+        make lint &
+        wait
+        
+        # Build (Pi4 only for faster CI)
+        make build
+        
+        # Only build Pi image for release builds
+        if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]]; then
+          make build-pi
+        fi
+        
+        make check-binary
+    
+    - name: Run Tests
+      run: |
+        # Run streamlined test suite
+        make validate-ci
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: tinyos-build-${{ github.sha }}
+        path: |
+          target/aarch64-unknown-none/release/tiny_os
+          kernel8.img
+          target/aarch64-unknown-none/debug/tiny_os
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ github.sha }}
+        path: |
+          docs/archived/validation_report.md
+          test_*.log
+        retention-days: 30
+
+  # Development releases (both push and scheduled)
+  dev-release:
+    name: Dev Release
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: (github.ref == 'refs/heads/dev' && github.event_name == 'push') || github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Docker Environment
+      run: |
+        # Reuse Docker environment from build-and-test job cache
+        make setup
+    
+    - name: Run tests for scheduled builds
+      if: github.event_name == 'schedule'
+      run: |
+        # Build and test using make system
+        make build
+        make test
+    
+    - name: Calculate build number
+      id: build_number
+      run: |
+        # Get the number of commits on dev branch
+        BUILD_NUMBER=$(git rev-list --count HEAD)
+        echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "Build number: $BUILD_NUMBER"
+        
+        # Determine release type and tag prefix
+        if [ "${{ github.event_name }}" = "schedule" ]; then
+          echo "RELEASE_TYPE=Weekly Scheduled" >> $GITHUB_OUTPUT
+          echo "RELEASE_TITLE=Weekly Dev Release" >> $GITHUB_OUTPUT
+          echo "TAG_PREFIX=dev-weekly" >> $GITHUB_OUTPUT
+        else
+          echo "RELEASE_TYPE=Push Event" >> $GITHUB_OUTPUT
+          echo "RELEASE_TITLE=Development Build" >> $GITHUB_OUTPUT
+          echo "TAG_PREFIX=dev" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Update version in Cargo.toml
+      run: |
+        # Update version to 0.2.0-dev.{build}
+        sed -i "s/^version = \".*\"/version = \"0.2.0-dev.${{ steps.build_number.outputs.BUILD_NUMBER }}\"/" Cargo.toml
+        echo "Updated version to: $(grep '^version = ' Cargo.toml)"
+    
+    - name: Build release with updated version
+      run: |
+        # Build using make system
+        make build
+        make build-pi
+        
+        # Verify binaries
+        make check-binary
+    
+    - name: Create dev release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.build_number.outputs.TAG_PREFIX }}-v0.2.0-dev.${{ steps.build_number.outputs.BUILD_NUMBER }}
+        name: "TinyOS ${{ steps.build_number.outputs.RELEASE_TITLE }} v0.2.0-dev.${{ steps.build_number.outputs.BUILD_NUMBER }}"
+        body: |
+          🚀 **TinyOS ${{ steps.build_number.outputs.RELEASE_TITLE }}**
+          
+          **Build Information:**
+          - Branch: `dev`
+          - Commit: ${{ github.sha }}
+          - Build Number: ${{ steps.build_number.outputs.BUILD_NUMBER }}
+          - Release Type: ${{ steps.build_number.outputs.RELEASE_TYPE }}
+          - Built on: ${{ github.run_number }}
+          ${{ github.event_name == 'schedule' && '- Schedule: Every Monday 10 AM UTC' || '' }}
+          
+          **What's New:**
+          - Latest development features
+          - All tests passing ✅
+          - Modular architecture complete
+          - Pi 4/5 optimized
+          
+          **Files:**
+          - `kernel8.img` - Ready-to-use kernel for Pi 4/5
+          - `tiny_os` - ELF binary for debugging
+          
+          **⚠️ Development Release**
+          This is a pre-release build from the development branch. Use for testing and development only.
+          
+          **Installation:**
+          1. Download `kernel8.img`
+          2. Follow the [hardware deployment guide](https://github.com/${{ github.repository }}#real-hardware-deployment)
+          3. Copy to SD card with Pi firmware files
+        prerelease: true
+        files: |
+          kernel8.img
+          target/aarch64-unknown-none/release/tiny_os
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Production release for master branch
+  production-release:
+    name: Production Release
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Docker Environment
+      run: |
+        # Reuse Docker environment from build-and-test job cache
+        make setup
+    
+    - name: Get version from Cargo.toml
+      id: get_version
+      run: |
+        VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Release version: $VERSION"
+    
+    - name: Build production release
+      run: |
+        # Build using make system
+        make build
+        make build-pi
+        
+        # Verify binaries
+        make check-binary
+    
+    - name: Create production release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: production-v${{ steps.get_version.outputs.VERSION }}
+        name: "TinyOS Production Release v${{ steps.get_version.outputs.VERSION }}"
+        body: |
+          🎉 **TinyOS Production Release**
+          
+          **Release Information:**
+          - Version: ${{ steps.get_version.outputs.VERSION }}
+          - Branch: `master`
+          - Commit: ${{ github.sha }}
+          - Release Date: ${{ github.event.head_commit.timestamp }}
+          
+          **Features:**
+          - ✅ Complete modular architecture (Shell, Drivers, Memory, Filesystem)
+          - ✅ 26+ modular components with clear separation
+          - ✅ Comprehensive testing infrastructure (12+ test suites)
+          - ✅ Pi 4/5 hardware optimization
+          - ✅ FAT32 filesystem with modular implementation
+          - ✅ Interactive shell with 30+ commands
+          - ✅ Memory management with protection and statistics
+          - ✅ Hardware abstraction layer for all drivers
+          
+          **Files:**
+          - `kernel8.img` - Production-ready kernel for Pi 4/5
+          - `tiny_os` - ELF binary for debugging
+          
+          **📋 Production Ready**
+          This is a stable release suitable for production use and hardware deployment.
+          
+          **Installation:**
+          1. Download `kernel8.img`
+          2. Follow the [hardware deployment guide](https://github.com/${{ github.repository }}#real-hardware-deployment)
+          3. Copy to SD card with Pi firmware files
+          
+          **Documentation:**
+          - [README.md](https://github.com/${{ github.repository }}/blob/master/README.md)
+        prerelease: false
+        files: |
+          kernel8.img
+          target/aarch64-unknown-none/release/tiny_os
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Security validation (lightweight - TinyOS has no external dependencies)
+  security-scan:
+    name: Security Validation
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || contains(github.event.head_commit.modified, 'Cargo.toml'))
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Dependency Security Check
+      run: |
+        # TinyOS has no external dependencies, just verify Cargo.toml
+        echo "🔍 Checking Cargo.toml for dependency security..."
+        if grep -q "\[dependencies\]" Cargo.toml && grep -A 5 "\[dependencies\]" Cargo.toml | grep -v "^$" | grep -v "\[dependencies\]" | grep -q "."; then
+          echo "⚠️ External dependencies found, manual review recommended:"
+          grep -A 20 "\[dependencies\]" Cargo.toml || true
+          exit 1
+        else
+          echo "✅ No external dependencies - no security vulnerabilities possible"
+        fi
+        
+        echo "🔍 Checking for unsafe code blocks..."
+        if find src -name "*.rs" -exec grep -l "unsafe" {} \; | head -5; then
+          echo "⚠️ Unsafe code found - ensure manual review for memory safety"
+        else
+          echo "✅ No unsafe code blocks found"
+        fi

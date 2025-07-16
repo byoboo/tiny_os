@@ -28,6 +28,7 @@ SECTIONS
         __bss_end = .;
     }
     
-    /* Stack grows downward from 0x80000 */
-    __stack_end = 0x80000;
+    /* Stack grows downward from a higher address */
+    /* Place stack 16MB above kernel start to avoid conflicts */
+    __stack_end = 0x1080000;
 }

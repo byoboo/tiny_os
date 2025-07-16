@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "TinyOS QEMU Debug",
+            "request": "launch",
+            "type": "node",
+            "program": "${workspaceFolder}/run.sh",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build-debug"
+        }
+    ]
+}

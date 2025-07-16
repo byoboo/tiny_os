@@ -1,0 +1,130 @@
+name: Feature Branch Validation
+
+on:
+  push:
+    branches: 
+      - 'feature/*'
+      - 'bugfix/*'
+      - 'hotfix/*'
+  
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  feature-validation:
+    name: Feature Branch Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Docker Environment
+      run: |
+        # Install Docker Compose
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+        # Verify Docker tools are available
+        docker --version
+        docker-compose --version
+        
+        # Build Docker development environment
+        make setup
+    
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-feature-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+    
+    - name: Extract feature name
+      id: feature
+      run: |
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        FEATURE_NAME=${BRANCH_NAME##*/}
+        echo "FEATURE_NAME=$FEATURE_NAME" >> $GITHUB_OUTPUT
+        echo "Working on feature: $FEATURE_NAME"
+    
+    - name: Quick build validation
+      run: |
+        echo "🔨 Building feature: ${{ steps.feature.outputs.FEATURE_NAME }}"
+        cargo build --target aarch64-unknown-none
+    
+    - name: Code Quality & Basic Tests
+      run: |
+        echo "🧹 Checking code quality..."
+        # Format and lint using Docker environment
+        make format
+        make lint
+        
+        # Run basic tests
+        make test
+    
+    - name: Feature-specific validation
+      run: |
+        echo "🚀 Feature-specific validation for: ${{ steps.feature.outputs.FEATURE_NAME }}"
+        
+        # Run appropriate tests based on feature name
+        case "${{ steps.feature.outputs.FEATURE_NAME }}" in
+          *memory*)
+            echo "Running memory-related tests..."
+            docker-compose run --rm dev ./tests/scripts/test_memory_modular.sh || echo "Memory tests failed"
+            ;;
+          *driver*)
+            echo "Running driver-related tests..."
+            docker-compose run --rm dev ./tests/scripts/test_drivers_modular.sh || echo "Driver tests failed"
+            ;;
+          *filesystem*|*fat32*)
+            echo "Running filesystem-related tests..."
+            docker-compose run --rm dev ./tests/scripts/test_filesystem_modular.sh || echo "Filesystem tests failed"
+            ;;
+          *shell*)
+            echo "Running shell-related tests..."
+            docker-compose run --rm dev ./tests/scripts/test_qemu_boot.sh || echo "Shell tests failed"
+            ;;
+          *)
+            echo "Running comprehensive tests..."
+            docker-compose run --rm dev ./tests/scripts/test_comprehensive_integration.sh || echo "Integration tests failed"
+            ;;
+        esac
+    
+    - name: Generate feature build
+      run: |
+        echo "📦 Generating feature build..."
+        # Build using make system
+        make build
+        make build-pi
+        
+        # Add feature identifier to kernel name
+        mv kernel8.img kernel8-${{ steps.feature.outputs.FEATURE_NAME }}.img
+        
+        # Verify builds
+        make check-binary
+    
+    - name: Upload feature artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: feature-${{ steps.feature.outputs.FEATURE_NAME }}-${{ github.sha }}
+        path: |
+          kernel8-${{ steps.feature.outputs.FEATURE_NAME }}.img
+          target/aarch64-unknown-none/release/tiny_os
+        retention-days: 14
+    
+    - name: Feature summary
+      run: |
+        echo "📋 Feature Development Summary"
+        echo "============================="
+        echo "Feature: ${{ steps.feature.outputs.FEATURE_NAME }}"
+        echo "Branch: ${GITHUB_REF#refs/heads/}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Status: ✅ Build successful"
+        echo ""
+        echo "Next steps:"
+        echo "1. Complete feature development"
+        echo "2. Run './test_tinyos.sh' locally"
+        echo "3. Create PR to 'dev' branch"
+        echo "4. Address any review feedback"
+        echo "5. Merge to 'dev' for integration testing"

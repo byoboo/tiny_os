@@ -1,0 +1,75 @@
+{
+    "rust-analyzer.cargo.target": "aarch64-unknown-none",
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.targets": "aarch64-unknown-none",
+    "rust-analyzer.cargo.features": [],
+    "rust-analyzer.cargo.noDefaultFeatures": true,
+    "rust-analyzer.cargo.allFeatures": false,
+    "rust-analyzer.check.extraArgs": [
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "-W",
+        "clippy::all"
+    ],
+    "rust-analyzer.procMacro.enable": false,
+    "rust-analyzer.imports.granularity.group": "module",
+    "rust-analyzer.cargo.buildScripts.enable": false,
+    "rust-analyzer.diagnostics.experimental.enable": false,
+    "rust-analyzer.diagnostics.disabled": [
+        "unresolved-proc-macro",
+        "macro-error",
+        "unresolved-import",
+        "no-such-crate",
+        "missing-unsafe",
+        "inactive-code",
+        "test-unknown-config",
+        "test-not-found",
+        "test-ignored",
+        "unresolved-extern-crate"
+    ],
+    "rust-analyzer.completion.callable.snippets": "none",
+    "rust-analyzer.hover.actions.enable": false,
+    "rust-analyzer.lens.enable": false,
+    "rust-analyzer.inlayHints.enable": false,
+    // Force rust-analyzer to use project-specific cargo config
+    "rust-analyzer.server.extraEnv": {
+        "CARGO_BUILD_TARGET": "aarch64-unknown-none",
+        "RUSTFLAGS": "-C link-arg=-Tlinker.ld",
+        "CARGO_TARGET_DIR": "./target"
+    },
+    // Disable test-related features completely to prevent "can't find crate for test" errors
+    "rust-analyzer.cargo.unsetTest": true,
+    "rust-analyzer.runnables.command": null,
+    "rust-analyzer.lens.run.enable": false,
+    "rust-analyzer.lens.debug.enable": false,
+    "rust-analyzer.cargo.runBuildScripts": false,
+    // Force rust-analyzer to never attempt test compilation
+    "rust-analyzer.cargo.allTargets": false,
+    "rust-analyzer.cargo.loadOutDirsFromCheck": false,
+    // Additional test-related settings
+    "rust-analyzer.completion.postfix.enable": false,
+    "rust-analyzer.assist.importGranularity": "module",
+    "rust-analyzer.checkOnSave.enable": true,
+    "rust-analyzer.checkOnSave.command": "clippy",
+    "rust-analyzer.checkOnSave.extraArgs": ["--target", "aarch64-unknown-none"],
+    // Explicit workspace override to ignore global cargo settings
+    "rust-analyzer.cargo.configPath": ".cargo/config.toml",
+    "rust-analyzer.files.watcher": "client",
+    // Force sysroot to use the embedded target
+    "rust-analyzer.rustcSource": "discover",
+    "rust-analyzer.cargo.sysroot": "discover",
+    "rust-analyzer.cargo.useRustcWrapperForBuildScripts": false,
+    "files.associations": {
+        "*.s": "arm",
+        "*.ld": "ld-script"
+    },
+    "editor.rulers": [100],
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true
+    }
+}
