@@ -69,9 +69,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile', 'docker-compose.yml') }}
+        key: ${{ runner.os }}-buildx-v2-${{ hashFiles('Dockerfile', 'docker-compose.yml') }}
         restore-keys: |
-          ${{ runner.os }}-buildx-
+          ${{ runner.os }}-buildx-v2-
     
     - name: Cache Cargo dependencies
       uses: actions/cache@v4
@@ -93,7 +93,7 @@ jobs:
     
     - name: Setup Docker Environment
       run: |
-        # Build Docker development environment with cache
+        # Build Docker development environment (cache busted via v2 key)
         BUILDKIT_PROGRESS=plain DOCKER_BUILDKIT=1 make setup
     
     - name: Code Quality and Build
